@@ -40,7 +40,7 @@ export default function LandingPage() {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-600/10 border border-red-600/20 text-red-400 text-xs font-medium mb-8 animate-fade-in-up">
           <Shield className="h-3.5 w-3.5" />
-          Serie 6 · Herrer
+          Serie 1 · Herrer
         </div>
 
         {/* Heading */}
