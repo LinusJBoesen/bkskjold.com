@@ -3,6 +3,8 @@ import { cors } from "hono/cors";
 import { migrate } from "./db/migrate";
 import { seed } from "./db/seed";
 import authRoutes from "./routes/auth";
+import playerRoutes from "./routes/players";
+import syncRoutes from "./routes/sync";
 import { authMiddleware } from "./middleware/auth";
 
 // Run migrations and seed on startup
@@ -23,7 +25,7 @@ app.get("/api/health", (c) => {
 
 app.route("/api/auth", authRoutes);
 
-// Protected API routes — middleware skips public paths
+// Protected API routes
 app.use("/api/*", async (c, next) => {
   const path = c.req.path;
   if (path === "/api/health" || path.startsWith("/api/auth")) {
@@ -31,6 +33,9 @@ app.use("/api/*", async (c, next) => {
   }
   return authMiddleware(c, next);
 });
+
+app.route("/api/players", playerRoutes);
+app.route("/api/sync", syncRoutes);
 
 export default {
   port: 3000,
