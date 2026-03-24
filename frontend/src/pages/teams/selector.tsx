@@ -199,7 +199,7 @@ export default function TeamSelectorPage() {
   }
 
   return (
-    <div data-testid="page-teams">
+    <div data-testid="page-teams" className="animate-fade-in-up">
       <div className="flex items-center gap-3 mb-6">
         <div className="h-10 w-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
           <Users className="h-5 w-5 text-red-400" />

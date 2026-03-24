@@ -187,7 +187,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div data-testid="page-dashboard">
+    <div data-testid="page-dashboard" className="animate-fade-in-up">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-zinc-50 tracking-tight">{da.nav.dashboard}</h1>
@@ -205,7 +205,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Totals */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 animate-stagger">
         <StatCard icon={Users} label="Spillere" value={String(data?.totals.players ?? 0)} testId="player-count" />
         <StatCard icon={Banknote} label="Total bøder" value={`${data?.totals.totalFines ?? 0} kr`} color="text-red-400" testId="dashboard-total-fines" />
         <StatCard icon={CheckCircle} label="Betalt" value={`${data?.totals.paidFines ?? 0} kr`} color="text-emerald-400" testId="dashboard-paid-fines" />

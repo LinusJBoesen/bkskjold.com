@@ -28,7 +28,7 @@ export default function LoginPage({ onLogin }: LoginProps) {
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm animate-fade-in-up">
         <Card className="border-zinc-800 shadow-2xl shadow-black/50 relative overflow-visible">
           <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-red-600/5 to-transparent pointer-events-none" />
           <CardHeader className="text-center relative">

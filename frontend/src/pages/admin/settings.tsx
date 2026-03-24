@@ -58,7 +58,7 @@ export default function AdminSettingsPage() {
   ];
 
   return (
-    <div data-testid="page-admin">
+    <div data-testid="page-admin" className="animate-fade-in-up">
       <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.admin.title}</h1>
 
       {/* Tab navigation */}

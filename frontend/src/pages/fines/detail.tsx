@@ -136,7 +136,7 @@ export default function FineDetailPage() {
   }
 
   return (
-    <div data-testid="page-fine-detail">
+    <div data-testid="page-fine-detail" className="animate-fade-in-up">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
         <Button variant="ghost" onClick={() => navigate("/fines")} data-testid="fine-detail-back">
           <ArrowLeft className="h-4 w-4 mr-2" />

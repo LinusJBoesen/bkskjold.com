@@ -117,6 +117,7 @@ matches.get("/stats/all", (c) => {
     SELECT
       p.id,
       p.display_name,
+      p.profile_picture,
       COUNT(CASE WHEN m.status = 'completed' THEN 1 END) as matches,
       SUM(CASE WHEN m.winning_team = mp.team THEN 1 ELSE 0 END) as wins,
       SUM(CASE WHEN m.winning_team IS NOT NULL AND m.winning_team != mp.team THEN 1 ELSE 0 END) as losses

@@ -63,7 +63,7 @@ export default function TournamentStandingsPage() {
   const isSkjold = (name: string) => name === "BK Skjold";
 
   return (
-    <div data-testid="page-tournament">
+    <div data-testid="page-tournament" className="animate-fade-in-up">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-zinc-50 tracking-tight flex items-center gap-2">
           <Trophy className="w-6 h-6 text-amber-400" />

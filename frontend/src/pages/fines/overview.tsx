@@ -41,10 +41,10 @@ export default function FinesOverviewPage() {
   const totalPaid = summaries.reduce((sum, s) => sum + s.paid, 0);
 
   return (
-    <div data-testid="page-fines">
+    <div data-testid="page-fines" className="animate-fade-in-up">
       <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.nav.fines}</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 animate-stagger">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-zinc-500 uppercase tracking-wider flex items-center gap-2">

@@ -55,6 +55,7 @@ analysis.get("/player-rates", async (c) => {
     SELECT
       p.id,
       p.display_name,
+      p.profile_picture,
       COUNT(mp.match_id) as matches,
       SUM(CASE WHEN m.winning_team = mp.team THEN 1 ELSE 0 END) as wins,
       SUM(CASE WHEN m.winning_team IS NOT NULL AND m.winning_team != mp.team THEN 1 ELSE 0 END) as losses
@@ -67,6 +68,7 @@ analysis.get("/player-rates", async (c) => {
   `).all() as {
     id: string;
     display_name: string;
+    profile_picture: string | null;
     matches: number;
     wins: number;
     losses: number;
@@ -75,6 +77,7 @@ analysis.get("/player-rates", async (c) => {
   const playerRates = statsRows.map((s) => ({
     id: s.id,
     displayName: s.display_name,
+    profilePicture: s.profile_picture || null,
     trainingMatches: s.matches,
     trainingWins: s.wins,
     trainingLosses: s.losses,

@@ -15,6 +15,20 @@ import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
 import { Download, Trophy, Clock, Users, Swords } from "lucide-react";
 
+function PlayerAvatar({ name, src }: { name: string; src?: string | null }) {
+  if (src) {
+    return (
+      <img src={src} alt={name} className="h-7 w-7 rounded-full object-cover border border-zinc-700" />
+    );
+  }
+  const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
+  return (
+    <div className="h-7 w-7 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-medium text-zinc-400">
+      {initials}
+    </div>
+  );
+}
+
 interface MatchPlayer {
   player_id: string;
   team: number;
@@ -32,6 +46,7 @@ interface Match {
 interface PlayerStat {
   id: string;
   display_name: string;
+  profile_picture?: string | null;
   matches: number;
   wins: number;
   losses: number;
@@ -127,7 +142,7 @@ export default function TrainingHistoryPage() {
   }
 
   return (
-    <div data-testid="page-history">
+    <div data-testid="page-history" className="animate-fade-in-up">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-zinc-50 tracking-tight">{da.nav.history}</h1>
         <Button variant="secondary" onClick={exportCsv} data-testid="history-export-csv">
@@ -224,7 +239,12 @@ export default function TrainingHistoryPage() {
                 <TableBody>
                   {stats.map((s) => (
                     <TableRow key={s.id} data-testid={`stat-row-${s.id}`}>
-                      <TableCell className="font-medium text-zinc-200">{s.display_name}</TableCell>
+                      <TableCell className="font-medium text-zinc-200">
+                        <div className="flex items-center gap-2.5">
+                          <PlayerAvatar name={s.display_name} src={s.profile_picture} />
+                          {s.display_name}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right tabular-nums text-zinc-300">{s.matches}</TableCell>
                       <TableCell className="text-right tabular-nums text-zinc-300">{s.wins}</TableCell>
                       <TableCell className="text-right tabular-nums text-zinc-300">{s.losses}</TableCell>

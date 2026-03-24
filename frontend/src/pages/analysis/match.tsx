@@ -17,6 +17,7 @@ interface DbuMatch {
 interface PlayerRate {
   id: string;
   displayName: string;
+  profilePicture?: string | null;
   trainingMatches: number;
   trainingWins: number;
   trainingLosses: number;
@@ -49,6 +50,20 @@ const resultBadge = (result: "win" | "draw" | "loss") => {
   };
   return <Badge variant={variants[result]}>{labels[result]}</Badge>;
 };
+
+function PlayerAvatar({ name, src }: { name: string; src?: string | null }) {
+  if (src) {
+    return (
+      <img src={src} alt={name} className="h-7 w-7 rounded-full object-cover border border-zinc-700" />
+    );
+  }
+  const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
+  return (
+    <div className="h-7 w-7 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-medium text-zinc-400">
+      {initials}
+    </div>
+  );
+}
 
 const winRateColor = (rate: number) => {
   if (rate > 50) return "text-emerald-400";
@@ -106,11 +121,11 @@ export default function MatchAnalysisPage() {
   ];
 
   return (
-    <div data-testid="page-analysis">
+    <div data-testid="page-analysis" className="animate-fade-in-up">
       <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
 
       {/* DBU Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6" data-testid="analysis-summary">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 animate-stagger" data-testid="analysis-summary">
         {summaryCards.map((card) => (
           <div key={card.label} className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 text-center">
             <card.icon className={`w-5 h-5 ${card.color} mx-auto mb-2 opacity-60`} />
@@ -188,7 +203,12 @@ export default function MatchAnalysisPage() {
                     key={p.id}
                     className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors"
                   >
-                    <td className="px-4 py-3 text-sm font-medium text-zinc-200">{p.displayName}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-zinc-200">
+                      <div className="flex items-center gap-2.5">
+                        <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                        {p.displayName}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.trainingMatches}</td>
                     <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.trainingWins}</td>
                     <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.trainingLosses}</td>
