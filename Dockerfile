@@ -14,6 +14,9 @@ RUN cd frontend && bunx vite build
 # Copy backend source
 COPY backend/ backend/
 
+# Create data directory for SQLite
+RUN mkdir -p backend/data
+
 # Serve frontend static files from backend
 # Move built frontend into backend/static
 RUN mv frontend/dist backend/static
