@@ -38,6 +38,7 @@ teams.get("/available", (c) => {
     return {
       id: p.id,
       displayName: p.display_name,
+      profilePicture: p.profile_picture || null,
       winRate: stat?.winRate ?? 0.5,
       matches: stat?.matches ?? 0,
     };
