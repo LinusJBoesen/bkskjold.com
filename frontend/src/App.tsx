@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/header";
 import LoginPage from "@/pages/login";
 import DashboardPage from "@/pages/dashboard";
 import FinesOverviewPage from "@/pages/fines/overview";
+import FineDetailPage from "@/pages/fines/detail";
 import TeamSelectorPage from "@/pages/teams/selector";
 import TrainingHistoryPage from "@/pages/history/training";
 import TournamentStandingsPage from "@/pages/tournament/standings";
@@ -65,6 +66,7 @@ export default function App() {
         <Route element={<ProtectedLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="fines" element={<FinesOverviewPage />} />
+          <Route path="fines/:playerId" element={<FineDetailPage />} />
           <Route path="teams" element={<TeamSelectorPage />} />
           <Route path="history" element={<TrainingHistoryPage />} />
           <Route path="tournament" element={<TournamentStandingsPage />} />
