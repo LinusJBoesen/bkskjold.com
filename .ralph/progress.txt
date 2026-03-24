@@ -1,8 +1,8 @@
 # Skjold Bode Rebuild — PROGRESS
 
 ## Current Status
-- **Round**: 8 (Tournament + Match Analysis) — COMPLETE
-- **Task**: All Round 8 tasks done. Ready for Round 9.
+- **Round**: 9 (Admin Panel) — COMPLETE
+- **Task**: All Round 9 tasks done. Ready for Round 10.
 - **Last updated**: 2026-03-24
 
 ## Checklist
@@ -89,11 +89,11 @@
 - [x] Commit: `feat(skjold): tournament standings and match analysis with DBU scraping`
 
 ### Round 9: Admin Panel
-- [ ] Create admin config + export/import routes
-- [ ] Create admin settings page with tabs (config, fine types, data)
-- [ ] Create e2e specs
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): admin panel with config, fine types, and data management`
+- [x] Create admin config + export/import routes
+- [x] Create admin settings page with tabs (config, fine types, data)
+- [x] Create e2e specs
+- [x] Run E2E tests — all pass (48/48)
+- [x] Commit: `feat(skjold): admin panel with config, fine types, and data management`
 
 ### Round 10: Polish + Integration
 - [ ] Responsive design pass (mobile 375px)

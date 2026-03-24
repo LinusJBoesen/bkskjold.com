@@ -59,6 +59,47 @@ export const da = {
     refreshing: "Opdaterer...",
   },
 
+  // Admin
+  admin: {
+    title: "Admin",
+    tabs: {
+      config: "Konfiguration",
+      fineTypes: "Bødetyper",
+      data: "Data",
+    },
+    config: {
+      title: "Systemkonfiguration",
+      spondGroupId: "Spond Gruppe-ID",
+      lateResponseHours: "Svarfrist (timer)",
+      fineMissingMatch: "Bøde: Manglende kamp (kr)",
+      fineMissingTraining: "Bøde: Manglende træning (kr)",
+      fineNoResponse: "Bøde: Intet svar (kr)",
+      fineTrainingLoss: "Bøde: Tabt træning (kr)",
+      saved: "Konfiguration gemt",
+    },
+    fineTypes: {
+      title: "Bødetyper",
+      name: "Navn",
+      amount: "Beløb",
+      description: "Beskrivelse",
+      system: "System",
+      custom: "Brugerdefineret",
+      addNew: "Tilføj bødetype",
+      confirmDelete: "Er du sikker på, at du vil slette denne bødetype?",
+      cannotDeleteSystem: "Systembødetyper kan ikke slettes",
+    },
+    data: {
+      title: "Datahåndtering",
+      exportBtn: "Eksportér data",
+      exportDesc: "Download alle data som JSON-fil",
+      importBtn: "Importér data",
+      importDesc: "Upload en JSON-fil for at importere data",
+      importSuccess: "Data importeret",
+      importError: "Import fejlede",
+      exportError: "Eksport fejlede",
+    },
+  },
+
   // Analysis
   analysis: {
     title: "Kampanalyse",

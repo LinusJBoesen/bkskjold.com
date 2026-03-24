@@ -64,6 +64,23 @@ export function seed(): void {
   insertMatchPlayer.run(matchId, "player-5", 2);
   insertMatchPlayer.run(matchId, "player-6", 2);
 
+  // Default config values
+  const configValues = [
+    { key: "spond_group_id", value: "" },
+    { key: "late_response_hours", value: "24" },
+    { key: "fine_missing_match", value: "100" },
+    { key: "fine_missing_training", value: "30" },
+    { key: "fine_no_response", value: "60" },
+    { key: "fine_training_loss", value: "25" },
+  ];
+
+  const insertConfig = db.prepare(
+    "INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)"
+  );
+  for (const cfg of configValues) {
+    insertConfig.run(cfg.key, cfg.value);
+  }
+
   // Seed DBU standings and matches
   seedDbuData();
 
