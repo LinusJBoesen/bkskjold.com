@@ -1,7 +1,7 @@
 # Skjold Bode UI Overhaul — PROGRESS
 
 ## Current Status
-- **Round**: 3 (Fine Management Pages)
+- **Round**: 4 (Team Selector)
 - **Task**: Not started
 - **Last updated**: 2026-03-24
 
@@ -30,11 +30,11 @@
 - [x] Commit: `feat(skjold): dark modern login and dashboard`
 
 ### Round 3: Fine Management Pages
-- [ ] Rewrite fines/overview.tsx dark table with badges
-- [ ] Rewrite fines/detail.tsx dark player header and history
-- [ ] Style fine creation form dark
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): dark modern fine management UI`
+- [x] Rewrite fines/overview.tsx dark table with badges, Lucide icons, stat cards
+- [x] Rewrite fines/detail.tsx dark player header, history with Badge component
+- [x] Style fine creation form with dark inputs and select
+- [x] Run E2E tests — all pass (49/49)
+- [x] Commit: `feat(skjold): dark modern fine management UI`
 
 ### Round 4: Team Selector
 - [ ] Rewrite teams/selector.tsx dark cards and metrics
@@ -72,3 +72,4 @@
 |------|------|-------------|
 | 2026-03-24 | — | feat(skjold): dark theme foundation — components and layout |
 | 2026-03-24 | — | feat(skjold): dark modern login and dashboard |
+| 2026-03-24 | — | feat(skjold): dark modern fine management UI |

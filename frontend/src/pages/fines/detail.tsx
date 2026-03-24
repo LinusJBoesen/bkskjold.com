@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
+import { ArrowLeft, Plus, Banknote, CheckCircle, AlertTriangle, X } from "lucide-react";
 
 interface Fine {
   id: string;
@@ -112,10 +114,10 @@ export default function FineDetailPage() {
   if (loading) {
     return (
       <div data-testid="page-fine-detail">
-        <div className="h-8 w-48 bg-neutral-light-gray rounded animate-pulse mb-6" />
+        <div className="h-8 w-48 bg-zinc-800 rounded animate-pulse mb-6" />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           {[1, 2, 3].map((i) => (
-            <Card key={i}><CardContent className="py-8"><div className="h-8 bg-neutral-light-gray rounded animate-pulse" /></CardContent></Card>
+            <Card key={i}><CardContent className="py-8"><div className="h-8 bg-zinc-800 rounded animate-pulse" /></CardContent></Card>
           ))}
         </div>
       </div>
@@ -126,7 +128,7 @@ export default function FineDetailPage() {
     return (
       <div data-testid="page-fine-detail">
         <Card><CardContent className="py-8 text-center">
-          <p className="text-brand-red mb-4">{error}</p>
+          <p className="text-red-400 mb-4">{error}</p>
           <Button onClick={() => window.location.reload()}>Prøv igen</Button>
         </CardContent></Card>
       </div>
@@ -137,41 +139,61 @@ export default function FineDetailPage() {
     <div data-testid="page-fine-detail">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
         <Button variant="ghost" onClick={() => navigate("/fines")} data-testid="fine-detail-back">
-          &larr; Tilbage
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Tilbage
         </Button>
-        <h1 className="text-2xl font-bold text-brand-black">{playerName}</h1>
+        <h1 className="text-2xl font-bold text-zinc-50 tracking-tight">{playerName}</h1>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-mid-gray">Total</CardTitle>
+            <CardTitle className="text-xs font-medium text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+              <Banknote className="h-4 w-4 text-zinc-400" />
+              Total
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold tabular-nums" data-testid="fine-detail-total">{total} kr</p>
+            <p className="text-3xl font-bold tabular-nums text-zinc-50 mt-1" data-testid="fine-detail-total">{total} kr</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-mid-gray">Betalt</CardTitle>
+            <CardTitle className="text-xs font-medium text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-emerald-400" />
+              Betalt
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold tabular-nums text-accent-green">{paid} kr</p>
+            <p className="text-3xl font-bold tabular-nums text-emerald-400 mt-1">{paid} kr</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-mid-gray">Ubetalt</CardTitle>
+            <CardTitle className="text-xs font-medium text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-400" />
+              Ubetalt
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold tabular-nums text-brand-red">{unpaid} kr</p>
+            <p className="text-3xl font-bold tabular-nums text-red-400 mt-1">{unpaid} kr</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="flex justify-end mb-4">
         <Button onClick={() => setShowForm(!showForm)} data-testid="fine-add-button">
-          Tilføj bøde
+          {showForm ? (
+            <>
+              <X className="h-4 w-4 mr-2" />
+              Annuller
+            </>
+          ) : (
+            <>
+              <Plus className="h-4 w-4 mr-2" />
+              Tilføj bøde
+            </>
+          )}
         </Button>
       </div>
 
@@ -180,11 +202,11 @@ export default function FineDetailPage() {
           <CardContent className="pt-6">
             <form onSubmit={handleCreate} className="flex gap-4 items-end flex-wrap" data-testid="fine-create-form">
               <div>
-                <label className="text-xs font-medium text-neutral-mid-gray">Type</label>
+                <label className="text-sm font-medium text-zinc-300 mb-1.5 block">Type</label>
                 <select
                   value={newFineTypeId}
                   onChange={(e) => handleSelectFineType(e.target.value)}
-                  className="block w-48 rounded-md border border-neutral-light-gray px-3 py-2 text-sm"
+                  className="block w-48 rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-50 focus:ring-2 focus:ring-red-500/30 focus:border-red-500/50 transition-all"
                   data-testid="fine-create-type"
                   required
                 >
@@ -195,7 +217,7 @@ export default function FineDetailPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-neutral-mid-gray">Beløb</label>
+                <label className="text-sm font-medium text-zinc-300 mb-1.5 block">Beløb</label>
                 <Input
                   type="number"
                   value={newAmount}
@@ -206,7 +228,7 @@ export default function FineDetailPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-neutral-mid-gray">Noter</label>
+                <label className="text-sm font-medium text-zinc-300 mb-1.5 block">Noter</label>
                 <Input
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
@@ -223,7 +245,8 @@ export default function FineDetailPage() {
       {fines.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
-            <p className="text-neutral-mid-gray" data-testid="fine-detail-empty">Ingen bøder for denne spiller</p>
+            <Banknote className="h-12 w-12 text-zinc-600 mx-auto mb-3" />
+            <p className="text-zinc-400" data-testid="fine-detail-empty">Ingen bøder for denne spiller</p>
           </CardContent>
         </Card>
       ) : (
@@ -232,33 +255,33 @@ export default function FineDetailPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-brand-black hover:bg-brand-black">
-                    <TableHead className="text-white">Dato</TableHead>
-                    <TableHead className="text-white">Begivenhed</TableHead>
-                    <TableHead className="text-white">Type</TableHead>
-                    <TableHead className="text-white text-right">Beløb</TableHead>
-                    <TableHead className="text-white">Status</TableHead>
-                    <TableHead className="text-white">Handling</TableHead>
+                  <TableRow>
+                    <TableHead>Dato</TableHead>
+                    <TableHead>Begivenhed</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Beløb</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Handling</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {fines.map((f) => (
-                    <TableRow key={f.id} data-testid={`fine-row-${f.id}`}>
-                      <TableCell className="tabular-nums">
+                    <TableRow key={f.id} className="transition-colors duration-200" data-testid={`fine-row-${f.id}`}>
+                      <TableCell className="tabular-nums text-zinc-300">
                         {f.event_date || f.created_at.split("T")[0]}
                       </TableCell>
-                      <TableCell>{f.event_name || f.notes || "—"}</TableCell>
-                      <TableCell>{f.fine_type_name}</TableCell>
-                      <TableCell className="text-right tabular-nums">{f.amount} kr</TableCell>
+                      <TableCell className="text-zinc-300">{f.event_name || f.notes || "—"}</TableCell>
+                      <TableCell className="text-zinc-300">{f.fine_type_name}</TableCell>
+                      <TableCell className="text-right tabular-nums text-zinc-200">{f.amount} kr</TableCell>
                       <TableCell>
                         {f.paid ? (
-                          <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-accent-green" data-testid="fine-status-paid">
+                          <Badge variant="success" data-testid="fine-status-paid">
                             Betalt
-                          </span>
+                          </Badge>
                         ) : (
-                          <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-brand-red" data-testid="fine-status-unpaid">
+                          <Badge variant="error" data-testid="fine-status-unpaid">
                             Ubetalt
-                          </span>
+                          </Badge>
                         )}
                       </TableCell>
                       <TableCell>
@@ -269,6 +292,7 @@ export default function FineDetailPage() {
                             onClick={() => handlePay(f.id)}
                             data-testid={`fine-pay-${f.id}`}
                           >
+                            <CheckCircle className="h-4 w-4 mr-1.5 text-emerald-400" />
                             Markér betalt
                           </Button>
                         )}
