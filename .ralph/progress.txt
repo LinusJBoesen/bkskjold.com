@@ -1,8 +1,8 @@
 # Skjold Bode Rebuild — PROGRESS
 
 ## Current Status
-- **Round**: 6 (Training History) — COMPLETE
-- **Task**: All Round 6 tasks done. Ready for Round 7.
+- **Round**: 7 (Dashboard + Charts) — COMPLETE
+- **Task**: All Round 7 tasks done. Ready for Round 8.
 - **Last updated**: 2026-03-24
 
 ## Checklist
@@ -72,12 +72,12 @@
 - [x] Commit: `feat(skjold): training history with result registration and auto-fines`
 
 ### Round 7: Dashboard + Charts
-- [ ] Create dashboard stats aggregation endpoint
-- [ ] Create dashboard with top performers + Recharts charts
-- [ ] Install Recharts
-- [ ] Create e2e page objects + dashboard specs
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): dashboard with stats cards and Recharts visualizations`
+- [x] Create dashboard stats aggregation endpoint
+- [x] Create dashboard with top performers + Recharts charts
+- [x] Install Recharts
+- [x] Create e2e page objects + dashboard specs
+- [x] Run E2E tests — all pass
+- [x] Commit: `feat(skjold): dashboard with stats cards and Recharts visualizations`
 
 ### Round 8: Tournament + Match Analysis
 - [ ] Create DBU scraper service
