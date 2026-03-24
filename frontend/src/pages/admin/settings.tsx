@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/toast";
 import {
   Table,
@@ -13,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Settings, FileText, Database, Download, Upload, Plus, Pencil, Trash2, Check } from "lucide-react";
 
 type Tab = "config" | "fineTypes" | "data";
 
@@ -40,6 +42,12 @@ const CONFIG_LABELS: Record<string, string> = {
   fine_training_loss: da.admin.config.fineTrainingLoss,
 };
 
+const TAB_ICONS: Record<Tab, React.ReactNode> = {
+  config: <Settings className="w-4 h-4" />,
+  fineTypes: <FileText className="w-4 h-4" />,
+  data: <Database className="w-4 h-4" />,
+};
+
 export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("config");
 
@@ -51,21 +59,22 @@ export default function AdminSettingsPage() {
 
   return (
     <div data-testid="page-admin">
-      <h1 className="text-2xl font-bold text-brand-black mb-6">{da.admin.title}</h1>
+      <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.admin.title}</h1>
 
       {/* Tab navigation */}
-      <div className="flex gap-1 mb-6 border-b border-neutral-light-gray" data-testid="admin-tabs">
+      <div className="flex gap-1 mb-6 border-b border-zinc-800" data-testid="admin-tabs">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             data-testid={`admin-tab-${tab.id}`}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab.id
-                ? "border-brand-red text-brand-red"
-                : "border-transparent text-neutral-mid-gray hover:text-brand-black"
+                ? "border-red-500 text-red-400"
+                : "border-transparent text-zinc-500 hover:text-zinc-200"
             }`}
           >
+            {TAB_ICONS[tab.id]}
             {tab.label}
           </button>
         ))}
@@ -120,7 +129,7 @@ function ConfigTab() {
         <div className="space-y-4">
           {configs.map((cfg) => (
             <div key={cfg.key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4" data-testid={`admin-config-${cfg.key}`}>
-              <label className="text-sm font-medium text-brand-black sm:w-64 sm:shrink-0">
+              <label className="text-sm font-medium text-zinc-300 sm:w-64 sm:shrink-0">
                 {CONFIG_LABELS[cfg.key] || cfg.key}
               </label>
               <Input
@@ -140,7 +149,10 @@ function ConfigTab() {
                 {saving === cfg.key ? da.common.loading : da.common.save}
               </Button>
               {saved === cfg.key && (
-                <span className="text-sm text-accent-green">{da.admin.config.saved}</span>
+                <span className="text-sm text-emerald-400 flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5" />
+                  {da.admin.config.saved}
+                </span>
               )}
             </div>
           ))}
@@ -222,16 +234,17 @@ function FineTypesTab() {
         <CardTitle>{da.admin.fineTypes.title}</CardTitle>
         {!showForm && (
           <Button data-testid="admin-fine-type-add" onClick={() => setShowForm(true)}>
+            <Plus className="w-4 h-4 mr-1" />
             {da.admin.fineTypes.addNew}
           </Button>
         )}
       </CardHeader>
       <CardContent>
         {showForm && (
-          <div className="mb-6 p-4 border border-neutral-light-gray rounded-lg space-y-3" data-testid="admin-fine-type-form">
+          <div className="mb-6 p-4 border border-zinc-800 rounded-xl bg-zinc-900/50 space-y-3" data-testid="admin-fine-type-form">
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="text-xs font-medium text-neutral-mid-gray">{da.admin.fineTypes.name}</label>
+                <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{da.admin.fineTypes.name}</label>
                 <Input
                   data-testid="admin-fine-type-name"
                   value={formName}
@@ -240,7 +253,7 @@ function FineTypesTab() {
                 />
               </div>
               <div className="w-32">
-                <label className="text-xs font-medium text-neutral-mid-gray">{da.admin.fineTypes.amount}</label>
+                <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{da.admin.fineTypes.amount}</label>
                 <Input
                   data-testid="admin-fine-type-amount"
                   type="number"
@@ -251,7 +264,7 @@ function FineTypesTab() {
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-neutral-mid-gray">{da.admin.fineTypes.description}</label>
+              <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{da.admin.fineTypes.description}</label>
               <Input
                 data-testid="admin-fine-type-description"
                 value={formDescription}
@@ -263,7 +276,7 @@ function FineTypesTab() {
               <Button data-testid="admin-fine-type-submit" onClick={handleSubmit} disabled={!formName || !formAmount}>
                 {editingId ? da.common.save : da.common.create}
               </Button>
-              <Button data-testid="admin-fine-type-cancel" variant="outline" onClick={resetForm}>
+              <Button data-testid="admin-fine-type-cancel" variant="secondary" onClick={resetForm}>
                 {da.common.cancel}
               </Button>
             </div>
@@ -284,20 +297,16 @@ function FineTypesTab() {
           <TableBody>
             {fineTypes.map((ft) => (
               <TableRow key={ft.id} data-testid={`admin-fine-type-row-${ft.id}`}>
-                <TableCell className="font-medium">{ft.name}</TableCell>
-                <TableCell className="tabular-nums">{ft.amount} kr</TableCell>
-                <TableCell className="text-neutral-mid-gray">{ft.description || "—"}</TableCell>
+                <TableCell className="font-medium text-zinc-200">{ft.name}</TableCell>
+                <TableCell className="tabular-nums text-zinc-300">{ft.amount} kr</TableCell>
+                <TableCell className="text-zinc-500">{ft.description || "\u2014"}</TableCell>
                 <TableCell>
-                  <span
-                    className={`text-xs px-2 py-1 rounded ${
-                      ft.is_system
-                        ? "bg-neutral-light-gray text-neutral-mid-gray"
-                        : "bg-blue-50 text-accent-steel-blue"
-                    }`}
+                  <Badge
+                    variant={ft.is_system ? "default" : "info"}
                     data-testid={`admin-fine-type-badge-${ft.id}`}
                   >
                     {ft.is_system ? da.admin.fineTypes.system : da.admin.fineTypes.custom}
-                  </span>
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   {!ft.is_system && (
@@ -308,15 +317,17 @@ function FineTypesTab() {
                         data-testid={`admin-fine-type-edit-${ft.id}`}
                         onClick={() => startEdit(ft)}
                       >
+                        <Pencil className="w-3.5 h-3.5 mr-1" />
                         {da.common.edit}
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-brand-red"
+                        className="text-red-400 hover:text-red-300"
                         data-testid={`admin-fine-type-delete-${ft.id}`}
                         onClick={() => handleDelete(ft.id)}
                       >
+                        <Trash2 className="w-3.5 h-3.5 mr-1" />
                         {da.common.delete}
                       </Button>
                     </div>
@@ -385,23 +396,29 @@ function DataTab() {
       <CardHeader>
         <CardTitle>{da.admin.data.title}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex items-center justify-between p-4 border border-neutral-light-gray rounded-lg">
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between p-4 border border-zinc-800 rounded-xl bg-zinc-900/30">
           <div>
-            <p className="font-medium text-brand-black">{da.admin.data.exportBtn}</p>
-            <p className="text-sm text-neutral-mid-gray">{da.admin.data.exportDesc}</p>
+            <p className="font-medium text-zinc-200 flex items-center gap-2">
+              <Download className="w-4 h-4 text-zinc-400" />
+              {da.admin.data.exportBtn}
+            </p>
+            <p className="text-sm text-zinc-500 ml-6">{da.admin.data.exportDesc}</p>
           </div>
           <Button data-testid="admin-export-btn" onClick={handleExport}>
             {da.common.export}
           </Button>
         </div>
 
-        <div className="flex items-center justify-between p-4 border border-neutral-light-gray rounded-lg">
+        <div className="flex items-center justify-between p-4 border border-zinc-800 rounded-xl bg-zinc-900/30">
           <div>
-            <p className="font-medium text-brand-black">{da.admin.data.importBtn}</p>
-            <p className="text-sm text-neutral-mid-gray">{da.admin.data.importDesc}</p>
+            <p className="font-medium text-zinc-200 flex items-center gap-2">
+              <Upload className="w-4 h-4 text-zinc-400" />
+              {da.admin.data.importBtn}
+            </p>
+            <p className="text-sm text-zinc-500 ml-6">{da.admin.data.importDesc}</p>
           </div>
-          <Button data-testid="admin-import-btn" variant="outline" onClick={handleImport} disabled={importing}>
+          <Button data-testid="admin-import-btn" variant="secondary" onClick={handleImport} disabled={importing}>
             {importing ? da.common.loading : da.admin.data.importBtn}
           </Button>
         </div>
@@ -409,7 +426,7 @@ function DataTab() {
         {status && (
           <p
             data-testid="admin-data-status"
-            className={`text-sm ${status.type === "success" ? "text-accent-green" : "text-brand-red"}`}
+            className={`text-sm ${status.type === "success" ? "text-emerald-400" : "text-red-400"}`}
           >
             {status.message}
           </p>

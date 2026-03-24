@@ -1,7 +1,7 @@
 # Skjold Bode UI Overhaul — PROGRESS
 
 ## Current Status
-- **Round**: 5 (History + Tournament + Analysis + Admin)
+- **Round**: 6 (Polish + Animations + Final Pass)
 - **Task**: Not started
 - **Last updated**: 2026-03-24
 
@@ -46,13 +46,13 @@
 - [x] Commit: `feat(skjold): dark modern team selector with clipboard copy`
 
 ### Round 5: History + Tournament + Analysis + Admin
-- [ ] Rewrite history/training.tsx dark
-- [ ] Rewrite tournament/standings.tsx dark
-- [ ] Rewrite analysis/match.tsx dark
-- [ ] Rewrite admin/settings.tsx dark
-- [ ] Style all select/dropdown elements dark
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): dark modern history, tournament, analysis, and admin`
+- [x] Rewrite history/training.tsx dark with Lucide icons, Badge component, dark selects
+- [x] Rewrite tournament/standings.tsx dark league table with position colors
+- [x] Rewrite analysis/match.tsx dark summary cards, Badge for results, dark tables
+- [x] Rewrite admin/settings.tsx dark tabs with icons, dark forms, Badge for types
+- [x] Style all select/dropdown elements dark
+- [x] Run E2E tests — all pass (49/49)
+- [x] Commit: `feat(skjold): dark modern history, tournament, analysis, and admin`
 
 ### Round 6: Polish + Animations + Final Pass
 - [ ] Add hover transitions on cards, rows, buttons
@@ -75,3 +75,4 @@
 | 2026-03-24 | — | feat(skjold): dark modern login and dashboard |
 | 2026-03-24 | — | feat(skjold): dark modern fine management UI |
 | 2026-03-24 | — | feat(skjold): dark modern team selector with clipboard copy |
+| 2026-03-24 | — | feat(skjold): dark modern history, tournament, analysis, and admin |

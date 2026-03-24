@@ -3,6 +3,8 @@ import { da } from "@/i18n/da";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { BarChart3, Swords, Users, Trophy, XCircle } from "lucide-react";
 
 interface DbuMatch {
   date: string;
@@ -35,27 +37,23 @@ interface AnalysisData {
 }
 
 const resultBadge = (result: "win" | "draw" | "loss") => {
-  const styles = {
-    win: "bg-green-100 text-accent-green",
-    draw: "bg-blue-100 text-accent-steel-blue",
-    loss: "bg-red-100 text-brand-red",
+  const variants = {
+    win: "success" as const,
+    draw: "info" as const,
+    loss: "error" as const,
   };
   const labels = {
     win: da.analysis.win,
     draw: da.analysis.draw,
     loss: da.analysis.loss,
   };
-  return (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[result]}`}>
-      {labels[result]}
-    </span>
-  );
+  return <Badge variant={variants[result]}>{labels[result]}</Badge>;
 };
 
 const winRateColor = (rate: number) => {
-  if (rate > 50) return "text-accent-green";
-  if (rate === 50) return "text-accent-steel-blue";
-  return "text-brand-red";
+  if (rate > 50) return "text-emerald-400";
+  if (rate === 50) return "text-zinc-400";
+  return "text-red-400";
 };
 
 export default function MatchAnalysisPage() {
@@ -74,11 +72,11 @@ export default function MatchAnalysisPage() {
   if (loading) {
     return (
       <div data-testid="page-analysis">
-        <h1 className="text-2xl font-bold text-brand-black mb-6">{da.analysis.title}</h1>
+        <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow-sm border border-neutral-light-gray p-4">
-              <div className="h-8 bg-neutral-light-gray rounded animate-pulse" />
+            <div key={i} className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4">
+              <div className="h-8 bg-zinc-800 rounded animate-pulse" />
             </div>
           ))}
         </div>
@@ -89,9 +87,9 @@ export default function MatchAnalysisPage() {
   if (error) {
     return (
       <div data-testid="page-analysis">
-        <h1 className="text-2xl font-bold text-brand-black mb-6">{da.analysis.title}</h1>
+        <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
         <Card><CardContent className="py-8 text-center">
-          <p className="text-brand-red mb-4">{error}</p>
+          <p className="text-red-400 mb-4">{error}</p>
           <Button onClick={() => window.location.reload()}>Prøv igen</Button>
         </CardContent></Card>
       </div>
@@ -100,61 +98,59 @@ export default function MatchAnalysisPage() {
 
   if (!data) return null;
 
+  const summaryCards = [
+    { label: da.analysis.matches, value: data.dbuSummary.total, icon: Swords, color: "text-zinc-50" },
+    { label: da.analysis.win, value: data.dbuSummary.wins, icon: Trophy, color: "text-emerald-400" },
+    { label: da.analysis.draw, value: data.dbuSummary.draws, icon: BarChart3, color: "text-blue-400" },
+    { label: da.analysis.loss, value: data.dbuSummary.losses, icon: XCircle, color: "text-red-400" },
+  ];
+
   return (
     <div data-testid="page-analysis">
-      <h1 className="text-2xl font-bold text-brand-black mb-6">{da.analysis.title}</h1>
+      <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
 
       {/* DBU Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6" data-testid="analysis-summary">
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-light-gray p-4 text-center">
-          <p className="text-xs font-medium text-neutral-mid-gray">{da.analysis.matches}</p>
-          <p className="text-2xl font-bold tabular-nums text-brand-black">{data.dbuSummary.total}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-light-gray p-4 text-center">
-          <p className="text-xs font-medium text-neutral-mid-gray">{da.analysis.win}</p>
-          <p className="text-2xl font-bold tabular-nums text-accent-green">{data.dbuSummary.wins}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-light-gray p-4 text-center">
-          <p className="text-xs font-medium text-neutral-mid-gray">{da.analysis.draw}</p>
-          <p className="text-2xl font-bold tabular-nums text-accent-steel-blue">{data.dbuSummary.draws}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-light-gray p-4 text-center">
-          <p className="text-xs font-medium text-neutral-mid-gray">{da.analysis.loss}</p>
-          <p className="text-2xl font-bold tabular-nums text-brand-red">{data.dbuSummary.losses}</p>
-        </div>
+        {summaryCards.map((card) => (
+          <div key={card.label} className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 text-center">
+            <card.icon className={`w-5 h-5 ${card.color} mx-auto mb-2 opacity-60`} />
+            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{card.label}</p>
+            <p className={`text-2xl font-bold tabular-nums mt-1 ${card.color}`}>{card.value}</p>
+          </div>
+        ))}
       </div>
 
       {/* DBU Matches */}
       {data.dbuMatches.length === 0 ? (
         <Card className="mb-6"><CardContent className="py-8 text-center">
-          <p className="text-neutral-mid-gray">Ingen DBU-kampe endnu</p>
+          <p className="text-zinc-500">Ingen DBU-kampe endnu</p>
         </CardContent></Card>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-light-gray overflow-hidden mb-6">
-          <div className="px-4 py-3 border-b border-neutral-light-gray">
-            <h2 className="text-lg font-semibold text-brand-black">{da.analysis.dbuMatches}</h2>
+        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden mb-6">
+          <div className="px-4 py-3 border-b border-zinc-800">
+            <h2 className="text-lg font-semibold text-zinc-50">{da.analysis.dbuMatches}</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full" data-testid="analysis-dbu-matches-table">
               <thead>
-                <tr className="bg-brand-black text-white text-sm">
-                  <th className="px-4 py-3 text-left font-semibold">{da.analysis.date}</th>
-                  <th className="px-4 py-3 text-left font-semibold">{da.analysis.opponent}</th>
-                  <th className="px-4 py-3 text-center font-semibold">{da.analysis.score}</th>
-                  <th className="px-4 py-3 text-center font-semibold">{da.analysis.home}/{da.analysis.away}</th>
-                  <th className="px-4 py-3 text-center font-semibold">{da.analysis.result}</th>
+                <tr className="bg-zinc-900 text-zinc-400 text-xs font-medium uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left">{da.analysis.date}</th>
+                  <th className="px-4 py-3 text-left">{da.analysis.opponent}</th>
+                  <th className="px-4 py-3 text-center">{da.analysis.score}</th>
+                  <th className="px-4 py-3 text-center">{da.analysis.home}/{da.analysis.away}</th>
+                  <th className="px-4 py-3 text-center">{da.analysis.result}</th>
                 </tr>
               </thead>
               <tbody>
                 {data.dbuMatches.map((m, i) => (
                   <tr
                     key={`${m.date}-${m.opponent}`}
-                    className={`${i % 2 === 0 ? "bg-white" : "bg-brand-off-white"} hover:bg-neutral-light-gray transition-colors`}
+                    className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors"
                   >
-                    <td className="px-4 py-3 text-sm tabular-nums">{m.date}</td>
-                    <td className="px-4 py-3 text-sm">{m.opponent}</td>
-                    <td className="px-4 py-3 text-center text-sm font-medium tabular-nums">{m.score}</td>
-                    <td className="px-4 py-3 text-center text-sm">{m.isHome ? da.analysis.home : da.analysis.away}</td>
+                    <td className="px-4 py-3 text-sm tabular-nums text-zinc-300">{m.date}</td>
+                    <td className="px-4 py-3 text-sm text-zinc-200">{m.opponent}</td>
+                    <td className="px-4 py-3 text-center text-sm font-medium tabular-nums text-zinc-100">{m.score}</td>
+                    <td className="px-4 py-3 text-center text-sm text-zinc-400">{m.isHome ? da.analysis.home : da.analysis.away}</td>
                     <td className="px-4 py-3 text-center">{resultBadge(m.result)}</td>
                   </tr>
                 ))}
@@ -167,34 +163,35 @@ export default function MatchAnalysisPage() {
       {/* Player Training Rates */}
       {data.playerRates.length === 0 ? (
         <Card><CardContent className="py-8 text-center">
-          <p className="text-neutral-mid-gray">Ingen spillerdata endnu</p>
+          <p className="text-zinc-500">Ingen spillerdata endnu</p>
         </CardContent></Card>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-light-gray overflow-hidden">
-          <div className="px-4 py-3 border-b border-neutral-light-gray">
-            <h2 className="text-lg font-semibold text-brand-black">{da.analysis.playerRates}</h2>
+        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden">
+          <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
+            <Users className="w-5 h-5 text-zinc-400" />
+            <h2 className="text-lg font-semibold text-zinc-50">{da.analysis.playerRates}</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full" data-testid="analysis-player-rates-table">
               <thead>
-                <tr className="bg-brand-black text-white text-sm">
-                  <th className="px-4 py-3 text-left font-semibold">Navn</th>
-                  <th className="px-4 py-3 text-center font-semibold">{da.analysis.matches}</th>
-                  <th className="px-4 py-3 text-center font-semibold">{da.analysis.trainingWins}</th>
-                  <th className="px-4 py-3 text-center font-semibold">{da.analysis.trainingLosses}</th>
-                  <th className="px-4 py-3 text-center font-semibold">{da.analysis.winRate}</th>
+                <tr className="bg-zinc-900 text-zinc-400 text-xs font-medium uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left">Navn</th>
+                  <th className="px-4 py-3 text-center">{da.analysis.matches}</th>
+                  <th className="px-4 py-3 text-center">{da.analysis.trainingWins}</th>
+                  <th className="px-4 py-3 text-center">{da.analysis.trainingLosses}</th>
+                  <th className="px-4 py-3 text-center">{da.analysis.winRate}</th>
                 </tr>
               </thead>
               <tbody>
-                {data.playerRates.map((p, i) => (
+                {data.playerRates.map((p) => (
                   <tr
                     key={p.id}
-                    className={`${i % 2 === 0 ? "bg-white" : "bg-brand-off-white"} hover:bg-neutral-light-gray transition-colors`}
+                    className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors"
                   >
-                    <td className="px-4 py-3 text-sm font-medium">{p.displayName}</td>
-                    <td className="px-4 py-3 text-center text-sm tabular-nums">{p.trainingMatches}</td>
-                    <td className="px-4 py-3 text-center text-sm tabular-nums">{p.trainingWins}</td>
-                    <td className="px-4 py-3 text-center text-sm tabular-nums">{p.trainingLosses}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-zinc-200">{p.displayName}</td>
+                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.trainingMatches}</td>
+                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.trainingWins}</td>
+                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.trainingLosses}</td>
                     <td className={`px-4 py-3 text-center text-sm font-bold tabular-nums ${winRateColor(p.trainingWinRate)}`}>
                       {p.trainingWinRate}%
                     </td>
