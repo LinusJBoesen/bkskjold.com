@@ -32,10 +32,86 @@ app.get("/api/health", (c) => {
 
 app.route("/api/auth", authRoutes);
 
+// Test seed endpoint — creates test data for E2E tests (non-production only)
+app.post("/api/test/seed", async (c) => {
+  const { getDb } = await import("./lib/db");
+  const { randomUUID } = await import("crypto");
+  const db = getDb();
+
+  const players = [
+    { id: "player-1", first_name: "Anders", last_name: "Jensen", display_name: "Anders J." },
+    { id: "player-2", first_name: "Mikkel", last_name: "Nielsen", display_name: "Mikkel N." },
+    { id: "player-3", first_name: "Lars", last_name: "Pedersen", display_name: "Lars P." },
+    { id: "player-4", first_name: "Christian", last_name: "Hansen", display_name: "Christian H." },
+    { id: "player-5", first_name: "Frederik", last_name: "Andersen", display_name: "Frederik A." },
+    { id: "player-6", first_name: "Søren", last_name: "Christensen", display_name: "Søren C." },
+  ];
+
+  const insertPlayer = db.prepare(
+    "INSERT OR IGNORE INTO players (id, first_name, last_name, display_name) VALUES (?, ?, ?, ?)"
+  );
+  for (const p of players) {
+    insertPlayer.run(p.id, p.first_name, p.last_name, p.display_name);
+  }
+
+  const fines = [
+    { id: randomUUID(), player_id: "player-1", fine_type_id: "missing_training", amount: 30, paid: 0 },
+    { id: randomUUID(), player_id: "player-1", fine_type_id: "no_response_24h", amount: 60, paid: 1 },
+    { id: randomUUID(), player_id: "player-2", fine_type_id: "missing_match", amount: 100, paid: 0 },
+    { id: randomUUID(), player_id: "player-3", fine_type_id: "training_loss", amount: 25, paid: 0 },
+  ];
+
+  const insertFine = db.prepare(
+    "INSERT OR IGNORE INTO fines (id, player_id, fine_type_id, amount, paid) VALUES (?, ?, ?, ?, ?)"
+  );
+  for (const f of fines) {
+    insertFine.run(f.id, f.player_id, f.fine_type_id, f.amount, f.paid);
+  }
+
+  // DBU standings test data
+  const standings = [
+    { position: 1, team_name: "FC Nordvest", matches_played: 14, wins: 11, draws: 2, losses: 1, goal_diff: "+28", points: 35 },
+    { position: 2, team_name: "BK Skjold", matches_played: 14, wins: 10, draws: 2, losses: 2, goal_diff: "+22", points: 32 },
+    { position: 3, team_name: "Vanløse IF", matches_played: 14, wins: 8, draws: 3, losses: 3, goal_diff: "+14", points: 27 },
+    { position: 4, team_name: "Husum BK", matches_played: 14, wins: 7, draws: 3, losses: 4, goal_diff: "+8", points: 24 },
+    { position: 5, team_name: "Boldklubben af 1893", matches_played: 14, wins: 6, draws: 2, losses: 6, goal_diff: "+2", points: 20 },
+    { position: 6, team_name: "FB Copenhagen", matches_played: 14, wins: 5, draws: 3, losses: 6, goal_diff: "-3", points: 18 },
+    { position: 7, team_name: "Brønshøj BK", matches_played: 14, wins: 4, draws: 2, losses: 8, goal_diff: "-10", points: 14 },
+    { position: 8, team_name: "Nørrebro United", matches_played: 14, wins: 3, draws: 3, losses: 8, goal_diff: "-15", points: 12 },
+    { position: 9, team_name: "Østerbro IF", matches_played: 14, wins: 2, draws: 2, losses: 10, goal_diff: "-22", points: 8 },
+    { position: 10, team_name: "Amager BK", matches_played: 14, wins: 1, draws: 2, losses: 11, goal_diff: "-24", points: 5 },
+  ];
+
+  const insertStanding = db.prepare(
+    "INSERT OR IGNORE INTO dbu_standings (position, team_name, matches_played, wins, draws, losses, goal_diff, points) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  );
+  for (const s of standings) {
+    insertStanding.run(s.position, s.team_name, s.matches_played, s.wins, s.draws, s.losses, s.goal_diff, s.points);
+  }
+
+  // DBU matches test data
+  const dbuMatches = [
+    { date: "2025-03-15", home_team: "BK Skjold", away_team: "Vanløse IF", home_score: 3, away_score: 1 },
+    { date: "2025-03-08", home_team: "Husum BK", away_team: "BK Skjold", home_score: 1, away_score: 2 },
+    { date: "2025-03-01", home_team: "BK Skjold", away_team: "FC Nordvest", home_score: 0, away_score: 1 },
+    { date: "2025-02-22", home_team: "Brønshøj BK", away_team: "BK Skjold", home_score: 0, away_score: 4 },
+    { date: "2025-02-15", home_team: "BK Skjold", away_team: "Nørrebro United", home_score: 2, away_score: 2 },
+  ];
+
+  const insertMatch = db.prepare(
+    "INSERT OR IGNORE INTO dbu_matches (date, home_team, away_team, home_score, away_score) VALUES (?, ?, ?, ?, ?)"
+  );
+  for (const m of dbuMatches) {
+    insertMatch.run(m.date, m.home_team, m.away_team, m.home_score, m.away_score);
+  }
+
+  return c.json({ success: true, players: players.length, fines: fines.length });
+});
+
 // Protected API routes
 app.use("/api/*", async (c, next) => {
   const path = c.req.path;
-  if (path === "/api/health" || path.startsWith("/api/auth")) {
+  if (path === "/api/health" || path.startsWith("/api/auth") || path.startsWith("/api/test")) {
     return next();
   }
   return authMiddleware(c, next);

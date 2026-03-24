@@ -7,7 +7,23 @@
       "Bash(xargs ls:*)",
       "Bash(chmod +x /Users/linus/Desktop/skjold_bode/ralph.sh)",
       "Bash(git init:*)",
-      "Read(//Users/linus/.claude/**)"
+      "Read(//Users/linus/.claude/**)",
+      "Bash(export PATH=\"$HOME/.bun/bin:$PATH\")",
+      "Bash(bun build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(bun -e \":*)",
+      "Bash(npx playwright:*)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"admin@bkskjold.dk\"\",\"\"password\"\":\"\"test1234\"\"}' -c /tmp/skjold-cookies.txt)",
+      "Bash(curl -s -X POST http://localhost:3000/api/sync/spond -b /tmp/skjold-cookies.txt)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"admin@bkskjold.dk\"\",\"\"password\"\":\"\"test1234\"\"}' -c /tmp/skjold-cookies3.txt)",
+      "Bash(curl -s -X POST http://localhost:3000/api/sync/spond -b /tmp/skjold-cookies3.txt)",
+      "Bash(curl -s -X POST http://localhost:3000/api/sync/dbu -b /tmp/skjold-cookies3.txt)",
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"admin@bkskjold.dk\"\",\"\"password\"\":\"\"test1234\"\"}' -c /tmp/sk.txt)",
+      "Bash(curl -s http://localhost:3000/api/players -b /tmp/sk.txt)",
+      "Bash(SPOND_USERNAME=linusjb@gmail.com SPOND_PASSWORD='Nusnus88!' SPOND_GROUP_ID=93B5A75C60B94F27BD74BBF8AC03E91C bun -e \":*)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"admin@bkskjold.dk\"\",\"\"password\"\":\"\"test1234\"\"}' -c /tmp/sk3.txt)",
+      "Bash(curl -s http://localhost:3000/api/teams/available -b /tmp/sk3.txt)"
     ]
   }
 }

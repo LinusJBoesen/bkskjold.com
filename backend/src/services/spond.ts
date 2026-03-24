@@ -61,21 +61,38 @@ export class SpondClient {
   }
 
   async getGroupMembers(groupId: string) {
-    const group = await this.request<{
-      members: Array<{
+    const groups = await this.request<
+      Array<{
         id: string;
-        firstName: string;
-        lastName: string;
-        profile?: { id: string };
-      }>;
-    }>(`/groups/${groupId}`);
+        name: string;
+        members: Array<{
+          id: string;
+          firstName: string;
+          lastName: string;
+          profile?: { id: string; imageUrl?: string };
+          imageUrl?: string;
+        }>;
+      }>
+    >("/groups");
 
-    return group.members.map((m) => ({
-      id: m.id,
-      firstName: m.firstName,
-      lastName: m.lastName,
-      profileId: m.profile?.id,
-    }));
+    const group = groups.find((g) => g.id === groupId);
+    if (!group) {
+      throw new Error(`Spond group ${groupId} not found. Available: ${groups.map((g) => `${g.name} (${g.id})`).join(", ")}`);
+    }
+
+    return group.members.map((m) => {
+      let profilePicture: string | null = m.profile?.imageUrl ?? m.imageUrl ?? null;
+      // Strip query params that can cause issues
+      if (profilePicture && profilePicture.includes("?")) {
+        profilePicture = profilePicture.split("?")[0] ?? profilePicture;
+      }
+      return {
+        id: m.id,
+        firstName: m.firstName,
+        lastName: m.lastName,
+        profilePicture,
+      };
+    });
   }
 
   async getEvents(groupId: string, daysBack = 60) {
@@ -105,12 +122,15 @@ export class SpondClient {
     return events;
   }
 
-  async getNextTrainingAccepted(groupId: string): Promise<string[]> {
+  async getNextEvents(groupId: string): Promise<{
+    training: { heading: string; startTimestamp: string; acceptedIds: string[] } | null;
+    match: { heading: string; startTimestamp: string; acceptedIds: string[] } | null;
+  }> {
     const now = new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
     const params = new URLSearchParams({
       groupId,
       minStartTimestamp: now,
-      max: "1",
+      max: "30",
       scheduled: "true",
     });
     const events = await this.request<
@@ -125,7 +145,24 @@ export class SpondClient {
       }>
     >(`/sponds/?${params.toString()}`);
 
-    if (!events || events.length === 0) return [];
-    return events[0]?.responses?.acceptedIds ?? [];
+    if (!events || events.length === 0) return { training: null, match: null };
+
+    // Sort by startTimestamp ascending to find the nearest upcoming events
+    const sorted = events.sort(
+      (a, b) => new Date(a.startTimestamp).getTime() - new Date(b.startTimestamp).getTime()
+    );
+
+    // RECURRING = training, EVENT = match
+    const nextTraining = sorted.find((e) => e.type === "RECURRING");
+    const nextMatch = sorted.find((e) => e.type === "EVENT");
+
+    return {
+      training: nextTraining
+        ? { heading: nextTraining.heading, startTimestamp: nextTraining.startTimestamp, acceptedIds: nextTraining.responses?.acceptedIds ?? [] }
+        : null,
+      match: nextMatch
+        ? { heading: nextMatch.heading, startTimestamp: nextMatch.startTimestamp, acceptedIds: nextMatch.responses?.acceptedIds ?? [] }
+        : null,
+    };
   }
 }

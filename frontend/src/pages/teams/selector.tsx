@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
-import { Users, Shuffle, Save, UserPlus, ClipboardCopy, Check, ArrowRightLeft } from "lucide-react";
+import { Users, Shuffle, Save, UserPlus, ClipboardCopy, Check, ArrowRightLeft, Calendar, Trophy } from "lucide-react";
 
 interface AvailablePlayer {
   id: string;
@@ -13,6 +13,18 @@ interface AvailablePlayer {
   profilePicture?: string | null;
   winRate: number;
   matches: number;
+}
+
+interface EventInfo {
+  heading: string;
+  date: string;
+  players: AvailablePlayer[];
+}
+
+interface AvailableResponse {
+  training: EventInfo | null;
+  match: EventInfo | null;
+  allPlayers: AvailablePlayer[];
 }
 
 interface PlayerStats {
@@ -57,8 +69,18 @@ function PlayerAvatar({ name, src, size = "sm" }: { name: string; src?: string |
   );
 }
 
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  const days = ["søn", "man", "tir", "ons", "tor", "fre", "lør"];
+  const day = days[d.getDay()];
+  return `${day}. ${d.getDate()}/${d.getMonth() + 1} kl. ${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+}
+
+type ActiveTab = "training" | "match";
+
 export default function TeamSelectorPage() {
-  const [available, setAvailable] = useState<AvailablePlayer[]>([]);
+  const [data, setData] = useState<AvailableResponse | null>(null);
+  const [activeTab, setActiveTab] = useState<ActiveTab>("training");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [guestName, setGuestName] = useState("");
   const [guests, setGuests] = useState<string[]>([]);
@@ -71,14 +93,50 @@ export default function TeamSelectorPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    api.get<AvailablePlayer[]>("/teams/available")
-      .then((data) => {
-        setAvailable(data);
-        setSelected(new Set(data.map((p) => p.id)));
+    api.get<AvailableResponse>("/teams/available")
+      .then((res) => {
+        setData(res);
+        // Auto-select players from the active tab
+        const trainingPlayers = res.training?.players ?? [];
+        const matchPlayers = res.match?.players ?? [];
+        if (trainingPlayers.length > 0) {
+          setActiveTab("training");
+          setSelected(new Set(trainingPlayers.map((p) => p.id)));
+        } else if (matchPlayers.length > 0) {
+          setActiveTab("match");
+          setSelected(new Set(matchPlayers.map((p) => p.id)));
+        } else {
+          setSelected(new Set(res.allPlayers.map((p) => p.id)));
+        }
       })
       .catch(() => setError("Kunne ikke indlæse spillere"))
       .finally(() => setLoading(false));
   }, []);
+
+  const switchTab = (tab: ActiveTab) => {
+    if (!data) return;
+    setActiveTab(tab);
+    setResult(null);
+    setSaved(false);
+    setCopied(false);
+    setGuests([]);
+    const players = tab === "training"
+      ? (data.training?.players ?? [])
+      : (data.match?.players ?? []);
+    if (players.length > 0) {
+      setSelected(new Set(players.map((p) => p.id)));
+    } else {
+      setSelected(new Set(data.allPlayers.map((p) => p.id)));
+    }
+  };
+
+  const currentEvent = activeTab === "training" ? data?.training : data?.match;
+  const currentPlayers = currentEvent?.players?.length
+    ? currentEvent.players
+    : (data?.allPlayers ?? []);
+  const allPlayersList = [...currentPlayers, ...(data?.allPlayers ?? [])].filter(
+    (p, i, arr) => arr.findIndex((x) => x.id === p.id) === i
+  );
 
   const addGuest = () => {
     if (guestName.trim()) {
@@ -99,8 +157,8 @@ export default function TeamSelectorPage() {
       ...guests.map((_, i) => `guest-${i}-${guests[i]}`),
     ];
     try {
-      const data = await api.post<TeamResult>("/teams/generate", { playerIds, algorithm: "greedy" });
-      setResult(data);
+      const res = await api.post<TeamResult>("/teams/generate", { playerIds, algorithm: "greedy" });
+      setResult(res);
       setSaved(false);
       setCopied(false);
       toast("Hold genereret", "success");
@@ -112,12 +170,12 @@ export default function TeamSelectorPage() {
   const swapPlayer = async (playerId: string) => {
     if (!result) return;
     try {
-      const data = await api.post<TeamResult>("/teams/swap", {
+      const res = await api.post<TeamResult>("/teams/swap", {
         team1: result.team1,
         team2: result.team2,
         playerId,
       });
-      setResult(data);
+      setResult(res);
     } catch {
       toast("Kunne ikke bytte spiller", "error");
     }
@@ -168,7 +226,7 @@ export default function TeamSelectorPage() {
   };
 
   const getPlayerPicture = (id: string) => {
-    return available.find(p => p.id === id)?.profilePicture;
+    return allPlayersList.find(p => p.id === id)?.profilePicture;
   };
 
   if (loading) {
@@ -206,9 +264,68 @@ export default function TeamSelectorPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-zinc-50 tracking-tight">{da.nav.teams}</h1>
-          <p className="text-sm text-zinc-500">Generer balancerede hold til træning</p>
+          <p className="text-sm text-zinc-500">Generer balancerede hold til træning eller kamp</p>
         </div>
       </div>
+
+      {/* Event Tabs */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => switchTab("training")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            activeTab === "training"
+              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+              : "bg-zinc-900/50 text-zinc-400 border border-zinc-800 hover:text-zinc-200 hover:border-zinc-700"
+          }`}
+        >
+          <Calendar className="h-4 w-4" />
+          <div className="text-left">
+            <div>Næste træning</div>
+            {data?.training ? (
+              <div className="text-xs opacity-70">{formatDate(data.training.date)} — {data.training.players.length} tilmeldt</div>
+            ) : (
+              <div className="text-xs opacity-70">Ingen planlagt</div>
+            )}
+          </div>
+        </button>
+        <button
+          onClick={() => switchTab("match")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            activeTab === "match"
+              ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+              : "bg-zinc-900/50 text-zinc-400 border border-zinc-800 hover:text-zinc-200 hover:border-zinc-700"
+          }`}
+        >
+          <Trophy className="h-4 w-4" />
+          <div className="text-left">
+            <div>Næste kamp</div>
+            {data?.match ? (
+              <div className="text-xs opacity-70">{formatDate(data.match.date)} — {data.match.players.length} tilmeldt</div>
+            ) : (
+              <div className="text-xs opacity-70">Ingen planlagt</div>
+            )}
+          </div>
+        </button>
+      </div>
+
+      {/* Event info banner */}
+      {currentEvent && (
+        <div className={`mb-6 rounded-lg px-4 py-3 border text-sm ${
+          activeTab === "training"
+            ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-300"
+            : "bg-blue-500/5 border-blue-500/20 text-blue-300"
+        }`}>
+          <span className="font-medium">{currentEvent.heading}</span>
+          <span className="mx-2 opacity-50">·</span>
+          <span className="opacity-80">{formatDate(currentEvent.date)}</span>
+          {currentEvent.players.length > 0 && (
+            <>
+              <span className="mx-2 opacity-50">·</span>
+              <span className="opacity-80">{currentEvent.players.length} har svaret ja</span>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Player Selection */}
@@ -216,16 +333,21 @@ export default function TeamSelectorPage() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Users className="h-4 w-4 text-zinc-400" />
-              Tilgængelige spillere
+              {currentEvent?.players?.length ? "Tilmeldte spillere" : "Alle spillere"}
             </CardTitle>
-            <p className="text-xs text-zinc-500">{selected.size + guests.length} valgt</p>
+            <p className="text-xs text-zinc-500">
+              {selected.size + guests.length} valgt
+              {currentEvent?.players?.length ? (
+                <span className="ml-1.5 text-emerald-400">(fra Spond)</span>
+              ) : null}
+            </p>
           </CardHeader>
           <CardContent>
-            {available.length === 0 && guests.length === 0 ? (
+            {currentPlayers.length === 0 && guests.length === 0 ? (
               <p className="text-sm text-zinc-500" data-testid="team-empty-state">Ingen spillere tilgængelige</p>
             ) : (
               <div className="space-y-1 max-h-80 overflow-y-auto pr-1" data-testid="team-available-players">
-                {available.map((p) => (
+                {currentPlayers.map((p) => (
                   <label
                     key={p.id}
                     className="flex items-center gap-2.5 text-sm cursor-pointer rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors"
