@@ -80,6 +80,26 @@ export default function LandingPage() {
         </div>
       </main>
 
+      {/* Instagram Embed */}
+      <section className="relative z-10 px-6 md:px-12 pb-20">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center gap-3 mb-6">
+            <InstagramIcon className="h-5 w-5 text-zinc-400" />
+            <h2 className="text-lg font-semibold text-zinc-200">@bkskjold13</h2>
+          </div>
+          <div className="rounded-xl overflow-hidden border border-white/10 bg-white/[0.02]">
+            <iframe
+              src="https://www.instagram.com/bkskjold13/embed"
+              className="w-full border-0"
+              height="600"
+              loading="lazy"
+              title="BK Skjold Instagram"
+              allowTransparency
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Footer line */}
       <footer className="relative z-10 border-t border-white/5 px-6 md:px-12 py-6 flex items-center justify-between">
         <p className="text-xs text-zinc-600">
