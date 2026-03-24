@@ -1,0 +1,22 @@
+FROM oven/bun:1.3 AS base
+WORKDIR /app
+
+# Install backend dependencies
+COPY backend/package.json backend/bun.lockb* backend/
+RUN cd backend && bun install --frozen-lockfile || cd backend && bun install
+
+# Build frontend
+COPY frontend/package.json frontend/bun.lockb* frontend/
+RUN cd frontend && bun install --frozen-lockfile || cd frontend && bun install
+COPY frontend/ frontend/
+RUN cd frontend && bunx vite build
+
+# Copy backend source
+COPY backend/ backend/
+
+# Serve frontend static files from backend
+# Move built frontend into backend/static
+RUN mv frontend/dist backend/static
+
+EXPOSE 3000
+CMD ["bun", "run", "backend/src/index.ts"]

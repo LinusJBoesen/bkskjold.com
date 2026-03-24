@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { serveStatic } from "hono/bun";
 import { migrate } from "./db/migrate";
 import { seed } from "./db/seed";
 import authRoutes from "./routes/auth";
@@ -20,8 +21,13 @@ seed();
 
 const app = new Hono();
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
 app.use("/*", cors({
-  origin: "http://localhost:5173",
+  origin: (origin) => allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
   credentials: true,
 }));
 
@@ -127,9 +133,17 @@ app.route("/api/tournament", tournamentRoutes);
 app.route("/api/analysis", analysisRoutes);
 app.route("/api/admin", adminRoutes);
 
+// Serve frontend static files in production (built into backend/static by Dockerfile)
+app.use("/*", serveStatic({ root: "./static" }));
+
+// SPA fallback — serve index.html for non-API routes
+app.get("*", serveStatic({ root: "./static", path: "index.html" }));
+
+const port = parseInt(process.env.PORT || "3000");
+
 export default {
-  port: 3000,
+  port,
   fetch: app.fetch,
 };
 
-console.log("Backend running on http://localhost:3000");
+console.log(`Backend running on http://localhost:${port}`);
