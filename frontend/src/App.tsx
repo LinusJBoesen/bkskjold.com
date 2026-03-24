@@ -20,8 +20,8 @@ function ProtectedLayout() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-brand-off-white flex items-center justify-center">
-        <p className="text-neutral-mid-gray">Indlæser...</p>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <p className="text-zinc-400">Indlæser...</p>
       </div>
     );
   }
@@ -31,11 +31,11 @@ function ProtectedLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-brand-off-white">
+    <div className="flex min-h-screen bg-zinc-950">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -61,8 +61,8 @@ function LoginRoute() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-brand-off-white flex items-center justify-center">
-        <p className="text-neutral-mid-gray">Indlæser...</p>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <p className="text-zinc-400">Indlæser...</p>
       </div>
     );
   }

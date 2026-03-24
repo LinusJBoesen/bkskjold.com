@@ -1,110 +1,67 @@
-# Skjold Bode Rebuild — PROGRESS
+# Skjold Bode UI Overhaul — PROGRESS
 
 ## Current Status
-- **Round**: 10 (Polish + Integration) — COMPLETE
-- **Task**: All 10 rounds completed. All 49 E2E tests pass.
+- **Round**: 2 (Login + Dashboard)
+- **Task**: Not started
 - **Last updated**: 2026-03-24
 
 ## Checklist
 
-### Round 1: Project Scaffolding + Database
-- [x] Initialize backend with Bun + Hono, `GET /api/health`
-- [x] Create SQLite schema, migrations, seed data
-- [x] Create `lib/db.ts` SQLite singleton
-- [x] Wire migration into startup
-- [x] Initialize frontend with Vite + React + TailwindCSS + shadcn/ui
-- [x] Create Vite API proxy config
-- [x] Create root dev script to start both servers
-- [x] Update e2e/playwright.config.ts for this project
-- [x] Create `specs/health/api-health.spec.ts`
-- [x] Add .gitignore and .env.example
-- [x] Run E2E tests — all pass
-- [x] Commit: `feat(skjold): project scaffolding with Bun + Hono + React + SQLite`
+### Round 1: Foundation — Dark Theme, Base Components, Layout
+- [x] Install lucide-react for icons (already installed)
+- [x] Rewrite index.css with dark zinc theme
+- [x] Rewrite button.tsx with dark variants
+- [x] Rewrite card.tsx with dark styling
+- [x] Rewrite input.tsx with dark styling
+- [x] Rewrite table.tsx with dark theme
+- [x] Create badge.tsx component
+- [x] Rewrite sidebar.tsx with Lucide icons and dark theme
+- [x] Rewrite header.tsx dark
+- [x] Update layout background to bg-zinc-950
+- [x] Run E2E tests — all pass (49/49)
+- [x] Commit: `feat(skjold): dark theme foundation — components and layout`
 
-### Round 2: Auth + Layout Shell
-- [x] Create `POST /api/auth/login` with env credentials + session cookie
-- [x] Create auth middleware, protect API routes
-- [x] Create login page with Danish labels
-- [x] Create sidebar with Danish navigation
-- [x] Create layout shell with header + logout
-- [x] Create stub pages for all nav items
-- [x] Create `i18n/da.ts` with Danish strings
-- [x] Create e2e auth fixture, test-data, login page object
-- [x] Create `specs/auth/login.spec.ts`
-- [x] Create `specs/layout/navigation.spec.ts`
-- [x] Run E2E tests — all pass
-- [x] Commit: `feat(skjold): auth with session cookies and layout shell with Danish nav`
+### Round 2: Login + Dashboard
+- [ ] Rewrite login.tsx with dark centered card
+- [ ] Rewrite dashboard.tsx with dark stat cards and charts
+- [ ] Add player profile pictures to top performers
+- [ ] Update Recharts dark theme
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): dark modern login and dashboard`
 
-### Round 3: Players + Spond Sync
-- [x] Create Spond API client service
-- [x] Create `GET /api/players` and `POST /api/sync/spond` routes
-- [x] Add Spond env vars to .env.example
-- [x] Create sync button on dashboard
-- [x] Create `specs/sync/spond-sync.spec.ts`
-- [x] Run E2E tests — all pass
-- [x] Commit: `feat(skjold): Spond API integration and player sync`
+### Round 3: Fine Management Pages
+- [ ] Rewrite fines/overview.tsx dark table with badges
+- [ ] Rewrite fines/detail.tsx dark player header and history
+- [ ] Style fine creation form dark
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): dark modern fine management UI`
 
-### Round 4: Fine Management
-- [x] Create fines calculation service
-- [x] Create fines CRUD routes + fine types CRUD routes
-- [x] Create fine overview page (all players + totals)
-- [x] Create fine detail page (per-player history)
-- [x] Create manual fine creation + mark-as-paid
-- [x] Create typed API client (`lib/api.ts`)
-- [x] Create e2e page objects + fine specs
-- [x] Run E2E tests — all pass
-- [x] Commit: `feat(skjold): fine management with auto-generation and manual CRUD`
+### Round 4: Team Selector
+- [ ] Rewrite teams/selector.tsx dark cards and metrics
+- [ ] Add copy to clipboard button
+- [ ] Show player profile pictures
+- [ ] Dark balance metrics
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): dark modern team selector with clipboard copy`
 
-### Round 5: Team Selector
-- [x] Create team generator service (greedy + optimal algorithms)
-- [x] Create team generation + swap + available routes
-- [x] Create team selector page with balance metrics
-- [x] Create e2e page objects + team specs
-- [x] Run E2E tests — all pass
-- [x] Commit: `feat(skjold): team selector with balanced generation algorithms`
+### Round 5: History + Tournament + Analysis + Admin
+- [ ] Rewrite history/training.tsx dark
+- [ ] Rewrite tournament/standings.tsx dark
+- [ ] Rewrite analysis/match.tsx dark
+- [ ] Rewrite admin/settings.tsx dark
+- [ ] Style all select/dropdown elements dark
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): dark modern history, tournament, analysis, and admin`
 
-### Round 6: Training History
-- [x] Create match CRUD routes + result registration + CSV export
-- [x] Wire training_loss fines into result registration
-- [x] Create training history page (pending, stats, history, export)
-- [x] Create e2e page objects + history specs
-- [x] Run E2E tests — all pass
-- [x] Commit: `feat(skjold): training history with result registration and auto-fines`
-
-### Round 7: Dashboard + Charts
-- [x] Create dashboard stats aggregation endpoint
-- [x] Create dashboard with top performers + Recharts charts
-- [x] Install Recharts
-- [x] Create e2e page objects + dashboard specs
-- [x] Run E2E tests — all pass
-- [x] Commit: `feat(skjold): dashboard with stats cards and Recharts visualizations`
-
-### Round 8: Tournament + Match Analysis
-- [x] Create DBU scraper service
-- [x] Create tournament standings + match analysis routes
-- [x] Create standings page with color coding
-- [x] Create match analysis page
-- [x] Create e2e specs
-- [x] Run E2E tests — all pass (39/39)
-- [x] Commit: `feat(skjold): tournament standings and match analysis with DBU scraping`
-
-### Round 9: Admin Panel
-- [x] Create admin config + export/import routes
-- [x] Create admin settings page with tabs (config, fine types, data)
-- [x] Create e2e specs
-- [x] Run E2E tests — all pass (48/48)
-- [x] Commit: `feat(skjold): admin panel with config, fine types, and data management`
-
-### Round 10: Polish + Integration
-- [x] Responsive design pass (mobile 375px) — hamburger sidebar, overflow-x-auto tables, responsive grids
-- [x] Add loading states (skeleton/spinner) for all data-fetching pages
-- [x] Add error handling: API error toasts, network failure states with retry buttons
-- [x] Add empty states for all list views ("Ingen bøder endnu", "Ingen kampe endnu", etc.)
-- [x] Add toast notifications for actions (fine paid, teams saved, sync complete, config saved)
-- [x] Create `specs/integration/full-flow.spec.ts`
-- [x] Update CLAUDE.md with complete project documentation
-- [x] Run ALL E2E tests — all pass (49/49)
-- [x] Commit: `feat(skjold): polish — responsive design, states, and full integration test`
+### Round 6: Polish + Animations + Final Pass
+- [ ] Add hover transitions on cards, rows, buttons
+- [ ] Add subtle red glow on primary buttons
+- [ ] Audit spacing consistency
+- [ ] Add entrance animations
+- [ ] Player profile pictures in stats tables
+- [ ] Verify responsive design (375px)
+- [ ] Run ALL E2E tests — all pass
+- [ ] Commit: `feat(skjold): UI polish — animations, glows, consistency`
 
 ## Blockers
 (none)
@@ -113,4 +70,4 @@
 
 | Date | Hash | Description |
 |------|------|-------------|
-| 2026-03-24 | (pending) | feat(skjold): project scaffolding with Bun + Hono + React + SQLite |
+| 2026-03-24 | — | feat(skjold): dark theme foundation — components and layout |

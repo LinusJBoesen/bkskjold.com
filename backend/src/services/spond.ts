@@ -78,8 +78,15 @@ export class SpondClient {
     }));
   }
 
-  async getEvents(groupId: string, daysBack = 30) {
-    const minDate = new Date(Date.now() - daysBack * 86400_000).toISOString();
+  async getEvents(groupId: string, daysBack = 60) {
+    const minStart = new Date(Date.now() - daysBack * 86400_000);
+    const minStartStr = minStart.toISOString().split("T")[0] + "T00:00:00.000Z";
+    const params = new URLSearchParams({
+      groupId,
+      minStartTimestamp: minStartStr,
+      max: "100",
+      scheduled: "true",
+    });
     const events = await this.request<
       Array<{
         id: string;
@@ -93,13 +100,19 @@ export class SpondClient {
           waitinglistIds?: string[];
         };
       }>
-    >(`/sponds?groupId=${groupId}&minDate=${minDate}&includeComments=false&maxEvents=100`);
+    >(`/sponds/?${params.toString()}`);
 
     return events;
   }
 
   async getNextTrainingAccepted(groupId: string): Promise<string[]> {
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
+    const params = new URLSearchParams({
+      groupId,
+      minStartTimestamp: now,
+      max: "1",
+      scheduled: "true",
+    });
     const events = await this.request<
       Array<{
         id: string;
@@ -110,9 +123,9 @@ export class SpondClient {
           acceptedIds?: string[];
         };
       }>
-    >(`/sponds?groupId=${groupId}&minDate=${now}&maxEvents=1`);
+    >(`/sponds/?${params.toString()}`);
 
-    if (events.length === 0) return [];
-    return events[0].responses?.acceptedIds || [];
+    if (!events || events.length === 0) return [];
+    return events[0]?.responses?.acceptedIds ?? [];
   }
 }

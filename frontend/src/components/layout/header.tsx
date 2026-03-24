@@ -1,3 +1,4 @@
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { da } from "@/i18n/da";
 
@@ -9,23 +10,19 @@ interface HeaderProps {
 
 export function Header({ email, onLogout, onMenuToggle }: HeaderProps) {
   return (
-    <header className="h-14 bg-white border-b border-neutral-light-gray flex items-center justify-between px-4 md:px-6" data-testid="header">
+    <header className="h-14 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between px-4 md:px-6" data-testid="header">
       <button
         onClick={onMenuToggle}
-        className="lg:hidden p-2 -ml-2 text-brand-black hover:bg-neutral-light-gray rounded"
+        className="lg:hidden p-2 -ml-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
         data-testid="header-menu-toggle"
         aria-label="Menu"
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-          <rect y="3" width="20" height="2" rx="1" />
-          <rect y="9" width="20" height="2" rx="1" />
-          <rect y="15" width="20" height="2" rx="1" />
-        </svg>
+        <Menu className="size-5" />
       </button>
       <div className="hidden lg:block" />
       <div className="flex items-center gap-4">
         {email && (
-          <span className="text-xs text-neutral-mid-gray hidden sm:inline" data-testid="header-email">
+          <span className="text-xs text-zinc-500 hidden sm:inline" data-testid="header-email">
             {email}
           </span>
         )}
