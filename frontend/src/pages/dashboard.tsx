@@ -277,7 +277,7 @@ export default function DashboardPage() {
                     outerRadius={100}
                     stroke="#18181B"
                     strokeWidth={2}
-                    label={({ name, total }) => `${name}: ${total} kr`}
+                    label={({ name, value }) => `${name}: ${value} kr`}
                     labelLine={{ stroke: "#3F3F46" }}
                   >
                     {data.fineByType.map((_, i) => (

@@ -157,7 +157,7 @@ export default function MatchAnalysisPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.dbuMatches.map((m, i) => (
+                {data.dbuMatches.map((m) => (
                   <tr
                     key={`${m.date}-${m.opponent}`}
                     className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors"

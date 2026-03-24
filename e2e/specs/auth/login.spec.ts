@@ -15,7 +15,7 @@ test.describe("Login", () => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
     await loginPage.login(testCredentials.email, testCredentials.password);
-    await page.waitForURL("/");
+    await page.waitForURL("/dashboard");
     await expect(page.locator('[data-testid="page-dashboard"]')).toBeVisible();
   });
 
@@ -27,7 +27,7 @@ test.describe("Login", () => {
   });
 
   test("unauthenticated user is redirected to login", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/dashboard");
     await page.waitForURL("/login");
     await expect(page.locator('[data-testid="login-form"]')).toBeVisible();
   });

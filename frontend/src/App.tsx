@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { ToastProvider } from "@/components/toast";
+import LandingPage from "@/pages/landing";
 import LoginPage from "@/pages/login";
 import DashboardPage from "@/pages/dashboard";
 import FinesOverviewPage from "@/pages/fines/overview";
@@ -56,6 +57,24 @@ function ProtectedLayout() {
   );
 }
 
+function LandingRoute() {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <p className="text-zinc-400">Indlæser...</p>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <LandingPage />;
+}
+
 function LoginRoute() {
   const { isAuthenticated, loading, login } = useAuth();
 
@@ -68,7 +87,7 @@ function LoginRoute() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <LoginPage onLogin={login} />;
@@ -79,9 +98,10 @@ export default function App() {
     <BrowserRouter>
       <ToastProvider>
         <Routes>
+          <Route index element={<LandingRoute />} />
           <Route path="/login" element={<LoginRoute />} />
           <Route element={<ProtectedLayout />}>
-            <Route index element={<DashboardPage />} />
+            <Route path="dashboard" element={<DashboardPage />} />
             <Route path="fines" element={<FinesOverviewPage />} />
             <Route path="fines/:playerId" element={<FineDetailPage />} />
             <Route path="teams" element={<TeamSelectorPage />} />

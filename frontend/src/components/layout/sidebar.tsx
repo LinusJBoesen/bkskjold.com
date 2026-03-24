@@ -11,7 +11,7 @@ import {
 import { da } from "@/i18n/da";
 
 const navItems = [
-  { to: "/", label: da.nav.dashboard, testId: "nav-dashboard", icon: LayoutDashboard },
+  { to: "/dashboard", label: da.nav.dashboard, testId: "nav-dashboard", icon: LayoutDashboard },
   { to: "/fines", label: da.nav.fines, testId: "nav-fines", icon: Receipt },
   { to: "/teams", label: da.nav.teams, testId: "nav-teams", icon: Users },
   { to: "/history", label: da.nav.history, testId: "nav-history", icon: History },
@@ -40,7 +40,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           <NavLink
             key={item.to}
             to={item.to}
-            end={item.to === "/"}
+            end={item.to === "/dashboard"}
             data-testid={item.testId}
             onClick={onNavigate}
             className={({ isActive }) =>

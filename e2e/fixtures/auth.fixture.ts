@@ -15,7 +15,7 @@ export const test = base.extend<AuthFixtures>({
     const loginPage = new LoginPage(page);
     await loginPage.goto();
     await loginPage.login(testCredentials.email, testCredentials.password);
-    await page.waitForURL("/");
+    await page.waitForURL("/dashboard");
     await use(page);
   },
   loginPage: async ({ page }, use) => {
