@@ -1,8 +1,8 @@
 # Skjold Bode Rebuild — PROGRESS
 
 ## Current Status
-- **Round**: 7 (Dashboard + Charts) — COMPLETE
-- **Task**: All Round 7 tasks done. Ready for Round 8.
+- **Round**: 8 (Tournament + Match Analysis) — COMPLETE
+- **Task**: All Round 8 tasks done. Ready for Round 9.
 - **Last updated**: 2026-03-24
 
 ## Checklist
@@ -80,13 +80,13 @@
 - [x] Commit: `feat(skjold): dashboard with stats cards and Recharts visualizations`
 
 ### Round 8: Tournament + Match Analysis
-- [ ] Create DBU scraper service
-- [ ] Create tournament standings + match analysis routes
-- [ ] Create standings page with color coding
-- [ ] Create match analysis page
-- [ ] Create e2e specs
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): tournament standings and match analysis with DBU scraping`
+- [x] Create DBU scraper service
+- [x] Create tournament standings + match analysis routes
+- [x] Create standings page with color coding
+- [x] Create match analysis page
+- [x] Create e2e specs
+- [x] Run E2E tests — all pass (39/39)
+- [x] Commit: `feat(skjold): tournament standings and match analysis with DBU scraping`
 
 ### Round 9: Admin Panel
 - [ ] Create admin config + export/import routes

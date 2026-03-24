@@ -9,6 +9,8 @@ import fineRoutes from "./routes/fines";
 import teamRoutes from "./routes/teams";
 import matchRoutes from "./routes/matches";
 import statsRoutes from "./routes/stats";
+import tournamentRoutes from "./routes/tournament";
+import analysisRoutes from "./routes/analysis";
 import { authMiddleware } from "./middleware/auth";
 
 // Run migrations and seed on startup
@@ -44,6 +46,8 @@ app.route("/api/fines", fineRoutes);
 app.route("/api/teams", teamRoutes);
 app.route("/api/matches", matchRoutes);
 app.route("/api/stats", statsRoutes);
+app.route("/api/tournament", tournamentRoutes);
+app.route("/api/analysis", analysisRoutes);
 
 export default {
   port: 3000,

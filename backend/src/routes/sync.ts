@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getDb } from "../lib/db";
 import { SpondClient } from "../services/spond";
+import { seedDbuData } from "../services/dbu";
 
 const sync = new Hono();
 
@@ -76,6 +77,29 @@ sync.post("/spond", async (c) => {
       message: "Synkronisering fuldført",
       players: members.length,
       events: events.length,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Ukendt fejl";
+    return c.json({ success: false, message }, 500);
+  }
+});
+
+sync.post("/dbu", async (c) => {
+  try {
+    // Clear existing data and re-seed (simulates scraping from DBU website)
+    const db = getDb();
+    db.run("DELETE FROM dbu_standings");
+    db.run("DELETE FROM dbu_matches");
+    seedDbuData();
+
+    const standingsCount = (db.query("SELECT COUNT(*) as c FROM dbu_standings").get() as { c: number }).c;
+    const matchesCount = (db.query("SELECT COUNT(*) as c FROM dbu_matches").get() as { c: number }).c;
+
+    return c.json({
+      success: true,
+      message: "DBU data opdateret",
+      standings: standingsCount,
+      matches: matchesCount,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Ukendt fejl";

@@ -1,5 +1,6 @@
 import { getDb } from "../lib/db";
 import { randomUUID } from "crypto";
+import { seedDbuData } from "../services/dbu";
 
 export function seed(): void {
   const db = getDb();
@@ -62,6 +63,9 @@ export function seed(): void {
   insertMatchPlayer.run(matchId, "player-4", 2);
   insertMatchPlayer.run(matchId, "player-5", 2);
   insertMatchPlayer.run(matchId, "player-6", 2);
+
+  // Seed DBU standings and matches
+  seedDbuData();
 
   console.log("✓ Database seeded");
 }
