@@ -1,8 +1,8 @@
 # Skjold Bode Rebuild — PROGRESS
 
 ## Current Status
-- **Round**: 9 (Admin Panel) — COMPLETE
-- **Task**: All Round 9 tasks done. Ready for Round 10.
+- **Round**: 10 (Polish + Integration) — COMPLETE
+- **Task**: All 10 rounds completed. All 49 E2E tests pass.
 - **Last updated**: 2026-03-24
 
 ## Checklist
@@ -96,12 +96,15 @@
 - [x] Commit: `feat(skjold): admin panel with config, fine types, and data management`
 
 ### Round 10: Polish + Integration
-- [ ] Responsive design pass (mobile 375px)
-- [ ] Add loading states, error handling, empty states, toasts
-- [ ] Create `specs/integration/full-flow.spec.ts`
-- [ ] Update CLAUDE.md with full project docs
-- [ ] Run ALL E2E tests — all pass
-- [ ] Commit: `feat(skjold): polish — responsive design, states, and full integration test`
+- [x] Responsive design pass (mobile 375px) — hamburger sidebar, overflow-x-auto tables, responsive grids
+- [x] Add loading states (skeleton/spinner) for all data-fetching pages
+- [x] Add error handling: API error toasts, network failure states with retry buttons
+- [x] Add empty states for all list views ("Ingen bøder endnu", "Ingen kampe endnu", etc.)
+- [x] Add toast notifications for actions (fine paid, teams saved, sync complete, config saved)
+- [x] Create `specs/integration/full-flow.spec.ts`
+- [x] Update CLAUDE.md with complete project documentation
+- [x] Run ALL E2E tests — all pass (49/49)
+- [x] Commit: `feat(skjold): polish — responsive design, states, and full integration test`
 
 ## Blockers
 (none)

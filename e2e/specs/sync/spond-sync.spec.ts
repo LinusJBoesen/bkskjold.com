@@ -8,7 +8,8 @@ test.describe("Spond Sync", () => {
 
   test("clicking sync shows feedback message", async ({ authenticatedPage: page }) => {
     await page.locator('[data-testid="sync-button"]').click();
-    await expect(page.locator('[data-testid="sync-message"]')).toBeVisible({ timeout: 10_000 });
+    // Sync result shown via toast notification
+    await expect(page.locator('[data-testid="toast-message"]')).toBeVisible({ timeout: 10_000 });
   });
 
   test("player count is displayed", async ({ authenticatedPage: page }) => {

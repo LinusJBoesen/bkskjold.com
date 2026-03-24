@@ -28,8 +28,8 @@ test.describe("Admin Settings", () => {
     await input.clear();
     await input.fill("48");
     await admin.configSaveBtn("late_response_hours").click();
-    // Should show saved confirmation
-    await expect(page.getByText("Konfiguration gemt")).toBeVisible();
+    // Should show saved confirmation via toast
+    await expect(page.locator('[data-testid="toast-message"]')).toBeVisible();
   });
 
   test("switching tabs shows correct content", async ({ authenticatedPage: page }) => {

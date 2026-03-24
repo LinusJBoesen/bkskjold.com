@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
+import { useToast } from "@/components/toast";
 
 interface Fine {
   id: string;
@@ -37,8 +38,11 @@ interface FineType {
 export default function FineDetailPage() {
   const { playerId } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [fines, setFines] = useState<Fine[]>([]);
   const [fineTypes, setFineTypes] = useState<FineType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [newFineTypeId, setNewFineTypeId] = useState("");
   const [newAmount, setNewAmount] = useState("");
@@ -49,8 +53,17 @@ export default function FineDetailPage() {
   };
 
   useEffect(() => {
-    loadFines();
-    api.get<FineType[]>("/fines/types").then(setFineTypes).catch(() => {});
+    setLoading(true);
+    Promise.all([
+      api.get<Fine[]>(`/fines?player_id=${playerId}`),
+      api.get<FineType[]>("/fines/types"),
+    ])
+      .then(([finesData, types]) => {
+        setFines(finesData);
+        setFineTypes(types);
+      })
+      .catch(() => setError("Kunne ikke indlæse bødedata"))
+      .finally(() => setLoading(false));
   }, [playerId]);
 
   const playerName = fines[0]?.player_name || "Spiller";
@@ -59,25 +72,35 @@ export default function FineDetailPage() {
   const unpaid = total - paid;
 
   const handlePay = async (fineId: string) => {
-    await api.patch(`/fines/${fineId}/pay`);
-    loadFines();
+    try {
+      await api.patch(`/fines/${fineId}/pay`);
+      toast("Bøde markeret som betalt", "success");
+      loadFines();
+    } catch {
+      toast("Kunne ikke markere bøde som betalt", "error");
+    }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const fineType = fineTypes.find((ft) => ft.id === newFineTypeId);
     const amount = newAmount ? parseInt(newAmount) : fineType?.amount || 0;
-    await api.post("/fines", {
-      player_id: playerId,
-      fine_type_id: newFineTypeId,
-      amount,
-      notes: newNotes || undefined,
-    });
-    setShowForm(false);
-    setNewFineTypeId("");
-    setNewAmount("");
-    setNewNotes("");
-    loadFines();
+    try {
+      await api.post("/fines", {
+        player_id: playerId,
+        fine_type_id: newFineTypeId,
+        amount,
+        notes: newNotes || undefined,
+      });
+      toast("Bøde oprettet", "success");
+      setShowForm(false);
+      setNewFineTypeId("");
+      setNewAmount("");
+      setNewNotes("");
+      loadFines();
+    } catch {
+      toast("Kunne ikke oprette bøde", "error");
+    }
   };
 
   const handleSelectFineType = (id: string) => {
@@ -86,16 +109,40 @@ export default function FineDetailPage() {
     if (ft) setNewAmount(ft.amount.toString());
   };
 
+  if (loading) {
+    return (
+      <div data-testid="page-fine-detail">
+        <div className="h-8 w-48 bg-neutral-light-gray rounded animate-pulse mb-6" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}><CardContent className="py-8"><div className="h-8 bg-neutral-light-gray rounded animate-pulse" /></CardContent></Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div data-testid="page-fine-detail">
+        <Card><CardContent className="py-8 text-center">
+          <p className="text-brand-red mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>Prøv igen</Button>
+        </CardContent></Card>
+      </div>
+    );
+  }
+
   return (
     <div data-testid="page-fine-detail">
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
         <Button variant="ghost" onClick={() => navigate("/fines")} data-testid="fine-detail-back">
           &larr; Tilbage
         </Button>
         <h1 className="text-2xl font-bold text-brand-black">{playerName}</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-neutral-mid-gray">Total</CardTitle>
@@ -173,57 +220,67 @@ export default function FineDetailPage() {
         </Card>
       )}
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-brand-black hover:bg-brand-black">
-                <TableHead className="text-white">Dato</TableHead>
-                <TableHead className="text-white">Begivenhed</TableHead>
-                <TableHead className="text-white">Type</TableHead>
-                <TableHead className="text-white text-right">Beløb</TableHead>
-                <TableHead className="text-white">Status</TableHead>
-                <TableHead className="text-white">Handling</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {fines.map((f) => (
-                <TableRow key={f.id} data-testid={`fine-row-${f.id}`}>
-                  <TableCell className="tabular-nums">
-                    {f.event_date || f.created_at.split("T")[0]}
-                  </TableCell>
-                  <TableCell>{f.event_name || f.notes || "—"}</TableCell>
-                  <TableCell>{f.fine_type_name}</TableCell>
-                  <TableCell className="text-right tabular-nums">{f.amount} kr</TableCell>
-                  <TableCell>
-                    {f.paid ? (
-                      <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-accent-green" data-testid="fine-status-paid">
-                        Betalt
-                      </span>
-                    ) : (
-                      <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-brand-red" data-testid="fine-status-unpaid">
-                        Ubetalt
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {!f.paid && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handlePay(f.id)}
-                        data-testid={`fine-pay-${f.id}`}
-                      >
-                        Markér betalt
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {fines.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-neutral-mid-gray" data-testid="fine-detail-empty">Ingen bøder for denne spiller</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-brand-black hover:bg-brand-black">
+                    <TableHead className="text-white">Dato</TableHead>
+                    <TableHead className="text-white">Begivenhed</TableHead>
+                    <TableHead className="text-white">Type</TableHead>
+                    <TableHead className="text-white text-right">Beløb</TableHead>
+                    <TableHead className="text-white">Status</TableHead>
+                    <TableHead className="text-white">Handling</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {fines.map((f) => (
+                    <TableRow key={f.id} data-testid={`fine-row-${f.id}`}>
+                      <TableCell className="tabular-nums">
+                        {f.event_date || f.created_at.split("T")[0]}
+                      </TableCell>
+                      <TableCell>{f.event_name || f.notes || "—"}</TableCell>
+                      <TableCell>{f.fine_type_name}</TableCell>
+                      <TableCell className="text-right tabular-nums">{f.amount} kr</TableCell>
+                      <TableCell>
+                        {f.paid ? (
+                          <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-accent-green" data-testid="fine-status-paid">
+                            Betalt
+                          </span>
+                        ) : (
+                          <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-brand-red" data-testid="fine-status-unpaid">
+                            Ubetalt
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {!f.paid && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handlePay(f.id)}
+                            data-testid={`fine-pay-${f.id}`}
+                          >
+                            Markér betalt
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

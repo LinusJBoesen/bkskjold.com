@@ -11,7 +11,11 @@ const navItems = [
   { to: "/admin", label: da.nav.admin, testId: "nav-admin" },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+export function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <aside
       className="w-60 bg-brand-black text-white min-h-screen flex flex-col"
@@ -29,6 +33,7 @@ export function Sidebar() {
             to={item.to}
             end={item.to === "/"}
             data-testid={item.testId}
+            onClick={onNavigate}
             className={({ isActive }) =>
               `block px-4 py-2.5 text-sm transition-colors ${
                 isActive

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
+import { useToast } from "@/components/toast";
 
 interface MatchPlayer {
   player_id: string;
@@ -37,12 +38,24 @@ interface PlayerStat {
 export default function TrainingHistoryPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [stats, setStats] = useState<PlayerStat[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "10" | "20">("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
+  const { toast } = useToast();
 
   const loadData = () => {
-    api.get<Match[]>("/matches").then(setMatches).catch(() => {});
-    api.get<PlayerStat[]>("/matches/stats/all").then(setStats).catch(() => {});
+    setLoading(true);
+    Promise.all([
+      api.get<Match[]>("/matches"),
+      api.get<PlayerStat[]>("/matches/stats/all"),
+    ])
+      .then(([matchData, statsData]) => {
+        setMatches(matchData);
+        setStats(statsData);
+      })
+      .catch(() => setError("Kunne ikke indlæse træningsdata"))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -63,8 +76,13 @@ export default function TrainingHistoryPage() {
     : sortedCompleted.slice(0, parseInt(filter));
 
   const registerResult = async (matchId: string, winningTeam: number) => {
-    await api.patch(`/matches/${matchId}/result`, { winning_team: winningTeam });
-    loadData();
+    try {
+      await api.patch(`/matches/${matchId}/result`, { winning_team: winningTeam });
+      toast("Resultat registreret", "success");
+      loadData();
+    } catch {
+      toast("Kunne ikke registrere resultat", "error");
+    }
   };
 
   const exportCsv = () => {
@@ -79,9 +97,36 @@ export default function TrainingHistoryPage() {
     return "text-accent-steel-blue";
   };
 
+  if (loading) {
+    return (
+      <div data-testid="page-history">
+        <h1 className="text-2xl font-bold text-brand-black mb-6">{da.nav.history}</h1>
+        <Card><CardContent className="py-8">
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 bg-neutral-light-gray rounded animate-pulse" />
+            ))}
+          </div>
+        </CardContent></Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div data-testid="page-history">
+        <h1 className="text-2xl font-bold text-brand-black mb-6">{da.nav.history}</h1>
+        <Card><CardContent className="py-8 text-center">
+          <p className="text-brand-red mb-4">{error}</p>
+          <Button onClick={() => { setError(null); loadData(); }}>Prøv igen</Button>
+        </CardContent></Card>
+      </div>
+    );
+  }
+
   return (
     <div data-testid="page-history">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-brand-black">{da.nav.history}</h1>
         <Button variant="secondary" onClick={exportCsv} data-testid="history-export-csv">
           Eksportér CSV
@@ -101,7 +146,7 @@ export default function TrainingHistoryPage() {
                 const team2 = m.players.filter((p) => p.team === 2);
                 return (
                   <div key={m.id} className="border rounded-lg p-4" data-testid={`pending-match-${m.id}`}>
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
                       <span className="text-sm text-neutral-mid-gray">{m.date}</span>
                       <div className="flex gap-2">
                         <Button
@@ -149,37 +194,43 @@ export default function TrainingHistoryPage() {
           <CardTitle className="text-lg">Spillerstatistik</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-brand-black hover:bg-brand-black">
-                <TableHead className="text-white">Navn</TableHead>
-                <TableHead className="text-white text-right">Kampe</TableHead>
-                <TableHead className="text-white text-right">Sejre</TableHead>
-                <TableHead className="text-white text-right">Nederlag</TableHead>
-                <TableHead className="text-white text-right">Sejrsrate</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {stats.map((s) => (
-                <TableRow key={s.id} data-testid={`stat-row-${s.id}`}>
-                  <TableCell className="font-medium">{s.display_name}</TableCell>
-                  <TableCell className="text-right tabular-nums">{s.matches}</TableCell>
-                  <TableCell className="text-right tabular-nums">{s.wins}</TableCell>
-                  <TableCell className="text-right tabular-nums">{s.losses}</TableCell>
-                  <TableCell className={`text-right tabular-nums font-bold ${winRateColor(s)}`}>
-                    {s.matches > 0 ? Math.round((s.wins / s.matches) * 100) : 50}%
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {stats.length === 0 ? (
+            <p className="text-neutral-mid-gray text-sm p-6" data-testid="history-stats-empty">Ingen spillerstatistik endnu</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-brand-black hover:bg-brand-black">
+                    <TableHead className="text-white">Navn</TableHead>
+                    <TableHead className="text-white text-right">Kampe</TableHead>
+                    <TableHead className="text-white text-right">Sejre</TableHead>
+                    <TableHead className="text-white text-right">Nederlag</TableHead>
+                    <TableHead className="text-white text-right">Sejrsrate</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stats.map((s) => (
+                    <TableRow key={s.id} data-testid={`stat-row-${s.id}`}>
+                      <TableCell className="font-medium">{s.display_name}</TableCell>
+                      <TableCell className="text-right tabular-nums">{s.matches}</TableCell>
+                      <TableCell className="text-right tabular-nums">{s.wins}</TableCell>
+                      <TableCell className="text-right tabular-nums">{s.losses}</TableCell>
+                      <TableCell className={`text-right tabular-nums font-bold ${winRateColor(s)}`}>
+                        {s.matches > 0 ? Math.round((s.wins / s.matches) * 100) : 50}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Match History */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <CardTitle className="text-lg">Kamphistorik</CardTitle>
             <div className="flex gap-2">
               <select
@@ -213,9 +264,7 @@ export default function TrainingHistoryPage() {
                 <div key={m.id} className="border rounded-lg p-3 text-sm" data-testid={`completed-match-${m.id}`}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-neutral-mid-gray">{m.date}</span>
-                    <span className="font-medium">
-                      Hold {m.winning_team} vandt
-                    </span>
+                    <span className="font-medium">Hold {m.winning_team} vandt</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs text-neutral-mid-gray">
                     <div>
@@ -235,7 +284,7 @@ export default function TrainingHistoryPage() {
               );
             })}
             {filteredCompleted.length === 0 && (
-              <p className="text-neutral-mid-gray text-sm">Ingen afsluttede kampe endnu</p>
+              <p className="text-neutral-mid-gray text-sm" data-testid="history-empty">Ingen afsluttede kampe endnu</p>
             )}
           </div>
         </CardContent>

@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/toast";
 import {
   Table,
   TableBody,
@@ -83,6 +84,7 @@ function ConfigTab() {
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     api.get<ConfigItem[]>("/admin/config").then((data) => {
@@ -100,7 +102,10 @@ function ConfigTab() {
     try {
       await api.put(`/admin/config/${key}`, { value: editValues[key] });
       setSaved(key);
+      toast(da.admin.config.saved, "success");
       setTimeout(() => setSaved(null), 2000);
+    } catch {
+      toast("Kunne ikke gemme konfiguration", "error");
     } finally {
       setSaving(null);
     }
@@ -114,8 +119,8 @@ function ConfigTab() {
       <CardContent>
         <div className="space-y-4">
           {configs.map((cfg) => (
-            <div key={cfg.key} className="flex items-center gap-4" data-testid={`admin-config-${cfg.key}`}>
-              <label className="text-sm font-medium text-brand-black w-64 shrink-0">
+            <div key={cfg.key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4" data-testid={`admin-config-${cfg.key}`}>
+              <label className="text-sm font-medium text-brand-black sm:w-64 sm:shrink-0">
                 {CONFIG_LABELS[cfg.key] || cfg.key}
               </label>
               <Input
@@ -152,6 +157,7 @@ function FineTypesTab() {
   const [formName, setFormName] = useState("");
   const [formAmount, setFormAmount] = useState("");
   const [formDescription, setFormDescription] = useState("");
+  const { toast } = useToast();
 
   const loadFineTypes = useCallback(() => {
     api.get<FineType[]>("/fines/types").then(setFineTypes);
@@ -176,14 +182,19 @@ function FineTypesTab() {
       description: formDescription || null,
     };
 
-    if (editingId) {
-      await api.put(`/fines/types/${editingId}`, payload);
-    } else {
-      await api.post("/fines/types", payload);
+    try {
+      if (editingId) {
+        await api.put(`/fines/types/${editingId}`, payload);
+        toast("Bødetype opdateret", "success");
+      } else {
+        await api.post("/fines/types", payload);
+        toast("Bødetype oprettet", "success");
+      }
+      resetForm();
+      loadFineTypes();
+    } catch {
+      toast("Kunne ikke gemme bødetype", "error");
     }
-
-    resetForm();
-    loadFineTypes();
   };
 
   const startEdit = (ft: FineType) => {
@@ -196,8 +207,13 @@ function FineTypesTab() {
 
   const handleDelete = async (id: string) => {
     if (!confirm(da.admin.fineTypes.confirmDelete)) return;
-    await api.delete(`/fines/types/${id}`);
-    loadFineTypes();
+    try {
+      await api.delete(`/fines/types/${id}`);
+      toast("Bødetype slettet", "success");
+      loadFineTypes();
+    } catch {
+      toast("Kunne ikke slette bødetype", "error");
+    }
   };
 
   return (
@@ -254,6 +270,7 @@ function FineTypesTab() {
           </div>
         )}
 
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -309,6 +326,7 @@ function FineTypesTab() {
             ))}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );
@@ -317,6 +335,7 @@ function FineTypesTab() {
 function DataTab() {
   const [importing, setImporting] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const { toast } = useToast();
 
   const handleExport = async () => {
     try {
@@ -328,8 +347,10 @@ function DataTab() {
       a.download = `skjold-export-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      toast("Data eksporteret", "success");
     } catch {
       setStatus({ type: "error", message: da.admin.data.exportError });
+      toast(da.admin.data.exportError, "error");
     }
   };
 
@@ -348,8 +369,10 @@ function DataTab() {
         const data = JSON.parse(text);
         await api.post("/admin/import", data);
         setStatus({ type: "success", message: da.admin.data.importSuccess });
+        toast(da.admin.data.importSuccess, "success");
       } catch {
         setStatus({ type: "error", message: da.admin.data.importError });
+        toast(da.admin.data.importError, "error");
       } finally {
         setImporting(false);
       }

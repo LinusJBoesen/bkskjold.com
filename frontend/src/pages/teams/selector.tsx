@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
+import { useToast } from "@/components/toast";
 
 interface AvailablePlayer {
   id: string;
@@ -40,12 +41,18 @@ export default function TeamSelectorPage() {
   const [result, setResult] = useState<TeamResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
-    api.get<AvailablePlayer[]>("/teams/available").then((data) => {
-      setAvailable(data);
-      setSelected(new Set(data.map((p) => p.id)));
-    }).catch(() => {});
+    api.get<AvailablePlayer[]>("/teams/available")
+      .then((data) => {
+        setAvailable(data);
+        setSelected(new Set(data.map((p) => p.id)));
+      })
+      .catch(() => setError("Kunne ikke indlæse spillere"))
+      .finally(() => setLoading(false));
   }, []);
 
   const addGuest = () => {
@@ -66,30 +73,44 @@ export default function TeamSelectorPage() {
       ...Array.from(selected),
       ...guests.map((_, i) => `guest-${i}-${guests[i]}`),
     ];
-    const data = await api.post<TeamResult>("/teams/generate", { playerIds, algorithm: "greedy" });
-    setResult(data);
-    setSaved(false);
+    try {
+      const data = await api.post<TeamResult>("/teams/generate", { playerIds, algorithm: "greedy" });
+      setResult(data);
+      setSaved(false);
+      toast("Hold genereret", "success");
+    } catch {
+      toast("Kunne ikke generere hold", "error");
+    }
   };
 
   const swapPlayer = async (playerId: string) => {
     if (!result) return;
-    const data = await api.post<TeamResult>("/teams/swap", {
-      team1: result.team1,
-      team2: result.team2,
-      playerId,
-    });
-    setResult(data);
+    try {
+      const data = await api.post<TeamResult>("/teams/swap", {
+        team1: result.team1,
+        team2: result.team2,
+        playerId,
+      });
+      setResult(data);
+    } catch {
+      toast("Kunne ikke bytte spiller", "error");
+    }
   };
 
   const saveMatch = async () => {
     if (!result) return;
     setSaving(true);
-    await api.post("/matches", {
-      team1: result.team1.map((p) => p.id),
-      team2: result.team2.map((p) => p.id),
-    });
+    try {
+      await api.post("/matches", {
+        team1: result.team1.map((p) => p.id),
+        team2: result.team2.map((p) => p.id),
+      });
+      setSaved(true);
+      toast("Kamp gemt", "success");
+    } catch {
+      toast("Kunne ikke gemme kamp", "error");
+    }
     setSaving(false);
-    setSaved(true);
   };
 
   const winRateColor = (rate: number) => {
@@ -97,6 +118,33 @@ export default function TeamSelectorPage() {
     if (rate < 0.5) return "text-brand-red";
     return "text-accent-steel-blue";
   };
+
+  if (loading) {
+    return (
+      <div data-testid="page-teams">
+        <h1 className="text-2xl font-bold text-brand-black mb-6">{da.nav.teams}</h1>
+        <Card><CardContent className="py-8">
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-6 bg-neutral-light-gray rounded animate-pulse" />
+            ))}
+          </div>
+        </CardContent></Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div data-testid="page-teams">
+        <h1 className="text-2xl font-bold text-brand-black mb-6">{da.nav.teams}</h1>
+        <Card><CardContent className="py-8 text-center">
+          <p className="text-brand-red mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>Prøv igen</Button>
+        </CardContent></Card>
+      </div>
+    );
+  }
 
   return (
     <div data-testid="page-teams">
@@ -109,28 +157,32 @@ export default function TeamSelectorPage() {
             <CardTitle className="text-lg">Tilgængelige spillere</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 max-h-80 overflow-y-auto" data-testid="team-available-players">
-              {available.map((p) => (
-                <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(p.id)}
-                    onChange={() => togglePlayer(p.id)}
-                    className="accent-brand-red"
-                  />
-                  <span>{p.displayName}</span>
-                  <span className={`ml-auto tabular-nums text-xs ${winRateColor(p.winRate)}`}>
-                    {Math.round(p.winRate * 100)}%
-                  </span>
-                </label>
-              ))}
-              {guests.map((g, i) => (
-                <div key={`guest-${i}`} className="flex items-center gap-2 text-sm text-neutral-mid-gray">
-                  <input type="checkbox" checked disabled className="accent-brand-red" />
-                  <span>Gæst: {g}</span>
-                </div>
-              ))}
-            </div>
+            {available.length === 0 && guests.length === 0 ? (
+              <p className="text-sm text-neutral-mid-gray" data-testid="team-empty-state">Ingen spillere tilgængelige</p>
+            ) : (
+              <div className="space-y-2 max-h-80 overflow-y-auto" data-testid="team-available-players">
+                {available.map((p) => (
+                  <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(p.id)}
+                      onChange={() => togglePlayer(p.id)}
+                      className="accent-brand-red"
+                    />
+                    <span>{p.displayName}</span>
+                    <span className={`ml-auto tabular-nums text-xs ${winRateColor(p.winRate)}`}>
+                      {Math.round(p.winRate * 100)}%
+                    </span>
+                  </label>
+                ))}
+                {guests.map((g, i) => (
+                  <div key={`guest-${i}`} className="flex items-center gap-2 text-sm text-neutral-mid-gray">
+                    <input type="checkbox" checked disabled className="accent-brand-red" />
+                    <span>Gæst: {g}</span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="flex gap-2 mt-4">
               <Input
@@ -228,7 +280,7 @@ export default function TeamSelectorPage() {
       </div>
 
       {result && (
-        <div className="mt-6 flex items-center gap-4">
+        <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="text-sm" data-testid="team-balance">
             Balance: <span className="font-bold">{result.balance.balancePercent}%</span>
             <span className="text-neutral-mid-gray ml-2">

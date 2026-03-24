@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { ToastProvider } from "@/components/toast";
 import LoginPage from "@/pages/login";
 import DashboardPage from "@/pages/dashboard";
 import FinesOverviewPage from "@/pages/fines/overview";
@@ -14,6 +16,7 @@ import AdminSettingsPage from "@/pages/admin/settings";
 
 function ProtectedLayout() {
   const { isAuthenticated, loading, email, logout } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (loading) {
     return (
@@ -29,10 +32,23 @@ function ProtectedLayout() {
 
   return (
     <div className="flex min-h-screen bg-brand-off-white">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Header email={email} onLogout={logout} />
-        <main className="flex-1 p-6">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <div
+        className={`fixed inset-y-0 left-0 z-40 transform transition-transform duration-200 lg:relative lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <Sidebar onNavigate={() => setSidebarOpen(false)} />
+      </div>
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header email={email} onLogout={logout} onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+        <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
           <Outlet />
         </main>
       </div>
@@ -61,19 +77,21 @@ function LoginRoute() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginRoute />} />
-        <Route element={<ProtectedLayout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="fines" element={<FinesOverviewPage />} />
-          <Route path="fines/:playerId" element={<FineDetailPage />} />
-          <Route path="teams" element={<TeamSelectorPage />} />
-          <Route path="history" element={<TrainingHistoryPage />} />
-          <Route path="tournament" element={<TournamentStandingsPage />} />
-          <Route path="analysis" element={<MatchAnalysisPage />} />
-          <Route path="admin" element={<AdminSettingsPage />} />
-        </Route>
-      </Routes>
+      <ToastProvider>
+        <Routes>
+          <Route path="/login" element={<LoginRoute />} />
+          <Route element={<ProtectedLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="fines" element={<FinesOverviewPage />} />
+            <Route path="fines/:playerId" element={<FineDetailPage />} />
+            <Route path="teams" element={<TeamSelectorPage />} />
+            <Route path="history" element={<TrainingHistoryPage />} />
+            <Route path="tournament" element={<TournamentStandingsPage />} />
+            <Route path="analysis" element={<MatchAnalysisPage />} />
+            <Route path="admin" element={<AdminSettingsPage />} />
+          </Route>
+        </Routes>
+      </ToastProvider>
     </BrowserRouter>
   );
 }
