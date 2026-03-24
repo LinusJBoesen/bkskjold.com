@@ -1,8 +1,8 @@
 # Skjold Bode Rebuild — PROGRESS
 
 ## Current Status
-- **Round**: 1 (Project Scaffolding + Database) — COMPLETE
-- **Task**: All Round 1 tasks done. Ready for Round 2.
+- **Round**: 2 (Auth + Layout Shell) — COMPLETE
+- **Task**: All Round 2 tasks done. Ready for Round 3.
 - **Last updated**: 2026-03-24
 
 ## Checklist
@@ -22,18 +22,18 @@
 - [x] Commit: `feat(skjold): project scaffolding with Bun + Hono + React + SQLite`
 
 ### Round 2: Auth + Layout Shell
-- [ ] Create `POST /api/auth/login` with env credentials + session cookie
-- [ ] Create auth middleware, protect API routes
-- [ ] Create login page with Danish labels
-- [ ] Create sidebar with Danish navigation
-- [ ] Create layout shell with header + logout
-- [ ] Create stub pages for all nav items
-- [ ] Create `i18n/da.ts` with Danish strings
-- [ ] Create e2e auth fixture, test-data, login page object
-- [ ] Create `specs/auth/login.spec.ts`
-- [ ] Create `specs/layout/navigation.spec.ts`
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): auth with session cookies and layout shell with Danish nav`
+- [x] Create `POST /api/auth/login` with env credentials + session cookie
+- [x] Create auth middleware, protect API routes
+- [x] Create login page with Danish labels
+- [x] Create sidebar with Danish navigation
+- [x] Create layout shell with header + logout
+- [x] Create stub pages for all nav items
+- [x] Create `i18n/da.ts` with Danish strings
+- [x] Create e2e auth fixture, test-data, login page object
+- [x] Create `specs/auth/login.spec.ts`
+- [x] Create `specs/layout/navigation.spec.ts`
+- [x] Run E2E tests — all pass
+- [x] Commit: `feat(skjold): auth with session cookies and layout shell with Danish nav`
 
 ### Round 3: Players + Spond Sync
 - [ ] Create Spond API client service

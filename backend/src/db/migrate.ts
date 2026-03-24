@@ -3,6 +3,14 @@ import { schema } from "./schema";
 
 export function migrate(): void {
   const db = getDb();
-  db.exec(schema);
-  console.log("✓ Database migrated");
+  // Execute each statement separately for compatibility
+  const statements = schema
+    .split(";")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+  for (const stmt of statements) {
+    db.exec(stmt + ";");
+  }
+  console.log("Database migrated");
 }
