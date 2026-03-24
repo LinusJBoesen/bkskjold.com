@@ -1,8 +1,8 @@
 # Skjold Bode Rebuild — PROGRESS
 
 ## Current Status
-- **Round**: 4 (Fine Management) — COMPLETE
-- **Task**: All Round 4 tasks done. Ready for Round 5.
+- **Round**: 5 (Team Selector) — COMPLETE
+- **Task**: All Round 5 tasks done. Ready for Round 6.
 - **Last updated**: 2026-03-24
 
 ## Checklist
@@ -56,12 +56,12 @@
 - [x] Commit: `feat(skjold): fine management with auto-generation and manual CRUD`
 
 ### Round 5: Team Selector
-- [ ] Create team generator service (greedy + optimal algorithms)
-- [ ] Create team generation + swap + available routes
-- [ ] Create team selector page with balance metrics
-- [ ] Create e2e page objects + team specs
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): team selector with balanced generation algorithms`
+- [x] Create team generator service (greedy + optimal algorithms)
+- [x] Create team generation + swap + available routes
+- [x] Create team selector page with balance metrics
+- [x] Create e2e page objects + team specs
+- [x] Run E2E tests — all pass
+- [x] Commit: `feat(skjold): team selector with balanced generation algorithms`
 
 ### Round 6: Training History
 - [ ] Create match CRUD routes + result registration + CSV export

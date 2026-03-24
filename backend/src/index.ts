@@ -6,6 +6,8 @@ import authRoutes from "./routes/auth";
 import playerRoutes from "./routes/players";
 import syncRoutes from "./routes/sync";
 import fineRoutes from "./routes/fines";
+import teamRoutes from "./routes/teams";
+import matchRoutes from "./routes/matches";
 import { authMiddleware } from "./middleware/auth";
 
 // Run migrations and seed on startup
@@ -38,6 +40,8 @@ app.use("/api/*", async (c, next) => {
 app.route("/api/players", playerRoutes);
 app.route("/api/sync", syncRoutes);
 app.route("/api/fines", fineRoutes);
+app.route("/api/teams", teamRoutes);
+app.route("/api/matches", matchRoutes);
 
 export default {
   port: 3000,
