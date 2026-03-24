@@ -1,7 +1,7 @@
 # Skjold Bode UI Overhaul — PROGRESS
 
 ## Current Status
-- **Round**: 2 (Login + Dashboard)
+- **Round**: 3 (Fine Management Pages)
 - **Task**: Not started
 - **Last updated**: 2026-03-24
 
@@ -22,12 +22,12 @@
 - [x] Commit: `feat(skjold): dark theme foundation — components and layout`
 
 ### Round 2: Login + Dashboard
-- [ ] Rewrite login.tsx with dark centered card
-- [ ] Rewrite dashboard.tsx with dark stat cards and charts
-- [ ] Add player profile pictures to top performers
-- [ ] Update Recharts dark theme
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): dark modern login and dashboard`
+- [x] Rewrite login.tsx with dark centered card, shield icon, subtle glow
+- [x] Rewrite dashboard.tsx with dark stat cards (Lucide icons), modern chart styling
+- [x] Add player profile pictures to top performers (avatar with initials fallback)
+- [x] Update Recharts dark theme (zinc-800 grid, dark tooltips, brand colors)
+- [x] Run E2E tests — all pass (49/49)
+- [x] Commit: `feat(skjold): dark modern login and dashboard`
 
 ### Round 3: Fine Management Pages
 - [ ] Rewrite fines/overview.tsx dark table with badges
@@ -71,3 +71,4 @@
 | Date | Hash | Description |
 |------|------|-------------|
 | 2026-03-24 | — | feat(skjold): dark theme foundation — components and layout |
+| 2026-03-24 | — | feat(skjold): dark modern login and dashboard |

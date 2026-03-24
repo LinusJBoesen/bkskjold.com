@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { da } from "@/i18n/da";
+import { Shield } from "lucide-react";
 
 interface LoginProps {
   onLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -26,58 +27,68 @@ export default function LoginPage({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-brand-off-white flex items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-brand-black">
-            {da.layout.appName}
-          </CardTitle>
-          <p className="text-neutral-mid-gray text-sm">{da.login.title}</p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4" data-testid="login-form">
-            <div>
-              <label htmlFor="email" className="text-xs font-medium text-neutral-mid-gray">
-                {da.login.email}
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                data-testid="login-email"
-                required
-              />
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+        <Card className="border-zinc-800 shadow-2xl shadow-black/50 relative overflow-visible">
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-red-600/5 to-transparent pointer-events-none" />
+          <CardHeader className="text-center relative">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-red-600/10 border border-red-600/20">
+              <Shield className="h-6 w-6 text-red-500" />
             </div>
-            <div>
-              <label htmlFor="password" className="text-xs font-medium text-neutral-mid-gray">
-                {da.login.password}
-              </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                data-testid="login-password"
-                required
-              />
-            </div>
-            {error && (
-              <p className="text-sm text-brand-red" data-testid="login-error">
-                {error}
-              </p>
-            )}
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-              data-testid="login-submit"
-            >
-              {loading ? da.common.loading : da.login.submit}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            <CardTitle className="text-2xl font-bold text-zinc-50 tracking-tight">
+              {da.layout.appName}
+            </CardTitle>
+            <p className="text-zinc-400 text-sm">{da.login.title}</p>
+          </CardHeader>
+          <CardContent className="relative">
+            <form onSubmit={handleSubmit} className="space-y-4" data-testid="login-form">
+              <div>
+                <label htmlFor="email" className="text-sm font-medium text-zinc-300 mb-1.5 block">
+                  {da.login.email}
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  data-testid="login-email"
+                  placeholder="admin@skjold.dk"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="text-sm font-medium text-zinc-300 mb-1.5 block">
+                  {da.login.password}
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  data-testid="login-password"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+              {error && (
+                <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2">
+                  <p className="text-sm text-red-400" data-testid="login-error">
+                    {error}
+                  </p>
+                </div>
+              )}
+              <Button
+                type="submit"
+                className="w-full h-10 text-sm font-medium shadow-lg shadow-red-600/20"
+                disabled={loading}
+                data-testid="login-submit"
+              >
+                {loading ? da.common.loading : da.login.submit}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
