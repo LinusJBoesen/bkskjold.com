@@ -1,8 +1,8 @@
 # Skjold Bode Rebuild — PROGRESS
 
 ## Current Status
-- **Round**: 5 (Team Selector) — COMPLETE
-- **Task**: All Round 5 tasks done. Ready for Round 6.
+- **Round**: 6 (Training History) — COMPLETE
+- **Task**: All Round 6 tasks done. Ready for Round 7.
 - **Last updated**: 2026-03-24
 
 ## Checklist
@@ -64,12 +64,12 @@
 - [x] Commit: `feat(skjold): team selector with balanced generation algorithms`
 
 ### Round 6: Training History
-- [ ] Create match CRUD routes + result registration + CSV export
-- [ ] Wire training_loss fines into result registration
-- [ ] Create training history page (pending, stats, history, export)
-- [ ] Create e2e page objects + history specs
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): training history with result registration and auto-fines`
+- [x] Create match CRUD routes + result registration + CSV export
+- [x] Wire training_loss fines into result registration
+- [x] Create training history page (pending, stats, history, export)
+- [x] Create e2e page objects + history specs
+- [x] Run E2E tests — all pass
+- [x] Commit: `feat(skjold): training history with result registration and auto-fines`
 
 ### Round 7: Dashboard + Charts
 - [ ] Create dashboard stats aggregation endpoint
