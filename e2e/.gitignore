@@ -1,0 +1,7 @@
+# Test artifacts — generated on every run
+test-results/
+playwright-report/
+node_modules/
+
+# OS files
+.DS_Store

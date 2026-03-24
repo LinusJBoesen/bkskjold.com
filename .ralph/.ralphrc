@@ -1,0 +1,18 @@
+# Safety limits
+MAX_ITERATIONS=30
+CLAUDE_TIMEOUT_MINUTES=25
+
+# Completion detection
+COMPLETION_PROMISE=SKJOLD_BODE_REBUILD_COMPLETE
+
+# Git workflow
+AUTO_COMMIT=true
+COMMIT_PREFIX="feat(skjold):"
+
+# Test requirements
+MIN_COVERAGE=0
+RUN_INTEGRATION_TESTS=true
+
+# Resume behavior
+PERSIST_PROGRESS=true
+PROGRESS_FILE=.ralph/progress.txt

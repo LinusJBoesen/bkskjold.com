@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+backend/data/
+e2e/test-results/
+e2e/playwright-report/
+*.db
+.DS_Store

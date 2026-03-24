@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "instagit": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "instagit@latest"
+      ]
+    }
+  }
+}

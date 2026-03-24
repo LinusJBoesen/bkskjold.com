@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__instagit__ask_repo",
+      "Read(//private/tmp/bkskjold/**)",
+      "Read(//tmp/bkskjold/**)",
+      "Bash(xargs ls:*)",
+      "Bash(chmod +x /Users/linus/Desktop/skjold_bode/ralph.sh)",
+      "Bash(git init:*)",
+      "Read(//Users/linus/.claude/**)"
+    ]
+  }
+}

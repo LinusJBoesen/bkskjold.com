@@ -1,0 +1,113 @@
+# Skjold Bode Rebuild — PROGRESS
+
+## Current Status
+- **Round**: 1 (Project Scaffolding + Database) — COMPLETE
+- **Task**: All Round 1 tasks done. Ready for Round 2.
+- **Last updated**: 2026-03-24
+
+## Checklist
+
+### Round 1: Project Scaffolding + Database
+- [x] Initialize backend with Bun + Hono, `GET /api/health`
+- [x] Create SQLite schema, migrations, seed data
+- [x] Create `lib/db.ts` SQLite singleton
+- [x] Wire migration into startup
+- [x] Initialize frontend with Vite + React + TailwindCSS + shadcn/ui
+- [x] Create Vite API proxy config
+- [x] Create root dev script to start both servers
+- [x] Update e2e/playwright.config.ts for this project
+- [x] Create `specs/health/api-health.spec.ts`
+- [x] Add .gitignore and .env.example
+- [x] Run E2E tests — all pass
+- [x] Commit: `feat(skjold): project scaffolding with Bun + Hono + React + SQLite`
+
+### Round 2: Auth + Layout Shell
+- [ ] Create `POST /api/auth/login` with env credentials + session cookie
+- [ ] Create auth middleware, protect API routes
+- [ ] Create login page with Danish labels
+- [ ] Create sidebar with Danish navigation
+- [ ] Create layout shell with header + logout
+- [ ] Create stub pages for all nav items
+- [ ] Create `i18n/da.ts` with Danish strings
+- [ ] Create e2e auth fixture, test-data, login page object
+- [ ] Create `specs/auth/login.spec.ts`
+- [ ] Create `specs/layout/navigation.spec.ts`
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): auth with session cookies and layout shell with Danish nav`
+
+### Round 3: Players + Spond Sync
+- [ ] Create Spond API client service
+- [ ] Create `GET /api/players` and `POST /api/sync/spond` routes
+- [ ] Add Spond env vars to .env.example
+- [ ] Create sync button on dashboard
+- [ ] Create `specs/sync/spond-sync.spec.ts`
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): Spond API integration and player sync`
+
+### Round 4: Fine Management
+- [ ] Create fines calculation service
+- [ ] Create fines CRUD routes + fine types CRUD routes
+- [ ] Create fine overview page (all players + totals)
+- [ ] Create fine detail page (per-player history)
+- [ ] Create manual fine creation + mark-as-paid
+- [ ] Create typed API client (`lib/api.ts`)
+- [ ] Create e2e page objects + fine specs
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): fine management with auto-generation and manual CRUD`
+
+### Round 5: Team Selector
+- [ ] Create team generator service (greedy + optimal algorithms)
+- [ ] Create team generation + swap + available routes
+- [ ] Create team selector page with balance metrics
+- [ ] Create e2e page objects + team specs
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): team selector with balanced generation algorithms`
+
+### Round 6: Training History
+- [ ] Create match CRUD routes + result registration + CSV export
+- [ ] Wire training_loss fines into result registration
+- [ ] Create training history page (pending, stats, history, export)
+- [ ] Create e2e page objects + history specs
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): training history with result registration and auto-fines`
+
+### Round 7: Dashboard + Charts
+- [ ] Create dashboard stats aggregation endpoint
+- [ ] Create dashboard with top performers + Recharts charts
+- [ ] Install Recharts
+- [ ] Create e2e page objects + dashboard specs
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): dashboard with stats cards and Recharts visualizations`
+
+### Round 8: Tournament + Match Analysis
+- [ ] Create DBU scraper service
+- [ ] Create tournament standings + match analysis routes
+- [ ] Create standings page with color coding
+- [ ] Create match analysis page
+- [ ] Create e2e specs
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): tournament standings and match analysis with DBU scraping`
+
+### Round 9: Admin Panel
+- [ ] Create admin config + export/import routes
+- [ ] Create admin settings page with tabs (config, fine types, data)
+- [ ] Create e2e specs
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): admin panel with config, fine types, and data management`
+
+### Round 10: Polish + Integration
+- [ ] Responsive design pass (mobile 375px)
+- [ ] Add loading states, error handling, empty states, toasts
+- [ ] Create `specs/integration/full-flow.spec.ts`
+- [ ] Update CLAUDE.md with full project docs
+- [ ] Run ALL E2E tests — all pass
+- [ ] Commit: `feat(skjold): polish — responsive design, states, and full integration test`
+
+## Blockers
+(none)
+
+## Commit Log
+
+| Date | Hash | Description |
+|------|------|-------------|
+| 2026-03-24 | (pending) | feat(skjold): project scaffolding with Bun + Hono + React + SQLite |

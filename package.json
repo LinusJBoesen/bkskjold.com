@@ -1,0 +1,12 @@
+{
+  "name": "skjold-bode",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --kill-others \"bun run --watch backend/src/index.ts\" \"cd frontend && bun run dev\"",
+    "dev:backend": "bun run --watch backend/src/index.ts",
+    "dev:frontend": "cd frontend && bun run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
