@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { da } from "@/i18n/da";
-import { Shield } from "lucide-react";
+
 
 interface LoginProps {
   onLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -32,9 +32,7 @@ export default function LoginPage({ onLogin }: LoginProps) {
         <Card className="border-zinc-800 shadow-2xl shadow-black/50 relative overflow-visible">
           <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-red-600/5 to-transparent pointer-events-none" />
           <CardHeader className="text-center relative">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-red-600/10 border border-red-600/20">
-              <Shield className="h-6 w-6 text-red-500" />
-            </div>
+            <img src="/logo.webp" alt="BK Skjold" className="mx-auto mb-3 h-16 w-16" />
             <CardTitle className="text-2xl font-bold text-zinc-50 tracking-tight">
               {da.layout.appName}
             </CardTitle>

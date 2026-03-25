@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Shield, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -21,9 +21,7 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 md:px-12 py-6">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-red-600/10 border border-red-600/20 flex items-center justify-center">
-            <Shield className="h-5 w-5 text-red-500" />
-          </div>
+          <img src="/logo.webp" alt="BK Skjold" className="h-9 w-9" />
           <span className="text-lg font-bold text-zinc-50 tracking-tight">BK Skjold</span>
         </div>
         <Link
@@ -39,7 +37,7 @@ export default function LandingPage() {
       <main className="relative z-10 flex flex-col items-center justify-center text-center px-6 pt-24 md:pt-36 pb-20">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-600/10 border border-red-600/20 text-red-400 text-xs font-medium mb-8 animate-fade-in-up">
-          <Shield className="h-3.5 w-3.5" />
+          <img src="/logo.webp" alt="" className="h-3.5 w-3.5" />
           Alexanders Træningshold
         </div>
 

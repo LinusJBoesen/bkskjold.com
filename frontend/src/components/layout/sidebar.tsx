@@ -30,7 +30,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       className="w-60 bg-[#0A0A0A] text-white min-h-screen flex flex-col border-r border-white/5"
       data-testid="sidebar"
     >
-      <div className="p-4 border-b border-white/5">
+      <div className="p-4 border-b border-white/5 flex items-center gap-3">
+        <img src="/logo.webp" alt="BK Skjold" className="h-9 w-9" />
         <h1 className="text-xl font-bold text-white" data-testid="sidebar-title">
           {da.layout.appName}
         </h1>
