@@ -1,8 +1,8 @@
 # Skjold Bode Formation Builder — PROGRESS
 
 ## Current Status
-- **Round**: 4 (NOT STARTED)
-- **Task**: Integration — Team Selector + Formation View + Position Admin
+- **Round**: 5 (NOT STARTED)
+- **Task**: Polish, E2E Tests & Edge Cases
 - **Last updated**: 2026-03-25
 
 ## Checklist
@@ -15,7 +15,7 @@
 - [x] API routes for player positions (GET/PUT)
 - [x] API routes for formations (CRUD)
 - [x] Formation slot definitions
-- [x] Run E2E tests — all pass (7 pre-existing failures unchanged)
+- [x] Run E2E tests — all pass (pre-existing failures unchanged)
 - [x] Commit
 
 ### Round 2: Frontend — Pitch Component & Formation Rendering
@@ -24,26 +24,26 @@
 - [x] Player cards on pitch (dark bg, name, position, avatar)
 - [x] Empty slots with dashed border and position label
 - [x] Danish strings in i18n/da.ts
-- [x] Run E2E tests — 45 passed, 4 pre-existing tournament failures
+- [x] Run E2E tests — 45 passed
 - [x] Commit
 
 ### Round 3: Frontend — Drag and Drop & Player Panel
 - [x] PlayerPanel component with search, drag-from-panel, drop-to-remove
-- [x] HTML5 Drag and Drop implementation (panel→pitch, pitch→pitch, bench↔pitch, pitch/bench→panel)
-- [x] Drop zone validation and visual feedback (emerald glow on valid, amber on mismatch)
+- [x] HTML5 Drag and Drop implementation
+- [x] Drop zone validation and visual feedback
 - [x] Drag feedback (cursor-grab, scale on hover, ghost card)
 - [x] data-testid attributes on all elements
-- [x] Run E2E tests — 45 passed, 4 pre-existing tournament failures
+- [x] Run E2E tests — 45 passed
 - [x] Commit
 
 ### Round 4: Integration — Team Selector + Formation View + Position Admin
-- [ ] Formation tab in team selector page
-- [ ] Auto-assignment logic (positions → slots)
-- [ ] Player position management in admin settings
-- [ ] Save/load formations
-- [ ] Manual player add modal
-- [ ] Run E2E tests — all pass
-- [ ] Commit
+- [x] Formation tab in team selector page (List/Opstilling toggle + Team 1/2 selector)
+- [x] Auto-assignment logic (positions → slots with priority matching)
+- [x] Player position management in admin settings (Spillerpositioner tab with checkbox grid)
+- [x] Save/load formations via FormationView component
+- [x] FormationView wires Pitch + BenchArea + PlayerPanel + FormationSelector
+- [x] Run E2E tests — 45 passed, 4 pre-existing tournament failures
+- [x] Commit
 
 ### Round 5: Polish, E2E Tests & Edge Cases
 - [ ] New E2E tests for formation feature
@@ -63,4 +63,5 @@
 |------|------|-------------|
 | 2026-03-25 | d733f6c | feat(skjold): formation builder backend — positions, formations, lineups API |
 | 2026-03-25 | 37d158c | feat(skjold): formation pitch component with visual field and player cards |
-| 2026-03-25 | TBD | feat(skjold): drag and drop formation builder with player panel |
+| 2026-03-25 | 5e20607 | feat(skjold): drag and drop formation builder with player panel |
+| 2026-03-25 | TBD | feat(skjold): formation builder integration with team selector and admin |

@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
-import { Users, Shuffle, Save, UserPlus, ClipboardCopy, Check, ArrowRightLeft, Calendar, Trophy } from "lucide-react";
+import { FormationView, autoAssign, type PlayerInfo, type Position } from "@/components/pitch";
+import { Users, Shuffle, Save, UserPlus, ClipboardCopy, Check, ArrowRightLeft, Calendar, Trophy, LayoutGrid, List } from "lucide-react";
 
 interface AvailablePlayer {
   id: string;
@@ -77,6 +78,7 @@ function formatDate(iso: string) {
 }
 
 type ActiveTab = "training" | "match";
+type ViewMode = "list" | "formation";
 
 export default function TeamSelectorPage() {
   const [data, setData] = useState<AvailableResponse | null>(null);
@@ -90,13 +92,15 @@ export default function TeamSelectorPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [formationTeam, setFormationTeam] = useState<1 | 2>(1);
+  const [playerPositions, setPlayerPositions] = useState<Record<string, Position[]>>({});
   const { toast } = useToast();
 
   useEffect(() => {
     api.get<AvailableResponse>("/teams/available")
       .then((res) => {
         setData(res);
-        // Auto-select players from the active tab
         const trainingPlayers = res.training?.players ?? [];
         const matchPlayers = res.match?.players ?? [];
         if (trainingPlayers.length > 0) {
@@ -111,6 +115,17 @@ export default function TeamSelectorPage() {
       })
       .catch(() => setError("Kunne ikke indlæse spillere"))
       .finally(() => setLoading(false));
+
+    // Load player positions for formation auto-assignment
+    api.get<{ id: string; displayName: string; profilePicture: string | null; positions: string[] }[]>("/formations/players/positions")
+      .then((res) => {
+        const posMap: Record<string, Position[]> = {};
+        for (const p of res) {
+          posMap[p.id] = p.positions as Position[];
+        }
+        setPlayerPositions(posMap);
+      })
+      .catch(() => {/* positions are optional */});
   }, []);
 
   const switchTab = (tab: ActiveTab) => {
@@ -120,6 +135,7 @@ export default function TeamSelectorPage() {
     setSaved(false);
     setCopied(false);
     setGuests([]);
+    setViewMode("list");
     const players = tab === "training"
       ? (data.training?.players ?? [])
       : (data.match?.players ?? []);
@@ -229,6 +245,16 @@ export default function TeamSelectorPage() {
     return allPlayersList.find(p => p.id === id)?.profilePicture;
   };
 
+  // Build PlayerInfo list for formation view
+  const getFormationPlayers = (team: PlayerStats[]): PlayerInfo[] => {
+    return team.map((p) => ({
+      id: p.id,
+      displayName: p.displayName,
+      profilePicture: getPlayerPicture(p.id),
+      positions: playerPositions[p.id] ?? [],
+    }));
+  };
+
   if (loading) {
     return (
       <div data-testid="page-teams">
@@ -327,192 +353,269 @@ export default function TeamSelectorPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Player Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Users className="h-4 w-4 text-zinc-400" />
-              {currentEvent?.players?.length ? "Tilmeldte spillere" : "Alle spillere"}
-            </CardTitle>
-            <p className="text-xs text-zinc-500">
-              {selected.size + guests.length} valgt
-              {currentEvent?.players?.length ? (
-                <span className="ml-1.5 text-emerald-400">(fra Spond)</span>
-              ) : null}
-            </p>
-          </CardHeader>
-          <CardContent>
-            {currentPlayers.length === 0 && guests.length === 0 ? (
-              <p className="text-sm text-zinc-500" data-testid="team-empty-state">Ingen spillere tilgængelige</p>
-            ) : (
-              <div className="space-y-1 max-h-80 overflow-y-auto pr-1" data-testid="team-available-players">
-                {currentPlayers.map((p) => (
-                  <label
-                    key={p.id}
-                    className="flex items-center gap-2.5 text-sm cursor-pointer rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selected.has(p.id)}
-                      onChange={() => togglePlayer(p.id)}
-                      className="accent-red-500 rounded"
-                    />
-                    <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                    <span className="text-zinc-200">{p.displayName}</span>
-                    <span className={`ml-auto tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
-                      {Math.round(p.winRate * 100)}%
-                    </span>
-                  </label>
-                ))}
-                {guests.map((g, i) => (
-                  <div key={`guest-${i}`} className="flex items-center gap-2.5 text-sm text-zinc-500 px-2 py-1.5">
-                    <input type="checkbox" checked disabled className="accent-red-500" />
-                    <div className="h-7 w-7 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-[10px] font-medium text-zinc-500">
-                      G
-                    </div>
-                    <span>Gæst: {g}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="flex gap-2 mt-4">
-              <Input
-                placeholder="Gæstenavn..."
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addGuest()}
-                data-testid="team-guest-input"
-                className="flex-1"
-              />
-              <Button variant="secondary" onClick={addGuest} data-testid="team-add-guest">
-                <UserPlus className="h-4 w-4 mr-1.5" />
-                Tilføj gæst
-              </Button>
-            </div>
-
-            <Button
-              className="w-full mt-4"
-              onClick={generateTeams}
-              disabled={selected.size + guests.length < 2}
-              data-testid="team-generate-button"
-            >
-              <Shuffle className="h-4 w-4 mr-2" />
-              Generer hold
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Generated Teams */}
-        {result && (
-          <>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400">1</div>
-                  Hold 1
-                </CardTitle>
-                <p className="text-xs text-zinc-500">
-                  Styrke: <span className="text-zinc-300 font-medium">{result.balance.team1Strength}</span>
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-1" data-testid="team-1-players">
-                  {result.team1.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between text-sm rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors">
-                      <div className="flex items-center gap-2.5">
-                        <PlayerAvatar name={p.displayName} src={getPlayerPicture(p.id)} />
-                        <span className="text-zinc-200">{p.displayName}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
-                          {Math.round(p.winRate * 100)}%
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => swapPlayer(p.id)}
-                          data-testid={`team-swap-${p.id}`}
-                          className="h-6 w-6 p-0"
-                        >
-                          <ArrowRightLeft className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xs font-bold text-amber-400">2</div>
-                  Hold 2
-                </CardTitle>
-                <p className="text-xs text-zinc-500">
-                  Styrke: <span className="text-zinc-300 font-medium">{result.balance.team2Strength}</span>
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-1" data-testid="team-2-players">
-                  {result.team2.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between text-sm rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors">
-                      <div className="flex items-center gap-2.5">
-                        <PlayerAvatar name={p.displayName} src={getPlayerPicture(p.id)} />
-                        <span className="text-zinc-200">{p.displayName}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
-                          {Math.round(p.winRate * 100)}%
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => swapPlayer(p.id)}
-                          data-testid={`team-swap-${p.id}`}
-                          className="h-6 w-6 p-0"
-                        >
-                          <ArrowRightLeft className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
-
+      {/* View mode toggle (only shown after teams generated) */}
       {result && (
-        <div className="mt-6 bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="text-sm text-zinc-300 flex-1" data-testid="team-balance">
-            Balance: <span className="font-bold text-zinc-50">{result.balance.balancePercent}%</span>
-            <span className="text-zinc-500 ml-2">
-              (forskel: {result.balance.difference})
-            </span>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              onClick={copyTeams}
-              data-testid="team-copy-button"
+        <div className="flex items-center gap-2 mb-4" data-testid="view-mode-toggle">
+          <div className="flex rounded-lg border border-zinc-700 bg-zinc-900/50 overflow-hidden">
+            <button
+              data-testid="view-mode-list"
+              onClick={() => setViewMode("list")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === "list"
+                  ? "bg-red-600 text-white"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+              }`}
             >
-              {copied ? <Check className="h-4 w-4 mr-1.5" /> : <ClipboardCopy className="h-4 w-4 mr-1.5" />}
-              {copied ? "Kopieret!" : "Kopiér hold"}
-            </Button>
-            <Button
-              onClick={saveMatch}
-              disabled={saving || saved}
-              data-testid="team-save-button"
+              <List className="h-3.5 w-3.5" />
+              Liste
+            </button>
+            <button
+              data-testid="view-mode-formation"
+              onClick={() => setViewMode("formation")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === "formation"
+                  ? "bg-red-600 text-white"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+              }`}
             >
-              <Save className="h-4 w-4 mr-1.5" />
-              {saved ? "Gemt!" : saving ? "Gemmer..." : "Gem kamp"}
-            </Button>
+              <LayoutGrid className="h-3.5 w-3.5" />
+              Opstilling
+            </button>
           </div>
+
+          {viewMode === "formation" && (
+            <div className="flex rounded-lg border border-zinc-700 bg-zinc-900/50 overflow-hidden ml-2">
+              <button
+                data-testid="formation-team-1"
+                onClick={() => setFormationTeam(1)}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  formationTeam === 1
+                    ? "bg-blue-600 text-white"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+                }`}
+              >
+                Hold 1
+              </button>
+              <button
+                data-testid="formation-team-2"
+                onClick={() => setFormationTeam(2)}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  formationTeam === 2
+                    ? "bg-amber-600 text-white"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+                }`}
+              >
+                Hold 2
+              </button>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* Formation View */}
+      {result && viewMode === "formation" && (
+        <FormationView
+          key={formationTeam}
+          players={getFormationPlayers(formationTeam === 1 ? result.team1 : result.team2)}
+          teamNumber={formationTeam}
+          initialAssignments={autoAssign(
+            getFormationPlayers(formationTeam === 1 ? result.team1 : result.team2),
+            "1-2-3-1"
+          )}
+        />
+      )}
+
+      {/* List View (original) */}
+      {(viewMode === "list" || !result) && (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Player Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="h-4 w-4 text-zinc-400" />
+                  {currentEvent?.players?.length ? "Tilmeldte spillere" : "Alle spillere"}
+                </CardTitle>
+                <p className="text-xs text-zinc-500">
+                  {selected.size + guests.length} valgt
+                  {currentEvent?.players?.length ? (
+                    <span className="ml-1.5 text-emerald-400">(fra Spond)</span>
+                  ) : null}
+                </p>
+              </CardHeader>
+              <CardContent>
+                {currentPlayers.length === 0 && guests.length === 0 ? (
+                  <p className="text-sm text-zinc-500" data-testid="team-empty-state">Ingen spillere tilgængelige</p>
+                ) : (
+                  <div className="space-y-1 max-h-80 overflow-y-auto pr-1" data-testid="team-available-players">
+                    {currentPlayers.map((p) => (
+                      <label
+                        key={p.id}
+                        className="flex items-center gap-2.5 text-sm cursor-pointer rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected.has(p.id)}
+                          onChange={() => togglePlayer(p.id)}
+                          className="accent-red-500 rounded"
+                        />
+                        <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                        <span className="text-zinc-200">{p.displayName}</span>
+                        <span className={`ml-auto tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                          {Math.round(p.winRate * 100)}%
+                        </span>
+                      </label>
+                    ))}
+                    {guests.map((g, i) => (
+                      <div key={`guest-${i}`} className="flex items-center gap-2.5 text-sm text-zinc-500 px-2 py-1.5">
+                        <input type="checkbox" checked disabled className="accent-red-500" />
+                        <div className="h-7 w-7 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-[10px] font-medium text-zinc-500">
+                          G
+                        </div>
+                        <span>Gæst: {g}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2 mt-4">
+                  <Input
+                    placeholder="Gæstenavn..."
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addGuest()}
+                    data-testid="team-guest-input"
+                    className="flex-1"
+                  />
+                  <Button variant="secondary" onClick={addGuest} data-testid="team-add-guest">
+                    <UserPlus className="h-4 w-4 mr-1.5" />
+                    Tilføj gæst
+                  </Button>
+                </div>
+
+                <Button
+                  className="w-full mt-4"
+                  onClick={generateTeams}
+                  disabled={selected.size + guests.length < 2}
+                  data-testid="team-generate-button"
+                >
+                  <Shuffle className="h-4 w-4 mr-2" />
+                  Generer hold
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Generated Teams */}
+            {result && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400">1</div>
+                      Hold 1
+                    </CardTitle>
+                    <p className="text-xs text-zinc-500">
+                      Styrke: <span className="text-zinc-300 font-medium">{result.balance.team1Strength}</span>
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1" data-testid="team-1-players">
+                      {result.team1.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between text-sm rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors">
+                          <div className="flex items-center gap-2.5">
+                            <PlayerAvatar name={p.displayName} src={getPlayerPicture(p.id)} />
+                            <span className="text-zinc-200">{p.displayName}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                              {Math.round(p.winRate * 100)}%
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => swapPlayer(p.id)}
+                              data-testid={`team-swap-${p.id}`}
+                              className="h-6 w-6 p-0"
+                            >
+                              <ArrowRightLeft className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xs font-bold text-amber-400">2</div>
+                      Hold 2
+                    </CardTitle>
+                    <p className="text-xs text-zinc-500">
+                      Styrke: <span className="text-zinc-300 font-medium">{result.balance.team2Strength}</span>
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1" data-testid="team-2-players">
+                      {result.team2.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between text-sm rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors">
+                          <div className="flex items-center gap-2.5">
+                            <PlayerAvatar name={p.displayName} src={getPlayerPicture(p.id)} />
+                            <span className="text-zinc-200">{p.displayName}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                              {Math.round(p.winRate * 100)}%
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => swapPlayer(p.id)}
+                              data-testid={`team-swap-${p.id}`}
+                              className="h-6 w-6 p-0"
+                            >
+                              <ArrowRightLeft className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+
+          {result && (
+            <div className="mt-6 bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="text-sm text-zinc-300 flex-1" data-testid="team-balance">
+                Balance: <span className="font-bold text-zinc-50">{result.balance.balancePercent}%</span>
+                <span className="text-zinc-500 ml-2">
+                  (forskel: {result.balance.difference})
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={copyTeams}
+                  data-testid="team-copy-button"
+                >
+                  {copied ? <Check className="h-4 w-4 mr-1.5" /> : <ClipboardCopy className="h-4 w-4 mr-1.5" />}
+                  {copied ? "Kopieret!" : "Kopiér hold"}
+                </Button>
+                <Button
+                  onClick={saveMatch}
+                  disabled={saving || saved}
+                  data-testid="team-save-button"
+                >
+                  <Save className="h-4 w-4 mr-1.5" />
+                  {saved ? "Gemt!" : saving ? "Gemmer..." : "Gem kamp"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

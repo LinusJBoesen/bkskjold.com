@@ -14,9 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Settings, FileText, Database, Download, Upload, Plus, Pencil, Trash2, Check } from "lucide-react";
+import { Settings, FileText, Database, Download, Upload, Plus, Pencil, Trash2, Check, UserCog } from "lucide-react";
 
-type Tab = "config" | "fineTypes" | "data";
+type Tab = "config" | "fineTypes" | "positions" | "data";
 
 interface ConfigItem {
   key: string;
@@ -45,6 +45,7 @@ const CONFIG_LABELS: Record<string, string> = {
 const TAB_ICONS: Record<Tab, React.ReactNode> = {
   config: <Settings className="w-4 h-4" />,
   fineTypes: <FileText className="w-4 h-4" />,
+  positions: <UserCog className="w-4 h-4" />,
   data: <Database className="w-4 h-4" />,
 };
 
@@ -54,6 +55,7 @@ export default function AdminSettingsPage() {
   const tabs: { id: Tab; label: string }[] = [
     { id: "config", label: da.admin.tabs.config },
     { id: "fineTypes", label: da.admin.tabs.fineTypes },
+    { id: "positions", label: "Spillerpositioner" },
     { id: "data", label: da.admin.tabs.data },
   ];
 
@@ -83,6 +85,7 @@ export default function AdminSettingsPage() {
       {/* Tab content */}
       {activeTab === "config" && <ConfigTab />}
       {activeTab === "fineTypes" && <FineTypesTab />}
+      {activeTab === "positions" && <PlayerPositionsTab />}
       {activeTab === "data" && <DataTab />}
     </div>
   );
@@ -337,6 +340,147 @@ function FineTypesTab() {
             ))}
           </TableBody>
         </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+type Position = "keeper" | "defender" | "wing" | "midfield" | "attacker";
+
+const ALL_POSITIONS: { id: Position; label: string; abbr: string }[] = [
+  { id: "keeper", label: "Målmand", abbr: "K" },
+  { id: "defender", label: "Forsvar", abbr: "F" },
+  { id: "wing", label: "Kant", abbr: "Ka" },
+  { id: "midfield", label: "Central", abbr: "C" },
+  { id: "attacker", label: "Angriber", abbr: "A" },
+];
+
+interface PlayerWithPositions {
+  id: string;
+  displayName: string;
+  profilePicture: string | null;
+  positions: Position[];
+}
+
+function PlayerPositionsTab() {
+  const [players, setPlayers] = useState<PlayerWithPositions[]>([]);
+  const [modified, setModified] = useState<Record<string, Position[]>>({});
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    api.get<PlayerWithPositions[]>("/formations/players/positions").then(setPlayers);
+  }, []);
+
+  const togglePosition = (playerId: string, position: Position) => {
+    setModified((prev) => {
+      const current = prev[playerId] ?? players.find((p) => p.id === playerId)?.positions ?? [];
+      const next = current.includes(position)
+        ? current.filter((p) => p !== position)
+        : [...current, position];
+      return { ...prev, [playerId]: next };
+    });
+  };
+
+  const getPositions = (playerId: string): Position[] => {
+    return modified[playerId] ?? players.find((p) => p.id === playerId)?.positions ?? [];
+  };
+
+  const handleSaveAll = async () => {
+    setSaving(true);
+    try {
+      const entries = Object.entries(modified);
+      for (const [playerId, positions] of entries) {
+        await api.put(`/formations/players/${playerId}/positions`, { positions });
+      }
+      // Update local state
+      setPlayers((prev) =>
+        prev.map((p) => ({
+          ...p,
+          positions: modified[p.id] ?? p.positions,
+        }))
+      );
+      setModified({});
+      toast("Positioner gemt", "success");
+    } catch {
+      toast("Kunne ikke gemme positioner", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const hasChanges = Object.keys(modified).length > 0;
+
+  return (
+    <Card data-testid="admin-positions-section">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Spillerpositioner</CardTitle>
+        {hasChanges && (
+          <Button
+            data-testid="admin-positions-save"
+            onClick={handleSaveAll}
+            disabled={saving}
+          >
+            <Check className="w-4 h-4 mr-1" />
+            {saving ? da.common.loading : `Gem ændringer (${Object.keys(modified).length})`}
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-48">Spiller</TableHead>
+                {ALL_POSITIONS.map((pos) => (
+                  <TableHead key={pos.id} className="text-center w-20">
+                    <div className="text-xs">{pos.label}</div>
+                    <div className="text-[10px] text-zinc-500">{pos.abbr}</div>
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {players.map((player) => (
+                <TableRow key={player.id} data-testid={`admin-position-row-${player.id}`}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center shrink-0">
+                        {player.profilePicture ? (
+                          <img src={player.profilePicture} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[10px] font-medium text-zinc-400">
+                            {player.displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-sm text-zinc-200 truncate">{player.displayName}</span>
+                    </div>
+                  </TableCell>
+                  {ALL_POSITIONS.map((pos) => {
+                    const active = getPositions(player.id).includes(pos.id);
+                    const isModified = modified[player.id] !== undefined;
+                    return (
+                      <TableCell key={pos.id} className="text-center">
+                        <button
+                          data-testid={`admin-position-${player.id}-${pos.id}`}
+                          onClick={() => togglePosition(player.id, pos.id)}
+                          className={`w-8 h-8 rounded-lg border-2 transition-all ${
+                            active
+                              ? "bg-red-500/20 border-red-500/50 text-red-400"
+                              : "bg-zinc-900/50 border-zinc-700/50 text-zinc-600 hover:border-zinc-500"
+                          } ${isModified ? "ring-1 ring-amber-500/30" : ""}`}
+                        >
+                          {active ? "✓" : ""}
+                        </button>
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>

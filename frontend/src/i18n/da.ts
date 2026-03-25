@@ -65,6 +65,7 @@ export const da = {
     tabs: {
       config: "Konfiguration",
       fineTypes: "Bødetyper",
+      positions: "Spillerpositioner",
       data: "Data",
     },
     config: {
