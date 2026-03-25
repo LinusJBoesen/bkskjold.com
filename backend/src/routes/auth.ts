@@ -20,8 +20,10 @@ auth.post("/login", async (c) => {
   }
 
   const token = createSession(email);
+  const isProduction = !!process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === "production";
   setCookie(c, "session", token, {
     httpOnly: true,
+    secure: isProduction,
     sameSite: "Lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7, // 7 days
@@ -35,8 +37,10 @@ auth.post("/logout", async (c) => {
   if (token) {
     destroySession(token);
   }
+  const isProduction = !!process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === "production";
   setCookie(c, "session", "", {
     httpOnly: true,
+    secure: isProduction,
     sameSite: "Lax",
     path: "/",
     maxAge: 0,
