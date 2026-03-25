@@ -8,6 +8,8 @@ interface PlayerPanelProps {
   players: PlayerInfo[];
   assignedPlayerIds: Set<string>;
   onRemovePlayer?: (data: DragData) => void;
+  onPlayerTap?: (player: PlayerInfo) => void;
+  selectedPlayerId?: string;
   className?: string;
 }
 
@@ -28,7 +30,7 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-export function PlayerPanel({ players, assignedPlayerIds, onRemovePlayer, className }: PlayerPanelProps) {
+export function PlayerPanel({ players, assignedPlayerIds, onRemovePlayer, onPlayerTap, selectedPlayerId, className }: PlayerPanelProps) {
   const [search, setSearch] = useState("");
   const [dragOver, setDragOver] = useState(false);
 
@@ -104,7 +106,12 @@ export function PlayerPanel({ players, assignedPlayerIds, onRemovePlayer, classN
           </div>
         ) : (
           filtered.map((player) => (
-            <PlayerRow key={player.id} player={player} />
+            <PlayerRow
+              key={player.id}
+              player={player}
+              onTap={onPlayerTap}
+              isSelected={selectedPlayerId === player.id}
+            />
           ))
         )}
       </div>
@@ -119,7 +126,7 @@ export function PlayerPanel({ players, assignedPlayerIds, onRemovePlayer, classN
   );
 }
 
-function PlayerRow({ player }: { player: PlayerInfo }) {
+function PlayerRow({ player, onTap, isSelected }: { player: PlayerInfo; onTap?: (player: PlayerInfo) => void; isSelected?: boolean }) {
   const handleDragStart = (e: React.DragEvent) => {
     const data: DragData = {
       playerId: player.id,
@@ -143,7 +150,11 @@ function PlayerRow({ player }: { player: PlayerInfo }) {
       data-testid={`player-panel-row-${player.id}`}
       draggable
       onDragStart={handleDragStart}
-      className="flex items-center gap-2.5 px-4 py-2 cursor-grab active:cursor-grabbing hover:bg-white/[0.03] transition-colors select-none group"
+      onClick={() => onTap?.(player)}
+      className={cn(
+        "flex items-center gap-2.5 px-4 py-2 cursor-grab active:cursor-grabbing hover:bg-white/[0.03] transition-colors select-none group",
+        isSelected && "bg-emerald-500/10 border-l-2 border-emerald-400"
+      )}
     >
       <GripVertical className="h-3.5 w-3.5 text-zinc-600 group-hover:text-zinc-400 shrink-0" />
 

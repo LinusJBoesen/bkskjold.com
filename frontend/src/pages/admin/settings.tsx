@@ -370,7 +370,13 @@ function PlayerPositionsTab() {
   const { toast } = useToast();
 
   useEffect(() => {
-    api.get<PlayerWithPositions[]>("/formations/players/positions").then(setPlayers);
+    api.get<PlayerWithPositions[]>("/formations/players/positions")
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setPlayers(data);
+        }
+      })
+      .catch(() => {/* ignore - players will remain empty */});
   }, []);
 
   const togglePosition = (playerId: string, position: Position) => {

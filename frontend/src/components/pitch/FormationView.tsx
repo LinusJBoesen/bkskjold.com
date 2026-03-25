@@ -6,7 +6,7 @@ import { PlayerPanel } from "./PlayerPanel";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/toast";
 import { api } from "@/lib/api";
-import { Save, RotateCcw } from "lucide-react";
+import { Save, RotateCcw, X } from "lucide-react";
 import {
   FORMATIONS,
   type DragData,
@@ -37,6 +37,7 @@ export function FormationView({
   const [assignments, setAssignments] = useState<SlotAssignment[]>(initialAssignments ?? []);
   const [formationId, setFormationId] = useState<string | undefined>(existingFormationId);
   const [saving, setSaving] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerInfo | null>(null);
   const { toast } = useToast();
 
   const assignedPlayerIds = new Set(
@@ -129,6 +130,27 @@ export function FormationView({
           !(data.source === "bench" && a.slotIndex === data.sourceSlotIndex && a.isBench)
       )
     );
+  }, []);
+
+  // Tap-to-assign: select a player from panel, then tap a slot
+  const handleSlotClick = useCallback(
+    (slotIndex: number) => {
+      if (!selectedPlayer) return;
+      const data: DragData = {
+        playerId: selectedPlayer.id,
+        playerName: selectedPlayer.displayName,
+        profilePicture: selectedPlayer.profilePicture,
+        positions: selectedPlayer.positions,
+        source: "panel",
+      };
+      handleSlotDrop(slotIndex, data);
+      setSelectedPlayer(null);
+    },
+    [selectedPlayer, handleSlotDrop]
+  );
+
+  const handlePlayerTap = useCallback((player: PlayerInfo) => {
+    setSelectedPlayer((prev) => (prev?.id === player.id ? null : player));
   }, []);
 
   const handleFormationChange = useCallback(
@@ -232,6 +254,19 @@ export function FormationView({
         </div>
       </div>
 
+      {/* Selected player indicator (mobile tap-to-assign) */}
+      {selectedPlayer && (
+        <div
+          data-testid="selected-player-indicator"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-sm text-emerald-300 lg:hidden"
+        >
+          <span>Tryk på en plads for at placere <strong>{selectedPlayer.displayName}</strong></span>
+          <button onClick={() => setSelectedPlayer(null)} className="ml-auto">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Pitch + Player Panel side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
         <div className="space-y-3">
@@ -239,7 +274,9 @@ export function FormationView({
             formation={formation}
             assignments={pitchAssignments}
             onSlotDrop={handleSlotDrop}
+            onSlotClick={selectedPlayer ? handleSlotClick : undefined}
             onRemovePlayer={handleRemovePlayer}
+            highlightSlots={!!selectedPlayer}
           />
           <BenchArea
             slots={benchAssignments}
@@ -250,6 +287,8 @@ export function FormationView({
           players={players}
           assignedPlayerIds={assignedPlayerIds}
           onRemovePlayer={handleRemovePlayer}
+          onPlayerTap={handlePlayerTap}
+          selectedPlayerId={selectedPlayer?.id}
         />
       </div>
     </div>

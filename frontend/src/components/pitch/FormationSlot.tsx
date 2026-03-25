@@ -7,10 +7,12 @@ interface FormationSlotProps {
   slot: FormationSlotDef;
   assignment?: SlotAssignment | null;
   onDrop?: (slotIndex: number, data: DragData) => void;
+  onClick?: (slotIndex: number) => void;
   onDragStart?: (data: DragData) => void;
+  highlight?: boolean;
 }
 
-export function FormationSlot({ slot, assignment, onDrop, onDragStart }: FormationSlotProps) {
+export function FormationSlot({ slot, assignment, onDrop, onClick, onDragStart, highlight }: FormationSlotProps) {
   const [dragOver, setDragOver] = useState(false);
   const [positionMatch, setPositionMatch] = useState<boolean | null>(null);
   const hasPlayer = assignment?.playerId;
@@ -75,12 +77,15 @@ export function FormationSlot({ slot, assignment, onDrop, onDragStart }: Formati
       data-testid={`formation-slot-${slot.index}`}
       className={cn(
         "absolute -translate-x-1/2 -translate-y-1/2 transition-transform duration-150",
-        dragOver && "scale-110"
+        dragOver && "scale-110",
+        highlight && "scale-105",
+        onClick && "cursor-pointer"
       )}
       style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onClick={() => onClick?.(slot.index)}
     >
       {/* Drop zone glow */}
       {dragOver && (
@@ -109,14 +114,14 @@ export function FormationSlot({ slot, assignment, onDrop, onDragStart }: Formati
           className="flex flex-col items-center gap-1 select-none"
         >
           <div className={cn(
-            "w-10 h-10 rounded-full border-2 border-dashed flex items-center justify-center",
-            dragOver
+            "w-10 h-10 rounded-full border-2 border-dashed flex items-center justify-center transition-colors",
+            dragOver || highlight
               ? "border-emerald-400/60 bg-emerald-400/10"
               : "border-zinc-500/50 bg-zinc-800/30 animate-pulse"
           )}>
             <span className={cn(
               "text-xs font-bold",
-              dragOver ? "text-emerald-400" : "text-zinc-500"
+              dragOver || highlight ? "text-emerald-400" : "text-zinc-500"
             )}>{POSITION_LABELS[slot.position]}</span>
           </div>
           <div className="bg-zinc-900/50 border border-dashed border-zinc-600/50 rounded px-1.5 py-0.5 text-center backdrop-blur-sm">

@@ -7,8 +7,10 @@ export class AdminPage {
   readonly configTab: Locator;
   readonly fineTypesTab: Locator;
   readonly dataTab: Locator;
+  readonly positionsTab: Locator;
   readonly configSection: Locator;
   readonly fineTypesSection: Locator;
+  readonly positionsSection: Locator;
   readonly dataSection: Locator;
   readonly addFineTypeBtn: Locator;
   readonly fineTypeForm: Locator;
@@ -28,8 +30,10 @@ export class AdminPage {
     this.configTab = page.locator('[data-testid="admin-tab-config"]');
     this.fineTypesTab = page.locator('[data-testid="admin-tab-fineTypes"]');
     this.dataTab = page.locator('[data-testid="admin-tab-data"]');
+    this.positionsTab = page.locator('[data-testid="admin-tab-positions"]');
     this.configSection = page.locator('[data-testid="admin-config-section"]');
     this.fineTypesSection = page.locator('[data-testid="admin-fine-types-section"]');
+    this.positionsSection = page.locator('[data-testid="admin-positions-section"]');
     this.dataSection = page.locator('[data-testid="admin-data-section"]');
     this.addFineTypeBtn = page.locator('[data-testid="admin-fine-type-add"]');
     this.fineTypeForm = page.locator('[data-testid="admin-fine-type-form"]');

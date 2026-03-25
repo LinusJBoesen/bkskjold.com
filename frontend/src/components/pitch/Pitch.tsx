@@ -6,12 +6,14 @@ interface PitchProps {
   formation: FormationType;
   assignments: (SlotAssignment | null)[];
   onSlotDrop?: (slotIndex: number, data: DragData) => void;
+  onSlotClick?: (slotIndex: number) => void;
   onDragStart?: (data: DragData) => void;
   onRemovePlayer?: (data: DragData) => void;
+  highlightSlots?: boolean;
   className?: string;
 }
 
-export function Pitch({ formation, assignments, onSlotDrop, onDragStart, onRemovePlayer, className }: PitchProps) {
+export function Pitch({ formation, assignments, onSlotDrop, onSlotClick, onDragStart, onRemovePlayer, highlightSlots, className }: PitchProps) {
   const slots = FORMATIONS[formation];
 
   const handlePitchDragOver = (e: React.DragEvent) => {
@@ -77,7 +79,9 @@ export function Pitch({ formation, assignments, onSlotDrop, onDragStart, onRemov
               slot={slot}
               assignment={assignment}
               onDrop={onSlotDrop}
+              onClick={onSlotClick}
               onDragStart={onDragStart}
+              highlight={highlightSlots && !assignment?.playerId}
             />
           );
         })}
