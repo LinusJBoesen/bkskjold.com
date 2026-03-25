@@ -80,6 +80,7 @@ sync.post("/spond", async (c) => {
       events: events.length,
     });
   } catch (err) {
+    console.error("Spond sync error:", err);
     const message = err instanceof Error ? err.message : "Ukendt fejl";
     return c.json({ success: false, message }, 500);
   }

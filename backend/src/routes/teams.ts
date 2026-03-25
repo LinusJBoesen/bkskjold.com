@@ -75,21 +75,18 @@ teams.get("/available", async (c) => {
     ? getPlayersById(matchEvent.acceptedIds, stats)
     : [];
 
-  // Fallback: all active players if neither has accepted players
-  let allPlayers: any[] = [];
-  if (trainingPlayers.length === 0 && matchPlayers.length === 0) {
-    const rows = db.query("SELECT * FROM players WHERE active = 1 ORDER BY display_name").all() as any[];
-    allPlayers = rows.map((p: any) => {
-      const stat = stats.find((s) => s.id === p.id);
-      return {
-        id: p.id,
-        displayName: p.display_name,
-        profilePicture: p.profile_picture || null,
-        winRate: stat?.winRate ?? 0.5,
-        matches: stat?.matches ?? 0,
-      };
-    });
-  }
+  // Always return all active players so the frontend can offer manual selection
+  const rows = db.query("SELECT * FROM players WHERE active = 1 ORDER BY display_name").all() as any[];
+  const allPlayers = rows.map((p: any) => {
+    const stat = stats.find((s) => s.id === p.id);
+    return {
+      id: p.id,
+      displayName: p.display_name,
+      profilePicture: p.profile_picture || null,
+      winRate: stat?.winRate ?? 0.5,
+      matches: stat?.matches ?? 0,
+    };
+  });
 
   return c.json({
     training: trainingEvent

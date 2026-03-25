@@ -147,10 +147,11 @@ export default function TeamSelectorPage() {
   };
 
   const currentEvent = activeTab === "training" ? data?.training : data?.match;
-  const currentPlayers = currentEvent?.players?.length
-    ? currentEvent.players
-    : (data?.allPlayers ?? []);
-  const allPlayersList = [...currentPlayers, ...(data?.allPlayers ?? [])].filter(
+  const spondPlayers = currentEvent?.players ?? [];
+  const spondPlayerIds = new Set(spondPlayers.map((p) => p.id));
+  // All players not in the Spond-accepted list
+  const otherPlayers = (data?.allPlayers ?? []).filter((p) => !spondPlayerIds.has(p.id));
+  const allPlayersList = [...spondPlayers, ...otherPlayers, ...(data?.allPlayers ?? [])].filter(
     (p, i, arr) => arr.findIndex((x) => x.id === p.id) === i
   );
 
@@ -434,21 +435,76 @@ export default function TeamSelectorPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="h-4 w-4 text-zinc-400" />
-                  {currentEvent?.players?.length ? "Tilmeldte spillere" : "Alle spillere"}
+                  Spillere
                 </CardTitle>
                 <p className="text-xs text-zinc-500">
                   {selected.size + guests.length} valgt
-                  {currentEvent?.players?.length ? (
-                    <span className="ml-1.5 text-emerald-400">(fra Spond)</span>
+                  {spondPlayers.length > 0 ? (
+                    <span className="ml-1.5 text-emerald-400">({spondPlayers.length} tilmeldt via Spond)</span>
                   ) : null}
                 </p>
               </CardHeader>
               <CardContent>
-                {currentPlayers.length === 0 && guests.length === 0 ? (
+                {allPlayersList.length === 0 && guests.length === 0 ? (
                   <p className="text-sm text-zinc-500" data-testid="team-empty-state">Ingen spillere tilgængelige</p>
                 ) : (
-                  <div className="space-y-1 max-h-80 overflow-y-auto pr-1" data-testid="team-available-players">
-                    {currentPlayers.map((p) => (
+                  <div className="space-y-1 max-h-[28rem] overflow-y-auto pr-1" data-testid="team-available-players">
+                    {/* Spond-accepted players */}
+                    {spondPlayers.length > 0 && (
+                      <>
+                        <div className="text-[10px] uppercase tracking-wider font-semibold text-emerald-400/70 px-2 pt-1 pb-0.5">
+                          Tilmeldt
+                        </div>
+                        {spondPlayers.map((p) => (
+                          <label
+                            key={p.id}
+                            className="flex items-center gap-2.5 text-sm cursor-pointer rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected.has(p.id)}
+                              onChange={() => togglePlayer(p.id)}
+                              className="accent-red-500 rounded"
+                            />
+                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                            <span className="text-zinc-200">{p.displayName}</span>
+                            <span className={`ml-auto tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                              {Math.round(p.winRate * 100)}%
+                            </span>
+                          </label>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Other players (not signed up on Spond) */}
+                    {otherPlayers.length > 0 && (
+                      <>
+                        <div className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 px-2 pt-3 pb-0.5 border-t border-zinc-800/50 mt-2">
+                          {spondPlayers.length > 0 ? "Ikke tilmeldt" : "Alle spillere"}
+                        </div>
+                        {otherPlayers.map((p) => (
+                          <label
+                            key={p.id}
+                            className="flex items-center gap-2.5 text-sm cursor-pointer rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors opacity-70 hover:opacity-100"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected.has(p.id)}
+                              onChange={() => togglePlayer(p.id)}
+                              className="accent-red-500 rounded"
+                            />
+                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                            <span className="text-zinc-400">{p.displayName}</span>
+                            <span className={`ml-auto tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                              {Math.round(p.winRate * 100)}%
+                            </span>
+                          </label>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Fallback: if no Spond event, show all players normally */}
+                    {spondPlayers.length === 0 && otherPlayers.length === 0 && (data?.allPlayers ?? []).map((p) => (
                       <label
                         key={p.id}
                         className="flex items-center gap-2.5 text-sm cursor-pointer rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors"
@@ -466,6 +522,7 @@ export default function TeamSelectorPage() {
                         </span>
                       </label>
                     ))}
+
                     {guests.map((g, i) => (
                       <div key={`guest-${i}`} className="flex items-center gap-2.5 text-sm text-zinc-500 px-2 py-1.5">
                         <input type="checkbox" checked disabled className="accent-red-500" />
