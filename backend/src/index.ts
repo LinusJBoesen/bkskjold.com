@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serveStatic } from "hono/bun";
+import { join } from "path";
 import { migrate } from "./db/migrate";
 import { seed } from "./db/seed";
 import authRoutes from "./routes/auth";
@@ -134,10 +135,11 @@ app.route("/api/analysis", analysisRoutes);
 app.route("/api/admin", adminRoutes);
 
 // Serve frontend static files in production (built into backend/static by Dockerfile)
-app.use("/*", serveStatic({ root: "./static" }));
+const staticRoot = join(import.meta.dir, "../static");
+app.use("/*", serveStatic({ root: staticRoot }));
 
 // SPA fallback — serve index.html for non-API routes
-app.get("*", serveStatic({ root: "./static", path: "index.html" }));
+app.get("*", serveStatic({ root: staticRoot, path: "index.html" }));
 
 const port = parseInt(process.env.PORT || "3000");
 
