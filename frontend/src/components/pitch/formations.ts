@@ -17,6 +17,22 @@ export interface SlotAssignment {
   isBench: boolean;
 }
 
+export interface DragData {
+  playerId: string;
+  playerName: string;
+  profilePicture?: string | null;
+  positions?: Position[];
+  source: "panel" | "pitch" | "bench";
+  sourceSlotIndex?: number;
+}
+
+export interface PlayerInfo {
+  id: string;
+  displayName: string;
+  profilePicture?: string | null;
+  positions: Position[];
+}
+
 export const POSITION_LABELS: Record<Position, string> = {
   keeper: "K",
   defender: "F",

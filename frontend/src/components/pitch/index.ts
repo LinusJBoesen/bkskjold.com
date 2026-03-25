@@ -3,4 +3,5 @@ export { FormationSlot } from "./FormationSlot";
 export { PlayerCard } from "./PlayerCard";
 export { BenchArea } from "./BenchArea";
 export { FormationSelector } from "./FormationSelector";
+export { PlayerPanel } from "./PlayerPanel";
 export * from "./formations";

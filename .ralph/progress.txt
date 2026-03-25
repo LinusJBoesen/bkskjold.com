@@ -1,8 +1,8 @@
 # Skjold Bode Formation Builder — PROGRESS
 
 ## Current Status
-- **Round**: 3 (NOT STARTED)
-- **Task**: Frontend — Drag and Drop & Player Panel
+- **Round**: 4 (NOT STARTED)
+- **Task**: Integration — Team Selector + Formation View + Position Admin
 - **Last updated**: 2026-03-25
 
 ## Checklist
@@ -28,13 +28,13 @@
 - [x] Commit
 
 ### Round 3: Frontend — Drag and Drop & Player Panel
-- [ ] PlayerPanel component with Spond integration + manual add
-- [ ] HTML5 Drag and Drop implementation
-- [ ] Drop zone validation and visual feedback
-- [ ] Drag feedback (ghost card, glow highlights)
-- [ ] data-testid attributes on all elements
-- [ ] Run E2E tests — all pass
-- [ ] Commit
+- [x] PlayerPanel component with search, drag-from-panel, drop-to-remove
+- [x] HTML5 Drag and Drop implementation (panel→pitch, pitch→pitch, bench↔pitch, pitch/bench→panel)
+- [x] Drop zone validation and visual feedback (emerald glow on valid, amber on mismatch)
+- [x] Drag feedback (cursor-grab, scale on hover, ghost card)
+- [x] data-testid attributes on all elements
+- [x] Run E2E tests — 45 passed, 4 pre-existing tournament failures
+- [x] Commit
 
 ### Round 4: Integration — Team Selector + Formation View + Position Admin
 - [ ] Formation tab in team selector page
@@ -62,4 +62,5 @@
 | Date | Hash | Description |
 |------|------|-------------|
 | 2026-03-25 | d733f6c | feat(skjold): formation builder backend — positions, formations, lineups API |
-| 2026-03-25 | TBD | feat(skjold): formation pitch component with visual field and player cards |
+| 2026-03-25 | 37d158c | feat(skjold): formation pitch component with visual field and player cards |
+| 2026-03-25 | TBD | feat(skjold): drag and drop formation builder with player panel |

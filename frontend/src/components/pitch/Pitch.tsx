@@ -1,15 +1,23 @@
 import { cn } from "@/lib/utils";
 import { FormationSlot } from "./FormationSlot";
-import { FORMATIONS, type FormationType, type SlotAssignment } from "./formations";
+import { FORMATIONS, type DragData, type FormationType, type SlotAssignment } from "./formations";
 
 interface PitchProps {
   formation: FormationType;
   assignments: (SlotAssignment | null)[];
+  onSlotDrop?: (slotIndex: number, data: DragData) => void;
+  onDragStart?: (data: DragData) => void;
+  onRemovePlayer?: (data: DragData) => void;
   className?: string;
 }
 
-export function Pitch({ formation, assignments, className }: PitchProps) {
+export function Pitch({ formation, assignments, onSlotDrop, onDragStart, onRemovePlayer, className }: PitchProps) {
   const slots = FORMATIONS[formation];
+
+  const handlePitchDragOver = (e: React.DragEvent) => {
+    // Allow dropping on the pitch background to remove players
+    e.preventDefault();
+  };
 
   return (
     <div
@@ -18,6 +26,7 @@ export function Pitch({ formation, assignments, className }: PitchProps) {
         "relative w-full aspect-[3/4] max-w-md mx-auto rounded-xl overflow-hidden",
         className
       )}
+      onDragOver={handlePitchDragOver}
     >
       {/* Pitch background */}
       <div className="absolute inset-0 bg-gradient-to-b from-emerald-950 to-emerald-900" />
@@ -42,13 +51,11 @@ export function Pitch({ formation, assignments, className }: PitchProps) {
         {/* Top penalty area */}
         <rect x="75" y="10" width="150" height="60" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
         <rect x="110" y="10" width="80" height="25" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-        {/* Top penalty arc */}
         <path d="M 110 70 Q 150 90 190 70" stroke="rgba(255,255,255,0.1)" strokeWidth="1" fill="none" />
 
         {/* Bottom penalty area */}
         <rect x="75" y="330" width="150" height="60" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
         <rect x="110" y="365" width="80" height="25" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-        {/* Bottom penalty arc */}
         <path d="M 110 330 Q 150 310 190 330" stroke="rgba(255,255,255,0.1)" strokeWidth="1" fill="none" />
 
         {/* Corner arcs */}
@@ -69,6 +76,8 @@ export function Pitch({ formation, assignments, className }: PitchProps) {
               key={slot.index}
               slot={slot}
               assignment={assignment}
+              onDrop={onSlotDrop}
+              onDragStart={onDragStart}
             />
           );
         })}

@@ -138,5 +138,13 @@ export const da = {
     saveLineup: "Gem opstilling",
     resetLineup: "Nulstil opstilling",
     positions: "Positioner",
+    availablePlayers: "Tilgængelige spillere",
+    searchPlayer: "Søg spiller...",
+    noPlayersFound: "Ingen spillere fundet",
+    allAssigned: "Alle spillere er tildelt",
+    removeFromPitch: "Slip her for at fjerne fra banen",
+    addPlayer: "Tilføj spiller",
+    available: "ledige",
+    positionMismatch: "Positionsmismatch",
   },
 } as const;
