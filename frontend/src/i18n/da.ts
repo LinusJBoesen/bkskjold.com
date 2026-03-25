@@ -120,4 +120,23 @@ export const da = {
     winRate: "Sejrsrate",
     summary: "Oversigt",
   },
+  // Formation / Pitch
+  formation: {
+    title: "Opstilling",
+    formation: "Formation",
+    pitch: "Bane",
+    bench: "Bænk",
+    emptySlot: "Tom plads",
+    keeper: "Målmand",
+    defender: "Forsvar",
+    wing: "Kant",
+    midfield: "Central",
+    attacker: "Angriber",
+    selectFormation: "Vælg formation",
+    noPlayers: "Ingen spillere tildelt",
+    dragHint: "Træk spillere til banen",
+    saveLineup: "Gem opstilling",
+    resetLineup: "Nulstil opstilling",
+    positions: "Positioner",
+  },
 } as const;

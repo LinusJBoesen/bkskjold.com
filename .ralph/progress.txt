@@ -1,8 +1,8 @@
 # Skjold Bode Formation Builder — PROGRESS
 
 ## Current Status
-- **Round**: 2 (NOT STARTED)
-- **Task**: Frontend — Pitch Component & Formation Rendering
+- **Round**: 3 (NOT STARTED)
+- **Task**: Frontend — Drag and Drop & Player Panel
 - **Last updated**: 2026-03-25
 
 ## Checklist
@@ -19,13 +19,13 @@
 - [x] Commit
 
 ### Round 2: Frontend — Pitch Component & Formation Rendering
-- [ ] Create pitch components (Pitch, FormationSlot, PlayerCard, BenchArea, FormationSelector)
-- [ ] Pitch layout with CSS positioning per formation
-- [ ] Player cards on pitch (dark bg, name, position, avatar)
-- [ ] Empty slots with dashed border and position label
-- [ ] Danish strings in i18n/da.ts
-- [ ] Run E2E tests — all pass
-- [ ] Commit
+- [x] Create pitch components (Pitch, FormationSlot, PlayerCard, BenchArea, FormationSelector)
+- [x] Pitch layout with CSS positioning per formation
+- [x] Player cards on pitch (dark bg, name, position, avatar)
+- [x] Empty slots with dashed border and position label
+- [x] Danish strings in i18n/da.ts
+- [x] Run E2E tests — 45 passed, 4 pre-existing tournament failures
+- [x] Commit
 
 ### Round 3: Frontend — Drag and Drop & Player Panel
 - [ ] PlayerPanel component with Spond integration + manual add
@@ -61,4 +61,5 @@
 
 | Date | Hash | Description |
 |------|------|-------------|
-| 2026-03-25 | TBD | feat(skjold): formation builder backend — positions, formations, lineups API |
+| 2026-03-25 | d733f6c | feat(skjold): formation builder backend — positions, formations, lineups API |
+| 2026-03-25 | TBD | feat(skjold): formation pitch component with visual field and player cards |
