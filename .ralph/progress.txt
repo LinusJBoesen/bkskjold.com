@@ -1,69 +1,58 @@
-# Skjold Bode UI Overhaul — PROGRESS
+# Skjold Bode Formation Builder — PROGRESS
 
 ## Current Status
-- **Round**: 6 (COMPLETE)
-- **Task**: All done
-- **Last updated**: 2026-03-24
+- **Round**: 1 (NOT STARTED)
+- **Task**: Database + API — Player Positions & Formations
+- **Last updated**: 2026-03-25
 
 ## Checklist
 
-### Round 1: Foundation — Dark Theme, Base Components, Layout
-- [x] Install lucide-react for icons (already installed)
-- [x] Rewrite index.css with dark zinc theme
-- [x] Rewrite button.tsx with dark variants
-- [x] Rewrite card.tsx with dark styling
-- [x] Rewrite input.tsx with dark styling
-- [x] Rewrite table.tsx with dark theme
-- [x] Create badge.tsx component
-- [x] Rewrite sidebar.tsx with Lucide icons and dark theme
-- [x] Rewrite header.tsx dark
-- [x] Update layout background to bg-zinc-950
-- [x] Run E2E tests — all pass (49/49)
-- [x] Commit: `feat(skjold): dark theme foundation — components and layout`
+### Round 1: Database + API — Player Positions & Formations
+- [ ] Add player_positions table
+- [ ] Add lineup_formations table
+- [ ] Add lineup_slots table
+- [ ] Add migration for new tables
+- [ ] API routes for player positions (GET/PUT)
+- [ ] API routes for formations (CRUD)
+- [ ] Formation slot definitions
+- [ ] Run E2E tests — all pass
+- [ ] Commit
 
-### Round 2: Login + Dashboard
-- [x] Rewrite login.tsx with dark centered card, shield icon, subtle glow
-- [x] Rewrite dashboard.tsx with dark stat cards (Lucide icons), modern chart styling
-- [x] Add player profile pictures to top performers (avatar with initials fallback)
-- [x] Update Recharts dark theme (zinc-800 grid, dark tooltips, brand colors)
-- [x] Run E2E tests — all pass (49/49)
-- [x] Commit: `feat(skjold): dark modern login and dashboard`
+### Round 2: Frontend — Pitch Component & Formation Rendering
+- [ ] Create pitch components (Pitch, FormationSlot, PlayerCard, BenchArea, FormationSelector)
+- [ ] Pitch layout with CSS positioning per formation
+- [ ] Player cards on pitch (dark bg, name, position, avatar)
+- [ ] Empty slots with dashed border and position label
+- [ ] Danish strings in i18n/da.ts
+- [ ] Run E2E tests — all pass
+- [ ] Commit
 
-### Round 3: Fine Management Pages
-- [x] Rewrite fines/overview.tsx dark table with badges, Lucide icons, stat cards
-- [x] Rewrite fines/detail.tsx dark player header, history with Badge component
-- [x] Style fine creation form with dark inputs and select
-- [x] Run E2E tests — all pass (49/49)
-- [x] Commit: `feat(skjold): dark modern fine management UI`
+### Round 3: Frontend — Drag and Drop & Player Panel
+- [ ] PlayerPanel component with Spond integration + manual add
+- [ ] HTML5 Drag and Drop implementation
+- [ ] Drop zone validation and visual feedback
+- [ ] Drag feedback (ghost card, glow highlights)
+- [ ] data-testid attributes on all elements
+- [ ] Run E2E tests — all pass
+- [ ] Commit
 
-### Round 4: Team Selector
-- [x] Rewrite teams/selector.tsx dark cards and metrics
-- [x] Add copy to clipboard button (Kopiér hold)
-- [x] Show player profile pictures (avatar with initials fallback)
-- [x] Dark balance metrics in bottom bar
-- [x] Added profilePicture to backend /teams/available endpoint
-- [x] Run E2E tests — all pass (49/49)
-- [x] Commit: `feat(skjold): dark modern team selector with clipboard copy`
+### Round 4: Integration — Team Selector + Formation View + Position Admin
+- [ ] Formation tab in team selector page
+- [ ] Auto-assignment logic (positions → slots)
+- [ ] Player position management in admin settings
+- [ ] Save/load formations
+- [ ] Manual player add modal
+- [ ] Run E2E tests — all pass
+- [ ] Commit
 
-### Round 5: History + Tournament + Analysis + Admin
-- [x] Rewrite history/training.tsx dark with Lucide icons, Badge component, dark selects
-- [x] Rewrite tournament/standings.tsx dark league table with position colors
-- [x] Rewrite analysis/match.tsx dark summary cards, Badge for results, dark tables
-- [x] Rewrite admin/settings.tsx dark tabs with icons, dark forms, Badge for types
-- [x] Style all select/dropdown elements dark
-- [x] Run E2E tests — all pass (49/49)
-- [x] Commit: `feat(skjold): dark modern history, tournament, analysis, and admin`
-
-### Round 6: Polish + Animations + Final Pass
-- [x] Add hover transitions on cards, rows, buttons (card hover:border-zinc-700/80, button hover:shadow-xl)
-- [x] Add subtle red glow on primary buttons (hover:shadow-xl hover:shadow-red-600/30)
-- [x] Audit spacing consistency (all pages consistent)
-- [x] Add entrance animations (fade-in-up keyframe, animate-stagger for grids)
-- [x] Player profile pictures in stats tables (history + analysis)
-- [x] Added profilePicture to backend /matches/stats/all and /analysis/player-rates
-- [x] Verify responsive design (375px) — tested via E2E
-- [x] Run ALL E2E tests — all pass (49/49)
-- [x] Commit: `feat(skjold): UI polish — animations, glows, consistency`
+### Round 5: Polish, E2E Tests & Edge Cases
+- [ ] New E2E tests for formation feature
+- [ ] Edge case handling
+- [ ] Responsive design (mobile tap-to-assign)
+- [ ] Animations and transitions
+- [ ] Accessibility (keyboard navigation)
+- [ ] Run ALL E2E tests — all pass
+- [ ] Commit
 
 ## Blockers
 (none)
@@ -72,9 +61,3 @@
 
 | Date | Hash | Description |
 |------|------|-------------|
-| 2026-03-24 | — | feat(skjold): dark theme foundation — components and layout |
-| 2026-03-24 | — | feat(skjold): dark modern login and dashboard |
-| 2026-03-24 | — | feat(skjold): dark modern fine management UI |
-| 2026-03-24 | — | feat(skjold): dark modern team selector with clipboard copy |
-| 2026-03-24 | — | feat(skjold): dark modern history, tournament, analysis, and admin |
-| 2026-03-24 | — | feat(skjold): UI polish — animations, glows, consistency |

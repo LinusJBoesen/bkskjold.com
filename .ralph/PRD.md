@@ -1,200 +1,292 @@
-# Skjold Bode UI Overhaul — PRD
+# Skjold Bode Formation Builder — PRD
 
 ## Goal
 
-Transform the existing functional but dated-looking UI into a modern, polished interface inspired by openclaw.ai. The app should feel premium, fast, and visually striking — dark-mode first with clean typography, generous whitespace, and subtle visual effects.
+Build a Football Manager / FIFA-style visual formation and lineup builder for 7-a-side training matches. Coaches can assign player positions, choose formations, drag-and-drop players onto a visual pitch, and manage bench slots — all integrated with Spond availability data.
 
-## Design Direction: openclaw.ai-inspired
+## Feature Overview
 
-Key characteristics to replicate:
-- **Dark-mode first**: Rich dark backgrounds (`#0A0A0A` or `#09090B`), not harsh black
-- **High contrast text**: Crisp white/light text on dark backgrounds
-- **Subtle gradients**: Gentle gradient overlays on cards and sections
-- **Glassmorphism touches**: Subtle backdrop-blur on overlays and sidebar
-- **Clean typography**: Large, bold headings with generous letter-spacing. Clean sans-serif (Inter)
-- **Generous whitespace**: Lots of breathing room between elements
-- **Minimal borders**: Very subtle borders (`border-white/10` or `border-gray-800`)
-- **Soft glows**: Subtle box-shadow glows on hover or key elements (red glow for brand accent)
-- **Smooth animations**: `transition-all duration-300` on interactive elements
-- **Cards**: Dark cards (`bg-gray-900/50`) with subtle border and rounded corners
-- **Status indicators**: Clean pill badges with soft colored backgrounds
-- **Modern inputs**: Dark inputs with subtle borders and clean focus states
-- **Premium feel**: Everything should feel intentional and polished
+### Player Positions
+Each player can be assigned one or more preferred positions:
+- **Keeper** (K) — Goalkeeper
+- **Forsvar** (F) — Defender
+- **Kant** (Ka) — Wing
+- **Central** (C) — Central midfielder
+- **Angriber** (A) — Attacker
 
-## Color Palette
+Players can have multiple positions (e.g., a player might play both Wing and Attacker). Positions are stored in the database and managed via admin settings.
 
-### Backgrounds
-- Page background: `#09090B` (zinc-950)
-- Card background: `#18181B` (zinc-900) or `rgba(24,24,27,0.5)` with backdrop-blur
-- Sidebar: `#0A0A0A` with subtle border-right `border-white/5`
-- Input background: `#27272A` (zinc-800)
-- Hover states: `#27272A` (zinc-800)
+### Formations (7-a-side)
+Three formations available:
 
-### Text
-- Primary: `#FAFAFA` (zinc-50) — headings, main content
-- Secondary: `#A1A1AA` (zinc-400) — labels, descriptions, muted text
-- Tertiary: `#71717A` (zinc-500) — placeholders, least important text
+1. **1-2-3-1** — 1 Keeper, 2 Defenders, 2 Wings + 1 Central Mid, 1 Attacker
+2. **1-3-2-1** — 1 Keeper, 3 Defenders, 2 Central Mids, 1 Attacker
+3. **1-3-3** — 1 Keeper, 3 Defenders, 2 Wings + 1 Central Mid (no dedicated attacker)
 
-### Brand Accent
-- Red: `#D42428` — primary CTAs, active states, key highlights
-- Red hover: `#B91C1F` — darker on hover
-- Red glow: `0 0 20px rgba(212,36,40,0.3)` — subtle glow on primary buttons
+### Visual Pitch
+A top-down football pitch with:
+- Field lines (center circle, penalty areas, halfway line)
+- Player cards positioned at formation slots
+- Empty slots shown as dashed placeholders with position label
+- Cards show: player name, position badge, profile picture (or initials)
+- Dark green pitch aesthetic matching the app's dark theme
 
-### Status Colors (on dark backgrounds)
-- Success: `bg-emerald-500/10 text-emerald-400 border-emerald-500/20`
-- Error/Unpaid: `bg-red-500/10 text-red-400 border-red-500/20`
-- Warning/Pending: `bg-amber-500/10 text-amber-400 border-amber-500/20`
-- Info: `bg-blue-500/10 text-blue-400 border-blue-500/20`
+### Drag and Drop
+- Drag players from the available player list onto pitch slots
+- Drag players between positions on the pitch
+- Drag players to/from the bench
+- Visual feedback: highlight valid drop zones, ghost card while dragging
+- Use HTML5 Drag and Drop API (no external library needed)
 
-### Borders
-- Subtle: `border-white/5` or `border-zinc-800`
-- Medium: `border-white/10` or `border-zinc-700`
-- Dividers: `border-zinc-800`
+### Bench
+- 3 bench slots below the pitch
+- Players on bench are available but not in the starting formation
+- For training there are no substitutions — bench is just overflow/rotation tracking
 
-## Key UI Patterns
+### Player Source
+- **Spond integration**: Players who accepted the next training/match event are auto-loaded
+- **Manual add**: Button to add players who didn't reply on Spond (from all active players list)
+- Shows availability status indicator for each player
 
-### Sidebar
-- Background: `#0A0A0A` with `border-r border-white/5`
-- Logo/team name at top in white bold
-- Nav items with Lucide icons, `text-zinc-400` default
-- Active: `text-white bg-white/5 border-l-2 border-red-500`
-- Hover: `text-zinc-200 bg-white/5`
-- Clean `transition-colors duration-200`
-
-### Page Layout
-- Page title: `text-2xl font-bold text-white tracking-tight`
-- Subtitle: `text-sm text-zinc-400`
-- Content sections separated by `space-y-6`
-- Cards: `bg-zinc-900/50 border border-zinc-800 rounded-xl p-6`
-
-### Tables
-- Header: `bg-zinc-900 text-zinc-400 text-xs font-medium uppercase tracking-wider`
-- Rows: `border-b border-zinc-800/50`
-- Row hover: `hover:bg-white/[0.02]`
-- Cell text: `text-zinc-200`
-- Spacious: `px-4 py-3`
-
-### Buttons
-- Primary: `bg-red-600 text-white rounded-lg px-4 py-2 hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all duration-200`
-- Secondary: `bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-lg hover:bg-zinc-700 transition-colors`
-- Ghost: `text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors`
-- All with `font-medium text-sm`
-
-### Status Badges
-- Pill: `rounded-full px-2.5 py-0.5 text-xs font-medium border`
-- Paid: `bg-emerald-500/10 text-emerald-400 border-emerald-500/20`
-- Unpaid: `bg-red-500/10 text-red-400 border-red-500/20`
-- Pending: `bg-amber-500/10 text-amber-400 border-amber-500/20`
-
-### Stat Cards
-- `bg-zinc-900/50 border border-zinc-800 rounded-xl p-6`
-- Label: `text-xs text-zinc-500 uppercase tracking-wider font-medium`
-- Value: `text-3xl font-bold text-white tabular-nums mt-1`
-- Optional trend: small colored text below value
-
-### Form Inputs
-- `bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-500 focus:ring-2 focus:ring-red-500/30 focus:border-red-500/50 transition-all`
-- Labels: `text-sm font-medium text-zinc-300`
-- Select dropdowns: same dark styling as inputs
-
-### Charts (Recharts)
-- Background: transparent (inherits card bg)
-- Grid lines: `#27272A` (zinc-800)
-- Primary data: `#D42428` (brand red)
-- Secondary: `#A1A1AA` (zinc-400)
-- Tertiary: `#3B82F6` (blue-500)
-- Tooltip: `bg-zinc-800 border border-zinc-700 text-white rounded-lg shadow-xl`
-
-### Login Page
-- Full dark background
-- Centered card with subtle border glow
-- Clean form with dark inputs
-- Brand red login button with glow effect
+### Integration with Existing Team Selector
+- The formation view is a new tab/mode alongside the existing team generator
+- After teams are generated (Team 1 / Team 2), each team can be viewed in formation mode
+- Formation assignments are per-match, not permanent (but player position preferences persist)
 
 ---
 
-## Missing Features to Add
+## Rounds
 
-During this overhaul, also add these missing features:
+### Round 1: Database + API — Player Positions & Formations
 
-1. **Copy teams to clipboard** — button in team selector to copy team lists as text
-2. **Player profile pictures** — display player avatars (from Spond) in dashboard top performers, team selector, and player stats
+**Backend changes:**
+
+- [ ] Add `player_positions` table: `player_id TEXT, position TEXT ('keeper'|'defender'|'wing'|'midfield'|'attacker'), PRIMARY KEY (player_id, position)`
+- [ ] Add `lineup_formations` table: `id TEXT PRIMARY KEY, match_id TEXT, team_number INTEGER (1 or 2), formation TEXT ('1-2-3-1'|'1-3-2-1'|'1-3-3'), created_at TEXT`
+- [ ] Add `lineup_slots` table: `formation_id TEXT, slot_index INTEGER, player_id TEXT, position TEXT, is_bench INTEGER DEFAULT 0, PRIMARY KEY (formation_id, slot_index)`
+- [ ] Add migration for new tables in `db/migrate.ts`
+- [ ] API routes for player positions:
+  - `GET /api/players/:id/positions` — get player's positions
+  - `PUT /api/players/:id/positions` — set player's positions (body: `{ positions: string[] }`)
+  - `GET /api/players/positions` — get all players with their positions
+- [ ] API routes for formations:
+  - `POST /api/formations` — create/save a formation (body: `{ matchId?, teamNumber, formation, slots: [{slotIndex, playerId, position, isBench}] }`)
+  - `GET /api/formations/:matchId/:teamNumber` — get saved formation for a match team
+  - `PUT /api/formations/:id` — update formation (change formation type or slot assignments)
+  - `DELETE /api/formations/:id` — delete formation
+- [ ] Formation slot definitions (which positions go where for each formation type):
+  ```
+  1-2-3-1: [keeper, defender, defender, wing, midfield, wing, attacker]
+  1-3-2-1: [keeper, defender, defender, defender, midfield, midfield, attacker]
+  1-3-3:   [keeper, defender, defender, defender, wing, midfield, wing]
+  ```
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): formation builder backend — positions, formations, lineups API`
+
+### Round 2: Frontend — Pitch Component & Formation Rendering
+
+**Build the visual pitch and formation display:**
+
+- [ ] Create `frontend/src/components/pitch/` directory:
+  - `Pitch.tsx` — The football pitch SVG/div with field markings (dark green)
+  - `FormationSlot.tsx` — A position slot on the pitch (empty or filled with player card)
+  - `PlayerCard.tsx` — Small card showing player name, position badge, avatar
+  - `BenchArea.tsx` — Bench row below the pitch with 3 slots
+  - `FormationSelector.tsx` — Dropdown/tabs to switch between the 3 formations
+- [ ] Pitch layout: CSS grid or absolute positioning to place slots according to formation
+  - Each formation defines x,y coordinates (as percentages) for its 7 slots
+  - Pitch is responsive (scales with container width, maintains aspect ratio)
+- [ ] Formation slot positions (approximate % from top-left of pitch):
+  ```
+  1-2-3-1:
+    Keeper:     (50%, 90%)
+    Def left:   (30%, 70%)
+    Def right:  (70%, 70%)
+    Wing left:  (15%, 45%)
+    Mid center: (50%, 45%)
+    Wing right: (85%, 45%)
+    Attacker:   (50%, 15%)
+
+  1-3-2-1:
+    Keeper:     (50%, 90%)
+    Def left:   (25%, 70%)
+    Def center: (50%, 70%)
+    Def right:  (75%, 70%)
+    Mid left:   (35%, 45%)
+    Mid right:  (65%, 45%)
+    Attacker:   (50%, 15%)
+
+  1-3-3:
+    Keeper:     (50%, 90%)
+    Def left:   (25%, 70%)
+    Def center: (50%, 70%)
+    Def right:  (75%, 70%)
+    Wing left:  (20%, 35%)
+    Mid center: (50%, 35%)
+    Wing right: (80%, 35%)
+  ```
+- [ ] Player cards on pitch: dark bg, rounded, shows name + position abbreviation + avatar
+- [ ] Empty slots: dashed border, position abbreviation label, subtle pulse animation
+- [ ] Add Danish strings to `i18n/da.ts` for all new UI text
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): formation pitch component with visual field and player cards`
+
+### Round 3: Frontend — Drag and Drop & Player Panel
+
+**Make it interactive:**
+
+- [ ] Create `PlayerPanel.tsx` — sidebar/drawer listing available players
+  - Shows players from Spond who accepted (auto-loaded)
+  - "Tilføj spiller" (Add player) button to add from all active players not yet in lineup
+  - Each player row: avatar, name, position badges, drag handle
+  - Players already on pitch/bench are grayed out or hidden
+  - Search/filter by name
+- [ ] Implement HTML5 Drag and Drop:
+  - Drag from player panel → drop on pitch slot or bench slot
+  - Drag from pitch slot → drop on another pitch slot (swap)
+  - Drag from pitch slot → drop on bench (move to bench)
+  - Drag from bench → drop on pitch slot (move to pitch)
+  - Drag from pitch/bench → drop back on player panel (remove from lineup)
+- [ ] Drop zone validation:
+  - Highlight valid drop zones when dragging (green glow)
+  - Show position compatibility indicator (player's preferred positions vs slot position)
+  - Allow dropping on any slot regardless of position (flexibility), but show warning color if position mismatch
+- [ ] Visual drag feedback:
+  - Dragged card shows as semi-transparent ghost
+  - Drop target highlights with border glow
+  - Smooth transition when card lands
+- [ ] Add `data-testid` attributes on all interactive elements
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): drag and drop formation builder with player panel`
+
+### Round 4: Integration — Team Selector + Formation View + Position Admin
+
+**Wire everything together:**
+
+- [ ] Add "Formation" tab/toggle in the team selector page
+  - After generating teams, user can switch to formation view for Team 1 or Team 2
+  - Players from generated team auto-populate the formation (best-fit based on positions)
+  - User can then rearrange via drag-and-drop
+- [ ] Auto-assignment logic: when switching to formation view, assign players to slots based on their preferred positions (best fit algorithm)
+- [ ] Add player position management in admin settings:
+  - New section "Spillerpositioner" (Player Positions)
+  - List all players with checkboxes for each position
+  - Bulk-save positions
+- [ ] Save/load formations:
+  - "Gem opstilling" (Save lineup) button saves to backend
+  - When returning to a match, load saved formation if exists
+- [ ] Manual player add:
+  - "Tilføj spiller" opens a modal/dropdown with all active players not in the current lineup
+  - Added players appear in the player panel ready to be dragged onto the pitch
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): formation builder integration with team selector and admin`
+
+### Round 5: Polish, E2E Tests & Edge Cases
+
+**Final polish and test coverage:**
+
+- [ ] Add E2E tests for formation feature:
+  - `specs/formations/pitch-display.spec.ts` — pitch renders, formations switch, slots show
+  - `specs/formations/drag-drop.spec.ts` — drag player to slot, swap players, bench management
+  - `specs/formations/position-admin.spec.ts` — assign positions in admin
+- [ ] Handle edge cases:
+  - Fewer players than formation slots (show empty slots)
+  - More players than slots + bench (extra players stay in panel)
+  - Player with no position preference (show as flexible/any)
+  - Guest players in formation (manual add with no position data)
+- [ ] Responsive design:
+  - On mobile (< lg): pitch scales down, player panel becomes bottom sheet
+  - Touch-friendly: tap to select player, tap slot to place (alternative to drag on mobile)
+- [ ] Animations:
+  - Smooth slot transitions when formation changes
+  - Card entrance animations when players are assigned
+  - Subtle pitch line animations on load
+- [ ] Accessibility: keyboard navigation for slot assignment (tab through slots, enter to assign)
+- [ ] Run ALL E2E tests (existing + new) — all pass
+- [ ] Commit: `feat(skjold): formation builder polish, E2E tests, and responsive design`
 
 ---
 
-## Round 1: Foundation — Dark Theme, Base Components, Layout
+## Technical Notes
 
-- [ ] Install `lucide-react` for icons
-- [ ] Completely rewrite `index.css`: dark theme with zinc color scale, remove all old light-mode variables
-- [ ] Rewrite `button.tsx`: dark variants (primary red/secondary zinc/ghost) with explicit Tailwind classes
-- [ ] Rewrite `card.tsx`: dark `bg-zinc-900/50 border-zinc-800 rounded-xl`
-- [ ] Rewrite `input.tsx`: dark styling with zinc-800 bg and red focus ring
-- [ ] Rewrite `table.tsx`: dark theme, zinc-900 header, subtle row borders
-- [ ] Create `badge.tsx`: pill badges with semi-transparent colored backgrounds
-- [ ] Rewrite `sidebar.tsx`: dark with Lucide icons, red active state, clean transitions
-- [ ] Rewrite `header.tsx`: dark, minimal
-- [ ] Update App.tsx layout: `bg-zinc-950` page background
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): dark theme foundation — components and layout`
+### Formation Slot Schema
+Each formation type maps to an array of slot definitions:
+```typescript
+interface FormationSlot {
+  index: number;
+  position: 'keeper' | 'defender' | 'wing' | 'midfield' | 'attacker';
+  x: number; // percentage from left
+  y: number; // percentage from top
+  label: string; // Danish display label
+}
 
-### Round 2: Login + Dashboard
+const FORMATIONS: Record<string, FormationSlot[]> = {
+  '1-2-3-1': [
+    { index: 0, position: 'keeper', x: 50, y: 90, label: 'K' },
+    { index: 1, position: 'defender', x: 30, y: 70, label: 'F' },
+    { index: 2, position: 'defender', x: 70, y: 70, label: 'F' },
+    { index: 3, position: 'wing', x: 15, y: 45, label: 'Ka' },
+    { index: 4, position: 'midfield', x: 50, y: 45, label: 'C' },
+    { index: 5, position: 'wing', x: 85, y: 45, label: 'Ka' },
+    { index: 6, position: 'attacker', x: 50, y: 15, label: 'A' },
+  ],
+  '1-3-2-1': [
+    { index: 0, position: 'keeper', x: 50, y: 90, label: 'K' },
+    { index: 1, position: 'defender', x: 25, y: 70, label: 'F' },
+    { index: 2, position: 'defender', x: 50, y: 70, label: 'F' },
+    { index: 3, position: 'defender', x: 75, y: 70, label: 'F' },
+    { index: 4, position: 'midfield', x: 35, y: 45, label: 'C' },
+    { index: 5, position: 'midfield', x: 65, y: 45, label: 'C' },
+    { index: 6, position: 'attacker', x: 50, y: 15, label: 'A' },
+  ],
+  '1-3-3': [
+    { index: 0, position: 'keeper', x: 50, y: 90, label: 'K' },
+    { index: 1, position: 'defender', x: 25, y: 70, label: 'F' },
+    { index: 2, position: 'defender', x: 50, y: 70, label: 'F' },
+    { index: 3, position: 'defender', x: 75, y: 70, label: 'F' },
+    { index: 4, position: 'wing', x: 20, y: 35, label: 'Ka' },
+    { index: 5, position: 'midfield', x: 50, y: 35, label: 'C' },
+    { index: 6, position: 'wing', x: 80, y: 35, label: 'Ka' },
+  ],
+};
+```
 
-- [ ] Rewrite `login.tsx`: full dark page, centered card with subtle glow, dark inputs, red CTA
-- [ ] Rewrite `dashboard.tsx`: dark stat cards, modern chart styling with dark tooltips
-- [ ] Add player profile pictures to top performers section
-- [ ] Update Recharts: dark theme (zinc-800 grid, dark tooltips, brand colors)
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): dark modern login and dashboard`
+### Position Abbreviations (Danish)
+| Position | Danish | Abbreviation |
+|----------|--------|--------------|
+| Keeper | Målmand | K |
+| Defender | Forsvar | F |
+| Wing | Kant | Ka |
+| Midfield | Central | C |
+| Attacker | Angriber | A |
 
-### Round 3: Fine Management Pages
+### Auto-Assignment Algorithm
+When populating a formation from a generated team:
+1. For each slot (in order: keeper → defenders → midfield/wings → attacker):
+   - Find unassigned player whose preferred positions include the slot's position
+   - If no exact match, find player with closest position (defender ↔ midfield, wing ↔ attacker)
+   - If still no match, assign any remaining unassigned player
+2. Remaining players go to bench (up to 3)
+3. Extra players stay in the available panel
 
-- [ ] Rewrite `fines/overview.tsx`: dark table, status badges, clickable rows with hover
-- [ ] Rewrite `fines/detail.tsx`: dark player header, fine history with badges
-- [ ] Style manual fine creation form with dark inputs
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): dark modern fine management UI`
-
-### Round 4: Team Selector
-
-- [ ] Rewrite `teams/selector.tsx`: dark player cards, visual team columns, modern generate button
-- [ ] Add "Kopiér hold" (copy to clipboard) button
-- [ ] Show player profile pictures in team cards
-- [ ] Dark balance metrics display
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): dark modern team selector with clipboard copy`
-
-### Round 5: History + Tournament + Analysis + Admin
-
-- [ ] Rewrite `history/training.tsx`: dark pending matches, dark stats table, dark history
-- [ ] Rewrite `tournament/standings.tsx`: dark league table with subtle position colors
-- [ ] Rewrite `analysis/match.tsx`: dark stats cards and player table
-- [ ] Rewrite `admin/settings.tsx`: dark tabs, dark forms, dark tables
-- [ ] Style all select/dropdown elements to match dark theme
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): dark modern history, tournament, analysis, and admin`
-
-### Round 6: Polish + Animations + Final Pass
-
-- [ ] Add smooth hover transitions on all interactive elements (cards, rows, buttons)
-- [ ] Add subtle glow effects on primary buttons (red shadow)
-- [ ] Audit spacing consistency across all pages
-- [ ] Add subtle entrance animations for page content
-- [ ] Show player profile pictures in player stats tables where relevant
-- [ ] Verify responsive design on mobile (375px) — dark sidebar overlay
-- [ ] Run ALL E2E tests — all pass
-- [ ] Commit: `feat(skjold): UI polish — animations, glows, consistency`
-
----
+### Drag and Drop Data Transfer
+```typescript
+// On drag start
+e.dataTransfer.setData('application/json', JSON.stringify({
+  playerId: string,
+  source: 'panel' | 'pitch' | 'bench',
+  sourceSlotIndex?: number, // if from pitch/bench
+}));
+```
 
 ## Success Criteria
 
-1. The entire app uses a dark theme (no light backgrounds anywhere)
-2. Brand red used sparingly for CTAs, active states, and key highlights
-3. All tables use dark consistent styling
-4. All status indicators use Badge component with semi-transparent colors
-5. Smooth transitions on all interactive elements
-6. Lucide icons throughout navigation
-7. Player profile pictures displayed where relevant
-8. Copy to clipboard works in team selector
-9. All E2E tests still pass
-10. Responsive on mobile with dark sidebar overlay
+1. Visual pitch displays correctly with all 3 formations
+2. Players can be dragged and dropped between panel, pitch slots, and bench
+3. Player positions are persisted in the database
+4. Formation integrates with existing team generation flow
+5. Position management available in admin settings
+6. Works on mobile with tap-to-assign fallback
+7. All existing + new E2E tests pass
+8. Dark theme consistent with rest of app
+9. All UI text in Danish

@@ -17,9 +17,10 @@ COPY backend/ backend/
 # Create data directory for SQLite
 RUN mkdir -p backend/data
 
-# Serve frontend static files from backend
 # Move built frontend into backend/static
 RUN mv frontend/dist backend/static
 
+# Run from backend directory so relative paths resolve correctly
+WORKDIR /app/backend
 EXPOSE 3000
-CMD ["bun", "run", "backend/src/index.ts"]
+CMD ["bun", "run", "src/index.ts"]
