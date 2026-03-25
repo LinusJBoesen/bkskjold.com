@@ -94,4 +94,27 @@ CREATE TABLE IF NOT EXISTS config (
   value TEXT NOT NULL,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS player_positions (
+  player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  position TEXT NOT NULL CHECK(position IN ('keeper','defender','wing','midfield','attacker')),
+  PRIMARY KEY (player_id, position)
+);
+
+CREATE TABLE IF NOT EXISTS lineup_formations (
+  id TEXT PRIMARY KEY,
+  match_id TEXT,
+  team_number INTEGER NOT NULL CHECK(team_number IN (1, 2)),
+  formation TEXT NOT NULL CHECK(formation IN ('1-2-3-1','1-3-2-1','1-3-3')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS lineup_slots (
+  formation_id TEXT NOT NULL REFERENCES lineup_formations(id) ON DELETE CASCADE,
+  slot_index INTEGER NOT NULL,
+  player_id TEXT REFERENCES players(id),
+  position TEXT NOT NULL CHECK(position IN ('keeper','defender','wing','midfield','attacker')),
+  is_bench INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (formation_id, slot_index)
+);
 `;

@@ -13,6 +13,7 @@ import statsRoutes from "./routes/stats";
 import tournamentRoutes from "./routes/tournament";
 import analysisRoutes from "./routes/analysis";
 import adminRoutes from "./routes/admin";
+import formationRoutes from "./routes/formations";
 import { authMiddleware } from "./middleware/auth";
 
 // Run migrations and seed on startup
@@ -132,6 +133,7 @@ app.route("/api/stats", statsRoutes);
 app.route("/api/tournament", tournamentRoutes);
 app.route("/api/analysis", analysisRoutes);
 app.route("/api/admin", adminRoutes);
+app.route("/api/formations", formationRoutes);
 
 // Serve frontend static files in production (built into backend/static by Dockerfile)
 app.use("/*", serveStatic({ root: "./static" }));

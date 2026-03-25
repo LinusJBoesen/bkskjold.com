@@ -1,22 +1,22 @@
 # Skjold Bode Formation Builder — PROGRESS
 
 ## Current Status
-- **Round**: 1 (NOT STARTED)
-- **Task**: Database + API — Player Positions & Formations
+- **Round**: 2 (NOT STARTED)
+- **Task**: Frontend — Pitch Component & Formation Rendering
 - **Last updated**: 2026-03-25
 
 ## Checklist
 
 ### Round 1: Database + API — Player Positions & Formations
-- [ ] Add player_positions table
-- [ ] Add lineup_formations table
-- [ ] Add lineup_slots table
-- [ ] Add migration for new tables
-- [ ] API routes for player positions (GET/PUT)
-- [ ] API routes for formations (CRUD)
-- [ ] Formation slot definitions
-- [ ] Run E2E tests — all pass
-- [ ] Commit
+- [x] Add player_positions table
+- [x] Add lineup_formations table
+- [x] Add lineup_slots table
+- [x] Add migration for new tables (via schema.ts CREATE IF NOT EXISTS)
+- [x] API routes for player positions (GET/PUT)
+- [x] API routes for formations (CRUD)
+- [x] Formation slot definitions
+- [x] Run E2E tests — all pass (7 pre-existing failures unchanged)
+- [x] Commit
 
 ### Round 2: Frontend — Pitch Component & Formation Rendering
 - [ ] Create pitch components (Pitch, FormationSlot, PlayerCard, BenchArea, FormationSelector)
@@ -61,3 +61,4 @@
 
 | Date | Hash | Description |
 |------|------|-------------|
+| 2026-03-25 | TBD | feat(skjold): formation builder backend — positions, formations, lineups API |
