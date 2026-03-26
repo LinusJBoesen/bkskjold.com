@@ -24,13 +24,6 @@ export default function LandingPage() {
           <img src="/logo.webp" alt="BK Skjold" className="h-9 w-9" />
           <span className="text-lg font-bold text-zinc-50 tracking-tight">BK Skjold</span>
         </div>
-        <Link
-          to="/login"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm font-medium text-zinc-200 hover:bg-white/10 hover:text-white transition-all duration-200"
-        >
-          Log ind
-          <ArrowRight className="h-4 w-4" />
-        </Link>
       </nav>
 
       {/* Hero */}
