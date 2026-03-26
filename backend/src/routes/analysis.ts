@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { sql } from "../lib/db";
 import { fetchMatchResults } from "../services/dbu";
+import { requireRole } from "../middleware/auth";
 
 const analysis = new Hono();
 
-// Cross-reference DBU matches with Spond attendance to get player-level match stats
-analysis.get("/player-rates", async (c) => {
+// Cross-reference DBU matches with Spond attendance to get player-level match stats (admin + spiller)
+analysis.get("/player-rates", requireRole("admin", "spiller"), async (c) => {
   const dbuMatches = await fetchMatchResults();
 
   // Find DBU matches involving BK Skjold

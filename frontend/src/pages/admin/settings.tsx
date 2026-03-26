@@ -14,9 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Settings, FileText, Database, Download, Upload, Plus, Pencil, Trash2, Check, UserCog } from "lucide-react";
+import { Settings, FileText, Database, Download, Upload, Plus, Pencil, Trash2, Check, UserCog, Users as UsersIcon } from "lucide-react";
 
-type Tab = "config" | "fineTypes" | "positions" | "data";
+type Tab = "config" | "fineTypes" | "positions" | "data" | "users";
 
 interface ConfigItem {
   key: string;
@@ -36,10 +36,6 @@ interface FineType {
 const CONFIG_LABELS: Record<string, string> = {
   spond_group_id: da.admin.config.spondGroupId,
   late_response_hours: da.admin.config.lateResponseHours,
-  fine_missing_match: da.admin.config.fineMissingMatch,
-  fine_missing_training: da.admin.config.fineMissingTraining,
-  fine_no_response: da.admin.config.fineNoResponse,
-  fine_training_loss: da.admin.config.fineTrainingLoss,
 };
 
 const TAB_ICONS: Record<Tab, React.ReactNode> = {
@@ -47,6 +43,7 @@ const TAB_ICONS: Record<Tab, React.ReactNode> = {
   fineTypes: <FileText className="w-4 h-4" />,
   positions: <UserCog className="w-4 h-4" />,
   data: <Database className="w-4 h-4" />,
+  users: <UsersIcon className="w-4 h-4" />,
 };
 
 export default function AdminSettingsPage() {
@@ -57,6 +54,7 @@ export default function AdminSettingsPage() {
     { id: "fineTypes", label: da.admin.tabs.fineTypes },
     { id: "positions", label: "Spillerpositioner" },
     { id: "data", label: da.admin.tabs.data },
+    { id: "users", label: da.admin.tabs.users },
   ];
 
   return (
@@ -87,6 +85,7 @@ export default function AdminSettingsPage() {
       {activeTab === "fineTypes" && <FineTypesTab />}
       {activeTab === "positions" && <PlayerPositionsTab />}
       {activeTab === "data" && <DataTab />}
+      {activeTab === "users" && <UsersTab />}
     </div>
   );
 }
@@ -312,17 +311,17 @@ function FineTypesTab() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {!ft.is_system && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        data-testid={`admin-fine-type-edit-${ft.id}`}
-                        onClick={() => startEdit(ft)}
-                      >
-                        <Pencil className="w-3.5 h-3.5 mr-1" />
-                        {da.common.edit}
-                      </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      data-testid={`admin-fine-type-edit-${ft.id}`}
+                      onClick={() => startEdit(ft)}
+                    >
+                      <Pencil className="w-3.5 h-3.5 mr-1" />
+                      {da.common.edit}
+                    </Button>
+                    {!ft.is_system && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -333,8 +332,8 @@ function FineTypesTab() {
                         <Trash2 className="w-3.5 h-3.5 mr-1" />
                         {da.common.delete}
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -367,16 +366,23 @@ function PlayerPositionsTab() {
   const [players, setPlayers] = useState<PlayerWithPositions[]>([]);
   const [modified, setModified] = useState<Record<string, Position[]>>({});
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
+    setLoading(true);
     api.get<PlayerWithPositions[]>("/formations/players/positions")
       .then((data) => {
         if (Array.isArray(data)) {
           setPlayers(data);
         }
       })
-      .catch(() => {/* ignore - players will remain empty */});
+      .catch((err) => {
+        setError("Kunne ikke hente spillere");
+        console.error("Failed to load player positions:", err);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const togglePosition = (playerId: string, position: Position) => {
@@ -434,6 +440,12 @@ function PlayerPositionsTab() {
         )}
       </CardHeader>
       <CardContent>
+        {loading && <p className="text-zinc-400 py-4">{da.common.loading}</p>}
+        {error && <p className="text-red-400 py-4">{error}</p>}
+        {!loading && !error && players.length === 0 && (
+          <p className="text-zinc-500 py-4">Ingen spillere fundet. Synkroniser fra Spond for at hente spillere.</p>
+        )}
+        {!loading && players.length > 0 && (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -488,6 +500,7 @@ function PlayerPositionsTab() {
             </TableBody>
           </Table>
         </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -583,5 +596,207 @@ function DataTab() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+interface UserRecord {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  approved: number;
+  player_name: string | null;
+  created_at: string;
+}
+
+const ROLE_BADGE_COLORS: Record<string, string> = {
+  admin: "bg-red-500/20 text-red-400 border-red-500/30",
+  spiller: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  fan: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
+};
+
+function UsersTab() {
+  const [users, setUsers] = useState<UserRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const loadUsers = useCallback(() => {
+    api.get<UserRecord[]>("/admin/users")
+      .then(setUsers)
+      .catch(() => toast("Kunne ikke hente brugere", "error"))
+      .finally(() => setLoading(false));
+  }, [toast]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  const pendingUsers = users.filter((u) => !u.approved);
+  const allUsers = users;
+
+  const handleApprove = async (id: string) => {
+    try {
+      await api.patch(`/admin/users/${id}/approve`);
+      toast("Bruger godkendt", "success");
+      loadUsers();
+    } catch {
+      toast("Kunne ikke godkende bruger", "error");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Er du sikker på, at du vil slette denne bruger?")) return;
+    try {
+      await api.delete(`/admin/users/${id}`);
+      toast(da.admin.users.deleted, "success");
+      loadUsers();
+    } catch {
+      toast("Kunne ikke slette bruger", "error");
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card data-testid="admin-users-section">
+        <CardContent className="py-8">
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 bg-zinc-800 rounded animate-pulse" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6" data-testid="admin-users-section">
+      {/* Pending approvals */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UsersIcon className="w-5 h-5 text-amber-400" />
+            {da.admin.users.pending}
+            {pendingUsers.length > 0 && (
+              <Badge variant="warning" data-testid="admin-users-pending-count">
+                {pendingUsers.length}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {pendingUsers.length === 0 ? (
+            <p className="text-sm text-zinc-500" data-testid="admin-users-no-pending">
+              {da.admin.users.noPending}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {pendingUsers.map((u) => (
+                <div
+                  key={u.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border border-amber-500/20 bg-amber-500/5"
+                  data-testid={`admin-user-pending-${u.id}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-zinc-200">{u.name}</p>
+                    <p className="text-xs text-zinc-500">{u.email}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border ${ROLE_BADGE_COLORS[u.role] || ROLE_BADGE_COLORS.fan}`}>
+                        {(da.roles as Record<string, string>)[u.role] || u.role}
+                      </span>
+                      {u.player_name && (
+                        <span className="text-xs text-zinc-500">Spond: {u.player_name}</span>
+                      )}
+                      <span className="text-xs text-zinc-600">
+                        {new Date(u.created_at).toLocaleDateString("da-DK")}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => handleApprove(u.id)}
+                      data-testid={`admin-user-approve-${u.id}`}
+                    >
+                      <Check className="w-3.5 h-3.5 mr-1" />
+                      {da.admin.users.approve}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-400 hover:text-red-300"
+                      onClick={() => handleDelete(u.id)}
+                      data-testid={`admin-user-reject-${u.id}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1" />
+                      {da.admin.users.reject}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* All users */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{da.admin.users.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{da.admin.users.name}</TableHead>
+                  <TableHead>{da.admin.users.email}</TableHead>
+                  <TableHead>{da.admin.users.role}</TableHead>
+                  <TableHead>{da.admin.users.status}</TableHead>
+                  <TableHead>{da.admin.users.created}</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allUsers.map((u) => (
+                  <TableRow key={u.id} data-testid={`admin-user-row-${u.id}`}>
+                    <TableCell className="font-medium text-zinc-200">{u.name}</TableCell>
+                    <TableCell className="text-zinc-400">{u.email}</TableCell>
+                    <TableCell>
+                      <span className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border ${ROLE_BADGE_COLORS[u.role] || ROLE_BADGE_COLORS.fan}`}>
+                        {(da.roles as Record<string, string>)[u.role] || u.role}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {u.approved ? (
+                        <Badge variant="success">{da.admin.users.approved}</Badge>
+                      ) : (
+                        <Badge variant="warning">{da.common.pending}</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-zinc-500 tabular-nums">
+                      {new Date(u.created_at).toLocaleDateString("da-DK")}
+                    </TableCell>
+                    <TableCell>
+                      {u.role !== "admin" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-400 hover:text-red-300"
+                          onClick={() => handleDelete(u.id)}
+                          data-testid={`admin-user-delete-${u.id}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

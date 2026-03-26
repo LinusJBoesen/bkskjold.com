@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { sql } from "../lib/db";
 import { randomUUID } from "crypto";
+import { requireRole } from "../middleware/auth";
 
 const formations = new Hono();
 
@@ -35,13 +36,13 @@ const FORMATION_SLOTS: Record<string, { index: number; position: string }[]> = {
   ],
 };
 
-// GET /api/formations/slots — get formation slot definitions
-formations.get("/slots", (c) => {
+// GET /api/formations/slots — get formation slot definitions (admin + spiller)
+formations.get("/slots", requireRole("admin", "spiller"), (c) => {
   return c.json(FORMATION_SLOTS);
 });
 
-// POST /api/formations — create/save a formation
-formations.post("/", async (c) => {
+// POST /api/formations — create/save a formation (admin only)
+formations.post("/", requireRole("admin"), async (c) => {
   const body = await c.req.json();
   const { matchId, teamNumber, formation, slots } = body;
 
@@ -68,8 +69,8 @@ formations.post("/", async (c) => {
   return c.json({ id, matchId, teamNumber, formation });
 });
 
-// GET /api/formations/:matchId/:teamNumber — get saved formation
-formations.get("/:matchId/:teamNumber", async (c) => {
+// GET /api/formations/:matchId/:teamNumber — get saved formation (admin + spiller)
+formations.get("/:matchId/:teamNumber", requireRole("admin", "spiller"), async (c) => {
   const { matchId, teamNumber } = c.req.param();
 
   const [formation] = await sql`
@@ -93,8 +94,8 @@ formations.get("/:matchId/:teamNumber", async (c) => {
   return c.json({ formation: { ...formation, slots } });
 });
 
-// PUT /api/formations/:id — update formation
-formations.put("/:id", async (c) => {
+// PUT /api/formations/:id — update formation (admin only)
+formations.put("/:id", requireRole("admin"), async (c) => {
   const { id } = c.req.param();
   const body = await c.req.json();
   const { formation, slots } = body;
@@ -121,8 +122,8 @@ formations.put("/:id", async (c) => {
   return c.json({ success: true });
 });
 
-// DELETE /api/formations/:id — delete formation
-formations.delete("/:id", async (c) => {
+// DELETE /api/formations/:id — delete formation (admin only)
+formations.delete("/:id", requireRole("admin"), async (c) => {
   const { id } = c.req.param();
 
   const [existing] = await sql`SELECT * FROM lineup_formations WHERE id = ${id}`;
@@ -134,8 +135,8 @@ formations.delete("/:id", async (c) => {
   return c.json({ success: true });
 });
 
-// GET /api/formations/players/positions — get all players with their positions
-formations.get("/players/positions", async (c) => {
+// GET /api/formations/players/positions — get all players with their positions (admin + spiller)
+formations.get("/players/positions", requireRole("admin", "spiller"), async (c) => {
   const players = await sql`SELECT * FROM players WHERE active = 1 ORDER BY display_name` as any[];
   const positions = await sql`SELECT * FROM player_positions` as any[];
 
@@ -155,15 +156,15 @@ formations.get("/players/positions", async (c) => {
   return c.json(result);
 });
 
-// GET /api/formations/players/:id/positions — get player's positions
-formations.get("/players/:id/positions", async (c) => {
+// GET /api/formations/players/:id/positions — get player's positions (admin + spiller)
+formations.get("/players/:id/positions", requireRole("admin", "spiller"), async (c) => {
   const { id } = c.req.param();
   const rows = await sql`SELECT position FROM player_positions WHERE player_id = ${id}` as any[];
   return c.json({ playerId: id, positions: rows.map((r: any) => r.position) });
 });
 
-// PUT /api/formations/players/:id/positions — set player's positions
-formations.put("/players/:id/positions", async (c) => {
+// PUT /api/formations/players/:id/positions — set player's positions (admin only)
+formations.put("/players/:id/positions", requireRole("admin"), async (c) => {
   const { id } = c.req.param();
   const body = await c.req.json();
   const { positions } = body;

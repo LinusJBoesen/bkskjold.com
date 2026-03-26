@@ -2,8 +2,12 @@ import { Hono } from "hono";
 import { sql } from "../lib/db";
 import { SpondClient } from "../services/spond";
 import { scrapeStandings, scrapeMatchHistory } from "../services/dbu";
+import { requireRole } from "../middleware/auth";
 
 const sync = new Hono();
+
+// All sync routes are admin only
+sync.use("/*", requireRole("admin"));
 
 sync.post("/spond", async (c) => {
   const groupId = process.env.SPOND_GROUP_ID;
