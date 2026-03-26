@@ -37,8 +37,8 @@ export default function FinesOverviewPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const totalUnpaid = summaries.reduce((sum, s) => sum + s.unpaid, 0);
-  const totalPaid = summaries.reduce((sum, s) => sum + s.paid, 0);
+  const totalUnpaid = summaries.reduce((sum, s) => sum + Number(s.unpaid), 0);
+  const totalPaid = summaries.reduce((sum, s) => sum + Number(s.paid), 0);
 
   return (
     <div data-testid="page-fines" className="animate-fade-in-up">
@@ -133,11 +133,11 @@ export default function FinesOverviewPage() {
                       data-testid={`fine-player-row-${s.id}`}
                     >
                       <TableCell className="font-medium text-zinc-200">{s.display_name}</TableCell>
-                      <TableCell className="text-right tabular-nums text-zinc-300">{s.total} kr</TableCell>
-                      <TableCell className="text-right tabular-nums text-emerald-400">{s.paid} kr</TableCell>
+                      <TableCell className="text-right tabular-nums text-zinc-300">{Number(s.total)} kr</TableCell>
+                      <TableCell className="text-right tabular-nums text-emerald-400">{Number(s.paid)} kr</TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {s.unpaid > 0 ? (
-                          <Badge variant="error">{s.unpaid} kr</Badge>
+                        {Number(s.unpaid) > 0 ? (
+                          <Badge variant="error">{Number(s.unpaid)} kr</Badge>
                         ) : (
                           <Badge variant="success">0 kr</Badge>
                         )}
