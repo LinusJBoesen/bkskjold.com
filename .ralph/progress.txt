@@ -1,8 +1,8 @@
 # Skjold Bode Brugerregistrering & Rollesystem — PROGRESS
 
 ## Current Status
-- **Round**: 1 (COMPLETE)
-- **Task**: Database + Registrerings-API
+- **Round**: 2 (COMPLETE)
+- **Task**: Admin Bruger-API + Rute-beskyttelse
 - **Last updated**: 2026-03-26
 
 ## Checklist
@@ -20,13 +20,13 @@
 - [x] Commit
 
 ### Round 2: Admin Bruger-API + Rute-beskyttelse
-- [ ] GET /api/admin/users
-- [ ] GET /api/admin/users/pending
-- [ ] PATCH /api/admin/users/:id/approve
-- [ ] DELETE /api/admin/users/:id
-- [ ] Role-based route protection
-- [ ] Run E2E tests — all pass
-- [ ] Commit
+- [x] GET /api/admin/users
+- [x] GET /api/admin/users/pending
+- [x] PATCH /api/admin/users/:id/approve
+- [x] DELETE /api/admin/users/:id
+- [x] Role-based route protection
+- [x] Run E2E tests — all pass (8 pre-existing failures, 0 new)
+- [x] Commit
 
 ### Round 3: Frontend — Registrering, Auth-hook, UI-tweaks
 - [ ] i18n strings for registration
@@ -66,3 +66,4 @@
 | Date | Hash | Description |
 |------|------|-------------|
 | 2026-03-26 | TBD | feat(skjold): user registration backend with roles, password hashing, admin bootstrap |
+| 2026-03-26 | TBD | feat(skjold): admin user management API and role-based route protection |

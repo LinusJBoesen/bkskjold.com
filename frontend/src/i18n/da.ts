@@ -72,10 +72,6 @@ export const da = {
       title: "Systemkonfiguration",
       spondGroupId: "Spond Gruppe-ID",
       lateResponseHours: "Svarfrist (timer)",
-      fineMissingMatch: "Bøde: Manglende kamp (kr)",
-      fineMissingTraining: "Bøde: Manglende træning (kr)",
-      fineNoResponse: "Bøde: Intet svar (kr)",
-      fineTrainingLoss: "Bøde: Tabt træning (kr)",
       saved: "Konfiguration gemt",
     },
     fineTypes: {

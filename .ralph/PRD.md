@@ -1,292 +1,257 @@
-# Skjold Bode Formation Builder — PRD
+# Skjold Bode Brugerregistrering & Rollesystem — PRD
 
 ## Goal
 
-Build a Football Manager / FIFA-style visual formation and lineup builder for 7-a-side training matches. Coaches can assign player positions, choose formations, drag-and-drop players onto a visual pitch, and manage bench slots — all integrated with Spond availability data.
+Byg et brugerregistrerings- og rollesystem til BK Skjold appen. Tre roller: Admin (fuld adgang), Spiller (kan se alt men ikke oprette/redigere), Fan (begrænset adgang). Inkluderer registreringsside, admin-godkendelse af spillere, og rolle-baseret UI.
 
 ## Feature Overview
 
-### Player Positions
-Each player can be assigned one or more preferred positions:
-- **Keeper** (K) — Goalkeeper
-- **Forsvar** (F) — Defender
-- **Kant** (Ka) — Wing
-- **Central** (C) — Central midfielder
-- **Angriber** (A) — Attacker
+### Roller
+| Rolle | Adgang | Godkendelse |
+|-------|--------|-------------|
+| **Admin** | Alt | Env-bootstrap eller manuelt |
+| **Spiller** | Se alt, men kan IKKE oprette hold, tildele bøder, eller tilgå admin | Kræver admin-godkendelse |
+| **Fan** | Dashboard, Turnering, Kampanalyse | Auto-godkendt |
 
-Players can have multiple positions (e.g., a player might play both Wing and Attacker). Positions are stored in the database and managed via admin settings.
+### Registrering
+- Tilmeldingsformular med navn, email, password, rolle-valg (Fan/Spiller)
+- Spillere kan angive Spond email for at koble til eksisterende spiller-profil
+- Fans godkendes automatisk, spillere afventer admin-godkendelse
+- "Tilmeld dig"-knap på både landing-side og login-side
 
-### Formations (7-a-side)
-Three formations available:
+### Admin Brugerhåndtering
+- Admin ser ventende tilmeldinger i admin-panelet
+- Godkend eller afvis spillere
+- Fuld brugerliste med roller og status
 
-1. **1-2-3-1** — 1 Keeper, 2 Defenders, 2 Wings + 1 Central Mid, 1 Attacker
-2. **1-3-2-1** — 1 Keeper, 3 Defenders, 2 Central Mids, 1 Attacker
-3. **1-3-3** — 1 Keeper, 3 Defenders, 2 Wings + 1 Central Mid (no dedicated attacker)
-
-### Visual Pitch
-A top-down football pitch with:
-- Field lines (center circle, penalty areas, halfway line)
-- Player cards positioned at formation slots
-- Empty slots shown as dashed placeholders with position label
-- Cards show: player name, position badge, profile picture (or initials)
-- Dark green pitch aesthetic matching the app's dark theme
-
-### Drag and Drop
-- Drag players from the available player list onto pitch slots
-- Drag players between positions on the pitch
-- Drag players to/from the bench
-- Visual feedback: highlight valid drop zones, ghost card while dragging
-- Use HTML5 Drag and Drop API (no external library needed)
-
-### Bench
-- 3 bench slots below the pitch
-- Players on bench are available but not in the starting formation
-- For training there are no substitutions — bench is just overflow/rotation tracking
-
-### Player Source
-- **Spond integration**: Players who accepted the next training/match event are auto-loaded
-- **Manual add**: Button to add players who didn't reply on Spond (from all active players list)
-- Shows availability status indicator for each player
-
-### Integration with Existing Team Selector
-- The formation view is a new tab/mode alongside the existing team generator
-- After teams are generated (Team 1 / Team 2), each team can be viewed in formation mode
-- Formation assignments are per-match, not permanent (but player position preferences persist)
+### UI Ændringer
+- Dashboard overskrift komprimeret (mere plads til indhold)
+- Sidebar filtreret efter rolle
+- Handlingsknapper skjult for ikke-admins
+- Rolle-badge i header
 
 ---
 
 ## Rounds
 
-### Round 1: Database + API — Player Positions & Formations
+### Round 1: Database + Registrerings-API
 
 **Backend changes:**
 
-- [ ] Add `player_positions` table: `player_id TEXT, position TEXT ('keeper'|'defender'|'wing'|'midfield'|'attacker'), PRIMARY KEY (player_id, position)`
-- [ ] Add `lineup_formations` table: `id TEXT PRIMARY KEY, match_id TEXT, team_number INTEGER (1 or 2), formation TEXT ('1-2-3-1'|'1-3-2-1'|'1-3-3'), created_at TEXT`
-- [ ] Add `lineup_slots` table: `formation_id TEXT, slot_index INTEGER, player_id TEXT, position TEXT, is_bench INTEGER DEFAULT 0, PRIMARY KEY (formation_id, slot_index)`
-- [ ] Add migration for new tables in `db/migrate.ts`
-- [ ] API routes for player positions:
-  - `GET /api/players/:id/positions` — get player's positions
-  - `PUT /api/players/:id/positions` — set player's positions (body: `{ positions: string[] }`)
-  - `GET /api/players/positions` — get all players with their positions
-- [ ] API routes for formations:
-  - `POST /api/formations` — create/save a formation (body: `{ matchId?, teamNumber, formation, slots: [{slotIndex, playerId, position, isBench}] }`)
-  - `GET /api/formations/:matchId/:teamNumber` — get saved formation for a match team
-  - `PUT /api/formations/:id` — update formation (change formation type or slot assignments)
-  - `DELETE /api/formations/:id` — delete formation
-- [ ] Formation slot definitions (which positions go where for each formation type):
+- [ ] Add `users` table to `backend/src/db/schema.ts`:
+  ```sql
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('admin','spiller','fan')) DEFAULT 'fan',
+    player_id TEXT REFERENCES players(id),
+    approved INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )
   ```
-  1-2-3-1: [keeper, defender, defender, wing, midfield, wing, attacker]
-  1-3-2-1: [keeper, defender, defender, defender, midfield, midfield, attacker]
-  1-3-3:   [keeper, defender, defender, defender, wing, midfield, wing]
+- [ ] Admin bootstrap in `backend/src/db/migrate.ts`: If no admin user in DB, create one from `ADMIN_EMAIL`/`ADMIN_PASSWORD` env vars with role=admin, approved=1
+- [ ] Extend session type in `backend/src/middleware/auth.ts`:
+  ```typescript
+  { email: string; role: 'admin' | 'spiller' | 'fan'; userId: string; createdAt: number }
   ```
+- [ ] Update `createSession()` to accept role and userId
+- [ ] Create `requireRole(...roles)` middleware factory
+- [ ] `POST /api/auth/register` (public):
+  - Accepts `{ name, email, password, role, spondEmail? }`
+  - Uses `Bun.password.hash(password, "bcrypt")` for hashing
+  - Fan: set approved=1 (auto-approved)
+  - Spiller: set approved=0 (pending). If spondEmail provided, lookup player by matching in players table, set player_id
+  - Reject duplicate emails
+  - Password min 6 characters
+- [ ] Refactor `POST /api/auth/login`:
+  - First check DB users with `Bun.password.verify()`
+  - Reject if approved=0 with message "Afventer godkendelse"
+  - Fallback: check env-based ADMIN_EMAIL/ADMIN_PASSWORD (backward compat)
+  - Create session with role and userId
+- [ ] Update `GET /api/auth/me` to return `{ email, name, role, playerId }`
 - [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): formation builder backend — positions, formations, lineups API`
+- [ ] Commit: `feat(skjold): user registration backend with roles, password hashing, admin bootstrap`
 
-### Round 2: Frontend — Pitch Component & Formation Rendering
+### Round 2: Admin Bruger-API + Rute-beskyttelse
 
-**Build the visual pitch and formation display:**
+**Backend changes:**
 
-- [ ] Create `frontend/src/components/pitch/` directory:
-  - `Pitch.tsx` — The football pitch SVG/div with field markings (dark green)
-  - `FormationSlot.tsx` — A position slot on the pitch (empty or filled with player card)
-  - `PlayerCard.tsx` — Small card showing player name, position badge, avatar
-  - `BenchArea.tsx` — Bench row below the pitch with 3 slots
-  - `FormationSelector.tsx` — Dropdown/tabs to switch between the 3 formations
-- [ ] Pitch layout: CSS grid or absolute positioning to place slots according to formation
-  - Each formation defines x,y coordinates (as percentages) for its 7 slots
-  - Pitch is responsive (scales with container width, maintains aspect ratio)
-- [ ] Formation slot positions (approximate % from top-left of pitch):
-  ```
-  1-2-3-1:
-    Keeper:     (50%, 90%)
-    Def left:   (30%, 70%)
-    Def right:  (70%, 70%)
-    Wing left:  (15%, 45%)
-    Mid center: (50%, 45%)
-    Wing right: (85%, 45%)
-    Attacker:   (50%, 15%)
+- [ ] `GET /api/admin/users` (admin only) — list all users with player display_name if linked
+- [ ] `GET /api/admin/users/pending` (admin only) — list unapproved spiller users
+- [ ] `PATCH /api/admin/users/:id/approve` (admin only) — set approved=1
+- [ ] `DELETE /api/admin/users/:id` (admin only) — remove user
+- [ ] Apply role-based route protection:
+  - **Admin-only** (write operations):
+    - `POST /api/fines`, `PATCH /api/fines/:id/pay`, `DELETE /api/fines/:id`
+    - All `/api/fines/types/*` mutations (POST, PUT, DELETE)
+    - `POST /api/teams/generate`, `POST /api/teams/swap`
+    - `POST /api/matches`, `PATCH /api/matches/:id/result`, `DELETE /api/matches/:id`
+    - `POST /api/sync/*`
+    - All `/api/admin/*`
+    - `POST /api/formations`, `PUT /api/formations/:id`, `DELETE /api/formations/:id`
+  - **Admin + Spiller** (read operations):
+    - `GET /api/fines/*`, `GET /api/players/*`, `GET /api/matches/*`
+    - `GET /api/teams/*`, `GET /api/formations/*`, `GET /api/analysis/*`
+  - **All authenticated** (admin + spiller + fan):
+    - `GET /api/stats/dashboard`, `GET /api/tournament/*`, `GET /api/auth/me`
+- [ ] Unapproved users return 401 on any protected route
+- [ ] Run E2E tests — all pass (E2E uses env-based admin login)
+- [ ] Commit: `feat(skjold): admin user management API and role-based route protection`
 
-  1-3-2-1:
-    Keeper:     (50%, 90%)
-    Def left:   (25%, 70%)
-    Def center: (50%, 70%)
-    Def right:  (75%, 70%)
-    Mid left:   (35%, 45%)
-    Mid right:  (65%, 45%)
-    Attacker:   (50%, 15%)
+### Round 3: Frontend — Registrering, Auth-hook, UI-tweaks
 
-  1-3-3:
-    Keeper:     (50%, 90%)
-    Def left:   (25%, 70%)
-    Def center: (50%, 70%)
-    Def right:  (75%, 70%)
-    Wing left:  (20%, 35%)
-    Mid center: (50%, 35%)
-    Wing right: (80%, 35%)
-  ```
-- [ ] Player cards on pitch: dark bg, rounded, shows name + position abbreviation + avatar
-- [ ] Empty slots: dashed border, position abbreviation label, subtle pulse animation
-- [ ] Add Danish strings to `i18n/da.ts` for all new UI text
+**Frontend changes:**
+
+- [ ] Add i18n strings to `frontend/src/i18n/da.ts`:
+  - register.title, register.name, register.email, register.password
+  - register.role, register.fan, register.player, register.spondEmail
+  - register.spondHint, register.submit, register.loginLink
+  - register.success, register.pendingApproval, register.fanReady
+  - login.registerLink
+- [ ] Create `frontend/src/pages/register.tsx`:
+  - Name, email, password fields
+  - Role selector: radio/tabs for "Fan" / "Spiller"
+  - Spond email field (visible only when "Spiller" selected)
+  - On submit: call `POST /api/auth/register`
+  - Fan success → show "Du kan nu logge ind" + link to login
+  - Spiller success → show "Afventer godkendelse fra administrator"
+  - Error handling: duplicate email, validation errors
+  - data-testid on all elements
+- [ ] Update `frontend/src/hooks/use-auth.ts`:
+  - Add `role` and `name` to AuthState
+  - Parse from `/api/auth/me` response
+- [ ] Update `frontend/src/App.tsx`:
+  - Add `/register` route (public, like `/login`)
+- [ ] Update `frontend/src/pages/login.tsx`:
+  - Add "Har du ikke en konto? Tilmeld dig" link to `/register`
+- [ ] Update landing page (in `App.tsx` or dedicated landing):
+  - Add "Tilmeld dig" button linking to `/register`
+- [ ] Update `frontend/src/pages/dashboard.tsx`:
+  - Compress heading: remove logo from header area, reduce spacing
+  - Keep sync button and title, just more compact
 - [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): formation pitch component with visual field and player cards`
+- [ ] Commit: `feat(skjold): registration page, auth role support, signup buttons on landing/login`
 
-### Round 3: Frontend — Drag and Drop & Player Panel
+### Round 4: Frontend — Rolle-baseret UI + Admin Godkendelsespanel
 
-**Make it interactive:**
+**Frontend changes:**
 
-- [ ] Create `PlayerPanel.tsx` — sidebar/drawer listing available players
-  - Shows players from Spond who accepted (auto-loaded)
-  - "Tilføj spiller" (Add player) button to add from all active players not yet in lineup
-  - Each player row: avatar, name, position badges, drag handle
-  - Players already on pitch/bench are grayed out or hidden
-  - Search/filter by name
-- [ ] Implement HTML5 Drag and Drop:
-  - Drag from player panel → drop on pitch slot or bench slot
-  - Drag from pitch slot → drop on another pitch slot (swap)
-  - Drag from pitch slot → drop on bench (move to bench)
-  - Drag from bench → drop on pitch slot (move to pitch)
-  - Drag from pitch/bench → drop back on player panel (remove from lineup)
-- [ ] Drop zone validation:
-  - Highlight valid drop zones when dragging (green glow)
-  - Show position compatibility indicator (player's preferred positions vs slot position)
-  - Allow dropping on any slot regardless of position (flexibility), but show warning color if position mismatch
-- [ ] Visual drag feedback:
-  - Dragged card shows as semi-transparent ghost
-  - Drop target highlights with border glow
-  - Smooth transition when card lands
-- [ ] Add `data-testid` attributes on all interactive elements
+- [ ] Update `frontend/src/components/layout/sidebar.tsx`:
+  - Accept `role` from useAuth or prop
+  - Filter navItems by role:
+    - Fan: Oversigt (Dashboard), Turnering, Kampanalyse
+    - Spiller: all except Admin
+    - Admin: all
+- [ ] Update `frontend/src/App.tsx` (ProtectedLayout):
+  - Route guards: redirect fan from /fines, /teams, /history, /admin to /dashboard
+- [ ] Update fines pages:
+  - Hide "Tilføj bøde" button, pay/delete actions for non-admin
+- [ ] Update teams page:
+  - Hide "Generer hold" button for non-admin
+- [ ] Update `frontend/src/pages/admin/settings.tsx`:
+  - Add "Brugere" tab with Users icon
+  - Pending approval section at top with approve/reject buttons
+  - Full user list with role badges
+  - Each pending row: name, email, linked player, created date, approve/reject
+- [ ] Update `frontend/src/components/layout/header.tsx`:
+  - Show role badge next to email
+- [ ] Add i18n strings:
+  - admin.tabs.users, admin.users.title, admin.users.pending
+  - admin.users.approve, admin.users.reject, admin.users.noPending
+  - roles.admin, roles.spiller, roles.fan
+- [ ] data-testid on all new elements
 - [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): drag and drop formation builder with player panel`
+- [ ] Commit: `feat(skjold): role-based sidebar, action gating, admin user approval panel`
 
-### Round 4: Integration — Team Selector + Formation View + Position Admin
+### Round 5: Polish, Edge Cases & E2E Tests
 
-**Wire everything together:**
+**Testing & polish:**
 
-- [ ] Add "Formation" tab/toggle in the team selector page
-  - After generating teams, user can switch to formation view for Team 1 or Team 2
-  - Players from generated team auto-populate the formation (best-fit based on positions)
-  - User can then rearrange via drag-and-drop
-- [ ] Auto-assignment logic: when switching to formation view, assign players to slots based on their preferred positions (best fit algorithm)
-- [ ] Add player position management in admin settings:
-  - New section "Spillerpositioner" (Player Positions)
-  - List all players with checkboxes for each position
-  - Bulk-save positions
-- [ ] Save/load formations:
-  - "Gem opstilling" (Save lineup) button saves to backend
-  - When returning to a match, load saved formation if exists
-- [ ] Manual player add:
-  - "Tilføj spiller" opens a modal/dropdown with all active players not in the current lineup
-  - Added players appear in the player panel ready to be dragged onto the pitch
-- [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): formation builder integration with team selector and admin`
-
-### Round 5: Polish, E2E Tests & Edge Cases
-
-**Final polish and test coverage:**
-
-- [ ] Add E2E tests for formation feature:
-  - `specs/formations/pitch-display.spec.ts` — pitch renders, formations switch, slots show
-  - `specs/formations/drag-drop.spec.ts` — drag player to slot, swap players, bench management
-  - `specs/formations/position-admin.spec.ts` — assign positions in admin
-- [ ] Handle edge cases:
-  - Fewer players than formation slots (show empty slots)
-  - More players than slots + bench (extra players stay in panel)
-  - Player with no position preference (show as flexible/any)
-  - Guest players in formation (manual add with no position data)
-- [ ] Responsive design:
-  - On mobile (< lg): pitch scales down, player panel becomes bottom sheet
-  - Touch-friendly: tap to select player, tap slot to place (alternative to drag on mobile)
-- [ ] Animations:
-  - Smooth slot transitions when formation changes
-  - Card entrance animations when players are assigned
-  - Subtle pitch line animations on load
-- [ ] Accessibility: keyboard navigation for slot assignment (tab through slots, enter to assign)
+- [ ] E2E test: `e2e/specs/auth/register.spec.ts`:
+  - Fan registration → login → see limited sidebar
+  - Spiller registration → pending message → cannot login
+  - Duplicate email error
+- [ ] E2E test: `e2e/specs/auth/roles.spec.ts`:
+  - Fan cannot access fines page (redirect)
+  - Spiller can view but not create fines
+  - Admin has full access
+- [ ] E2E test: `e2e/specs/admin/users.spec.ts`:
+  - Admin sees pending users
+  - Admin approves user → user can login
+- [ ] Password min-length validation on frontend and backend
+- [ ] Session invalidation: if admin deletes a user with active session, next request returns 401
+- [ ] Registration page responsive on mobile
+- [ ] Admin users tab responsive on mobile
+- [ ] Env-based admin backward compatibility confirmed
 - [ ] Run ALL E2E tests (existing + new) — all pass
-- [ ] Commit: `feat(skjold): formation builder polish, E2E tests, and responsive design`
+- [ ] Commit: `feat(skjold): registration & roles polish, E2E tests, edge cases`
 
 ---
 
 ## Technical Notes
 
-### Formation Slot Schema
-Each formation type maps to an array of slot definitions:
+### Password Hashing (Bun built-in)
 ```typescript
-interface FormationSlot {
-  index: number;
-  position: 'keeper' | 'defender' | 'wing' | 'midfield' | 'attacker';
-  x: number; // percentage from left
-  y: number; // percentage from top
-  label: string; // Danish display label
+const hash = await Bun.password.hash(password, "bcrypt");
+const valid = await Bun.password.verify(password, hash);
+```
+
+### Database: PostgreSQL via Bun.SQL
+The project uses `Bun.SQL` with PostgreSQL (NOT SQLite). All queries use tagged template literals:
+```typescript
+import { sql } from "../lib/db";
+
+// Parameterized queries (preferred)
+const [user] = await sql`SELECT * FROM users WHERE email = ${email}`;
+await sql`INSERT INTO users (id, name, email, password_hash, role, approved) VALUES (${id}, ${name}, ${email}, ${hash}, ${role}, ${approved})`;
+
+// Dynamic SQL (when query structure varies)
+const rows = await sql.unsafe("SELECT * FROM users WHERE role = $1", [role]);
+```
+
+### Session Type
+```typescript
+// Before
+const sessions = new Map<string, { email: string; createdAt: number }>();
+
+// After
+const sessions = new Map<string, {
+  email: string;
+  role: 'admin' | 'spiller' | 'fan';
+  userId: string;
+  createdAt: number
+}>();
+```
+
+### Role Middleware
+```typescript
+export function requireRole(...roles: string[]) {
+  return createMiddleware(async (c, next) => {
+    const session = c.get("session");
+    if (!session || !roles.includes(session.role)) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+    await next();
+  });
 }
-
-const FORMATIONS: Record<string, FormationSlot[]> = {
-  '1-2-3-1': [
-    { index: 0, position: 'keeper', x: 50, y: 90, label: 'K' },
-    { index: 1, position: 'defender', x: 30, y: 70, label: 'F' },
-    { index: 2, position: 'defender', x: 70, y: 70, label: 'F' },
-    { index: 3, position: 'wing', x: 15, y: 45, label: 'Ka' },
-    { index: 4, position: 'midfield', x: 50, y: 45, label: 'C' },
-    { index: 5, position: 'wing', x: 85, y: 45, label: 'Ka' },
-    { index: 6, position: 'attacker', x: 50, y: 15, label: 'A' },
-  ],
-  '1-3-2-1': [
-    { index: 0, position: 'keeper', x: 50, y: 90, label: 'K' },
-    { index: 1, position: 'defender', x: 25, y: 70, label: 'F' },
-    { index: 2, position: 'defender', x: 50, y: 70, label: 'F' },
-    { index: 3, position: 'defender', x: 75, y: 70, label: 'F' },
-    { index: 4, position: 'midfield', x: 35, y: 45, label: 'C' },
-    { index: 5, position: 'midfield', x: 65, y: 45, label: 'C' },
-    { index: 6, position: 'attacker', x: 50, y: 15, label: 'A' },
-  ],
-  '1-3-3': [
-    { index: 0, position: 'keeper', x: 50, y: 90, label: 'K' },
-    { index: 1, position: 'defender', x: 25, y: 70, label: 'F' },
-    { index: 2, position: 'defender', x: 50, y: 70, label: 'F' },
-    { index: 3, position: 'defender', x: 75, y: 70, label: 'F' },
-    { index: 4, position: 'wing', x: 20, y: 35, label: 'Ka' },
-    { index: 5, position: 'midfield', x: 50, y: 35, label: 'C' },
-    { index: 6, position: 'wing', x: 80, y: 35, label: 'Ka' },
-  ],
-};
 ```
 
-### Position Abbreviations (Danish)
-| Position | Danish | Abbreviation |
-|----------|--------|--------------|
-| Keeper | Målmand | K |
-| Defender | Forsvar | F |
-| Wing | Kant | Ka |
-| Midfield | Central | C |
-| Attacker | Angriber | A |
+### Spond Player Matching
+The `players` table has `display_name` and could match on email if Spond stores it. Pragmatic approach: store the claimed Spond email on the user record, attempt auto-match by looking up players. If no match found, `player_id` stays null — admin can see this during approval and manually link if needed.
 
-### Auto-Assignment Algorithm
-When populating a formation from a generated team:
-1. For each slot (in order: keeper → defenders → midfield/wings → attacker):
-   - Find unassigned player whose preferred positions include the slot's position
-   - If no exact match, find player with closest position (defender ↔ midfield, wing ↔ attacker)
-   - If still no match, assign any remaining unassigned player
-2. Remaining players go to bench (up to 3)
-3. Extra players stay in the available panel
-
-### Drag and Drop Data Transfer
-```typescript
-// On drag start
-e.dataTransfer.setData('application/json', JSON.stringify({
-  playerId: string,
-  source: 'panel' | 'pitch' | 'bench',
-  sourceSlotIndex?: number, // if from pitch/bench
-}));
-```
+### Env-Admin Fallback
+The env-based admin login (ADMIN_EMAIL/ADMIN_PASSWORD) is preserved as a fallback. This ensures existing deployments continue to work. On first startup with the new schema, an admin user is auto-created in the DB from these env vars.
 
 ## Success Criteria
 
-1. Visual pitch displays correctly with all 3 formations
-2. Players can be dragged and dropped between panel, pitch slots, and bench
-3. Player positions are persisted in the database
-4. Formation integrates with existing team generation flow
-5. Position management available in admin settings
-6. Works on mobile with tap-to-assign fallback
+1. Three distinct roles with correct access levels
+2. Registration flow works for both fans and players
+3. Admin can approve/reject player registrations
+4. Sidebar and action buttons respect user role
+5. Existing admin login still works (backward compat)
+6. Spond email matching links players to user accounts
 7. All existing + new E2E tests pass
-8. Dark theme consistent with rest of app
-9. All UI text in Danish
+8. All UI text in Danish

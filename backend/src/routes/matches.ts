@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { sql } from "../lib/db";
 import { randomUUID } from "crypto";
+import { requireRole } from "../middleware/auth";
 
 const matches = new Hono();
 
-// GET /api/matches
-matches.get("/", async (c) => {
+// GET /api/matches (admin + spiller)
+matches.get("/", requireRole("admin", "spiller"), async (c) => {
   const status = c.req.query("status");
   const baseQuery = `
     SELECT m.*,
@@ -29,8 +30,8 @@ matches.get("/", async (c) => {
   return c.json(rows);
 });
 
-// GET /api/matches/:id
-matches.get("/:id", async (c) => {
+// GET /api/matches/:id (admin + spiller)
+matches.get("/:id", requireRole("admin", "spiller"), async (c) => {
   const id = c.req.param("id");
   const [match] = await sql`SELECT * FROM matches WHERE id = ${id}`;
   if (!match) return c.json({ error: "Not found" }, 404);
@@ -45,8 +46,8 @@ matches.get("/:id", async (c) => {
   return c.json({ ...match, players });
 });
 
-// POST /api/matches — create match (from team selector)
-matches.post("/", async (c) => {
+// POST /api/matches — create match (admin only)
+matches.post("/", requireRole("admin"), async (c) => {
   const body = await c.req.json();
   const { team1, team2, date } = body;
   const id = randomUUID();
@@ -64,8 +65,8 @@ matches.post("/", async (c) => {
   return c.json({ id, success: true }, 201);
 });
 
-// PATCH /api/matches/:id/result — register result
-matches.patch("/:id/result", async (c) => {
+// PATCH /api/matches/:id/result — register result (admin only)
+matches.patch("/:id/result", requireRole("admin"), async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json();
   const { winning_team } = body;
@@ -95,15 +96,15 @@ matches.patch("/:id/result", async (c) => {
   return c.json({ success: true });
 });
 
-// DELETE /api/matches/:id
-matches.delete("/:id", async (c) => {
+// DELETE /api/matches/:id (admin only)
+matches.delete("/:id", requireRole("admin"), async (c) => {
   const id = c.req.param("id");
   await sql`DELETE FROM matches WHERE id = ${id}`;
   return c.json({ success: true });
 });
 
-// GET /api/matches/stats — player statistics
-matches.get("/stats/all", async (c) => {
+// GET /api/matches/stats — player statistics (admin + spiller)
+matches.get("/stats/all", requireRole("admin", "spiller"), async (c) => {
   const rows = await sql`
     SELECT
       p.id,
@@ -122,8 +123,8 @@ matches.get("/stats/all", async (c) => {
   return c.json(rows);
 });
 
-// GET /api/matches/export/csv
-matches.get("/export/csv", async (c) => {
+// GET /api/matches/export/csv (admin + spiller)
+matches.get("/export/csv", requireRole("admin", "spiller"), async (c) => {
   const rows = await sql`
     SELECT m.id, m.date, m.status, m.winning_team, mp.player_id, p.display_name, mp.team
     FROM matches m

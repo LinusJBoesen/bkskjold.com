@@ -36,10 +36,6 @@ interface FineType {
 const CONFIG_LABELS: Record<string, string> = {
   spond_group_id: da.admin.config.spondGroupId,
   late_response_hours: da.admin.config.lateResponseHours,
-  fine_missing_match: da.admin.config.fineMissingMatch,
-  fine_missing_training: da.admin.config.fineMissingTraining,
-  fine_no_response: da.admin.config.fineNoResponse,
-  fine_training_loss: da.admin.config.fineTrainingLoss,
 };
 
 const TAB_ICONS: Record<Tab, React.ReactNode> = {
@@ -312,17 +308,17 @@ function FineTypesTab() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {!ft.is_system && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        data-testid={`admin-fine-type-edit-${ft.id}`}
-                        onClick={() => startEdit(ft)}
-                      >
-                        <Pencil className="w-3.5 h-3.5 mr-1" />
-                        {da.common.edit}
-                      </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      data-testid={`admin-fine-type-edit-${ft.id}`}
+                      onClick={() => startEdit(ft)}
+                    >
+                      <Pencil className="w-3.5 h-3.5 mr-1" />
+                      {da.common.edit}
+                    </Button>
+                    {!ft.is_system && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -333,8 +329,8 @@ function FineTypesTab() {
                         <Trash2 className="w-3.5 h-3.5 mr-1" />
                         {da.common.delete}
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -367,16 +363,23 @@ function PlayerPositionsTab() {
   const [players, setPlayers] = useState<PlayerWithPositions[]>([]);
   const [modified, setModified] = useState<Record<string, Position[]>>({});
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
+    setLoading(true);
     api.get<PlayerWithPositions[]>("/formations/players/positions")
       .then((data) => {
         if (Array.isArray(data)) {
           setPlayers(data);
         }
       })
-      .catch(() => {/* ignore - players will remain empty */});
+      .catch((err) => {
+        setError("Kunne ikke hente spillere");
+        console.error("Failed to load player positions:", err);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const togglePosition = (playerId: string, position: Position) => {
@@ -434,6 +437,12 @@ function PlayerPositionsTab() {
         )}
       </CardHeader>
       <CardContent>
+        {loading && <p className="text-zinc-400 py-4">{da.common.loading}</p>}
+        {error && <p className="text-red-400 py-4">{error}</p>}
+        {!loading && !error && players.length === 0 && (
+          <p className="text-zinc-500 py-4">Ingen spillere fundet. Synkroniser fra Spond for at hente spillere.</p>
+        )}
+        {!loading && players.length > 0 && (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -488,6 +497,7 @@ function PlayerPositionsTab() {
             </TableBody>
           </Table>
         </div>
+        )}
       </CardContent>
     </Card>
   );

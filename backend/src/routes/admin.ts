@@ -1,7 +1,59 @@
 import { Hono } from "hono";
 import { sql } from "../lib/db";
+import { requireRole, destroySessionsByUserId } from "../middleware/auth";
 
 const admin = new Hono();
+
+// All admin routes require admin role
+admin.use("/*", requireRole("admin"));
+
+// GET /api/admin/users — list all users with player display_name if linked
+admin.get("/users", async (c) => {
+  const rows = await sql`
+    SELECT u.id, u.name, u.email, u.role, u.approved, u.player_id, u.created_at,
+           p.display_name as player_name
+    FROM users u
+    LEFT JOIN players p ON u.player_id = p.id
+    ORDER BY u.created_at DESC
+  `;
+  return c.json(rows);
+});
+
+// GET /api/admin/users/pending — list unapproved spiller users
+admin.get("/users/pending", async (c) => {
+  const rows = await sql`
+    SELECT u.id, u.name, u.email, u.role, u.player_id, u.created_at,
+           p.display_name as player_name
+    FROM users u
+    LEFT JOIN players p ON u.player_id = p.id
+    WHERE u.approved = 0
+    ORDER BY u.created_at ASC
+  `;
+  return c.json(rows);
+});
+
+// PATCH /api/admin/users/:id/approve — set approved=1
+admin.patch("/users/:id/approve", async (c) => {
+  const id = c.req.param("id");
+  const [user] = await sql`SELECT id FROM users WHERE id = ${id}`;
+  if (!user) {
+    return c.json({ error: "Bruger ikke fundet" }, 404);
+  }
+  await sql`UPDATE users SET approved = 1, updated_at = NOW() WHERE id = ${id}`;
+  return c.json({ success: true });
+});
+
+// DELETE /api/admin/users/:id — remove user
+admin.delete("/users/:id", async (c) => {
+  const id = c.req.param("id");
+  const [user] = await sql`SELECT id FROM users WHERE id = ${id}`;
+  if (!user) {
+    return c.json({ error: "Bruger ikke fundet" }, 404);
+  }
+  destroySessionsByUserId(id);
+  await sql`DELETE FROM users WHERE id = ${id}`;
+  return c.json({ success: true });
+});
 
 // GET /api/admin/config — read all config values
 admin.get("/config", async (c) => {
