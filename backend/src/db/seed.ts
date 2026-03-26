@@ -1,8 +1,6 @@
-import { getDb } from "../lib/db";
+import { sql } from "../lib/db";
 
-export function seed(): void {
-  const db = getDb();
-
+export async function seed(): Promise<void> {
   // System fine types (these are part of the app logic, not test data)
   const fineTypes = [
     { id: "missing_match", name: "Manglende kamp", amount: 100, description: "Ikke mødt til kamp", is_system: 1 },
@@ -11,28 +9,26 @@ export function seed(): void {
     { id: "training_loss", name: "Tabt træning", amount: 25, description: "Tabte holdets træningsmatch", is_system: 1 },
   ];
 
-  const insertFineType = db.prepare(
-    "INSERT OR IGNORE INTO fine_types (id, name, amount, description, is_system) VALUES (?, ?, ?, ?, ?)"
-  );
   for (const ft of fineTypes) {
-    insertFineType.run(ft.id, ft.name, ft.amount, ft.description, ft.is_system);
+    await sql`
+      INSERT INTO fine_types (id, name, amount, description, is_system)
+      VALUES (${ft.id}, ${ft.name}, ${ft.amount}, ${ft.description}, ${ft.is_system})
+      ON CONFLICT (id) DO NOTHING
+    `;
   }
 
   // Default config values
   const configValues = [
     { key: "spond_group_id", value: "" },
     { key: "late_response_hours", value: "24" },
-    { key: "fine_missing_match", value: "100" },
-    { key: "fine_missing_training", value: "30" },
-    { key: "fine_no_response", value: "60" },
-    { key: "fine_training_loss", value: "25" },
   ];
 
-  const insertConfig = db.prepare(
-    "INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)"
-  );
   for (const cfg of configValues) {
-    insertConfig.run(cfg.key, cfg.value);
+    await sql`
+      INSERT INTO config (key, value)
+      VALUES (${cfg.key}, ${cfg.value})
+      ON CONFLICT (key) DO NOTHING
+    `;
   }
 
   console.log("✓ Database initialized");

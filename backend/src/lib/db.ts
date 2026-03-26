@@ -1,15 +1,5 @@
-import { Database } from "bun:sqlite";
-import { join } from "path";
-
-const DB_PATH = join(import.meta.dir, "../../data/skjold.db");
-
-let db: Database | null = null;
-
-export function getDb(): Database {
-  if (!db) {
-    db = new Database(DB_PATH, { create: true });
-    db.exec("PRAGMA journal_mode = WAL");
-    db.exec("PRAGMA foreign_keys = ON");
-  }
-  return db;
-}
+// PostgreSQL via Bun.sql
+// Bun auto-loads .env from cwd; DATABASE_URL may also be set by Railway/hosting
+export const sql = new Bun.SQL({
+  url: process.env.DATABASE_URL || "postgres://localhost:5432/skjold",
+});

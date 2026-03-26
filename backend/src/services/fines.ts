@@ -1,4 +1,4 @@
-import { getDb } from "../lib/db";
+import { sql } from "../lib/db";
 
 interface EventAttendance {
   eventId: string;
@@ -10,13 +10,23 @@ interface EventAttendance {
   respondedAt: string | null;
 }
 
-export function calculateEventFines(
+export async function calculateEventFines(
   eventId: string,
   eventName: string,
   eventDate: string,
   eventType: string,
   attendance: Array<{ playerId: string; response: string; respondedAt: string | null }>
 ) {
+  // Look up amounts from fine_types table
+  const fineTypeRows = await sql`
+    SELECT id, amount FROM fine_types WHERE id IN ('missing_match', 'missing_training', 'no_response_24h')
+  ` as { id: string; amount: number }[];
+
+  const fineAmounts: Record<string, number> = {};
+  for (const row of fineTypeRows) {
+    fineAmounts[row.id] = row.amount;
+  }
+
   const fines: Array<{
     playerId: string;
     fineTypeId: string;
@@ -30,9 +40,8 @@ export function calculateEventFines(
 
   for (const att of attendance) {
     if (att.response === "declined" || att.response === "unanswered") {
-      // Missing match or training
       const fineTypeId = isMatch ? "missing_match" : "missing_training";
-      const amount = isMatch ? 100 : 30;
+      const amount = fineAmounts[fineTypeId] ?? (isMatch ? 100 : 30);
       fines.push({
         playerId: att.playerId,
         fineTypeId,
@@ -44,14 +53,13 @@ export function calculateEventFines(
     }
 
     if (att.response === "unanswered") {
-      // No response within 24h
       fines.push({
         playerId: att.playerId,
         fineTypeId: "no_response_24h",
         eventId,
         eventName,
         eventDate,
-        amount: 60,
+        amount: fineAmounts["no_response_24h"] ?? 60,
       });
     }
   }
@@ -59,15 +67,13 @@ export function calculateEventFines(
   return fines;
 }
 
-export function generateAutoFines() {
-  const db = getDb();
-
-  const events = db.query(`
-    SELECT se.id, se.name, se.start_time, se.event_type,
-           sa.player_id, sa.response, sa.responded_at
+export async function generateAutoFines() {
+  const events = await sql`
+    SELECT se.id as "eventId", se.name as "eventName", se.start_time as "eventDate", se.event_type as "eventType",
+           sa.player_id as "playerId", sa.response, sa.responded_at as "respondedAt"
     FROM spond_events se
     JOIN spond_attendance sa ON se.id = sa.event_id
-  `).all() as EventAttendance[];
+  ` as EventAttendance[];
 
   // Group by event
   const byEvent = new Map<string, typeof events>();
@@ -78,20 +84,16 @@ export function generateAutoFines() {
   }
 
   let created = 0;
-  const insertFine = db.prepare(`
-    INSERT OR IGNORE INTO fines (id, player_id, fine_type_id, event_id, event_name, event_date, amount)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
 
   for (const [eventId, rows] of byEvent) {
-    const first = rows[0];
+    const first = rows[0]!;
     const attendance = rows.map((r) => ({
       playerId: r.playerId,
       response: r.response,
       respondedAt: r.respondedAt,
     }));
 
-    const fines = calculateEventFines(
+    const fines = await calculateEventFines(
       eventId,
       first.eventName,
       first.eventDate,
@@ -101,8 +103,12 @@ export function generateAutoFines() {
 
     for (const fine of fines) {
       const id = `auto-${fine.playerId}-${fine.eventId}-${fine.fineTypeId}`;
-      const result = insertFine.run(id, fine.playerId, fine.fineTypeId, fine.eventId, fine.eventName, fine.eventDate, fine.amount);
-      if (result.changes > 0) created++;
+      const result = await sql`
+        INSERT INTO fines (id, player_id, fine_type_id, event_id, event_name, event_date, amount)
+        VALUES (${id}, ${fine.playerId}, ${fine.fineTypeId}, ${fine.eventId}, ${fine.eventName}, ${fine.eventDate}, ${fine.amount})
+        ON CONFLICT DO NOTHING
+      `;
+      if (result.count > 0) created++;
     }
   }
 

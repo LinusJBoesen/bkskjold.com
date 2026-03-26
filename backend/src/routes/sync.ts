@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getDb } from "../lib/db";
+import { sql } from "../lib/db";
 import { SpondClient } from "../services/spond";
 import { scrapeStandings, scrapeMatchHistory } from "../services/dbu";
 
@@ -10,8 +10,7 @@ sync.post("/spond", async (c) => {
 
   if (!groupId) {
     // If Spond is not configured, return success with seeded data count
-    const db = getDb();
-    const count = db.query("SELECT COUNT(*) as count FROM players").get() as { count: number };
+    const [count] = await sql`SELECT COUNT(*) as count FROM players`;
     return c.json({
       success: true,
       message: "Spond ikke konfigureret — bruger eksisterende data",
@@ -24,52 +23,53 @@ sync.post("/spond", async (c) => {
     const client = new SpondClient();
     const members = await client.getGroupMembers(groupId);
     const events = await client.getEvents(groupId);
-    const db = getDb();
 
     // Upsert players
-    const upsertPlayer = db.prepare(`
-      INSERT INTO players (id, first_name, last_name, display_name, profile_picture, updated_at)
-      VALUES (?, ?, ?, ?, ?, datetime('now'))
-      ON CONFLICT(id) DO UPDATE SET
-        first_name = excluded.first_name,
-        last_name = excluded.last_name,
-        display_name = excluded.display_name,
-        profile_picture = excluded.profile_picture,
-        updated_at = datetime('now')
-    `);
-
     for (const m of members) {
       const displayName = `${m.firstName} ${m.lastName.charAt(0)}.`;
-      upsertPlayer.run(m.id, m.firstName, m.lastName, displayName, m.profilePicture);
+      await sql`
+        INSERT INTO players (id, first_name, last_name, display_name, profile_picture, updated_at)
+        VALUES (${m.id}, ${m.firstName}, ${m.lastName}, ${displayName}, ${m.profilePicture}, NOW())
+        ON CONFLICT(id) DO UPDATE SET
+          first_name = EXCLUDED.first_name,
+          last_name = EXCLUDED.last_name,
+          display_name = EXCLUDED.display_name,
+          profile_picture = EXCLUDED.profile_picture,
+          updated_at = NOW()
+      `;
     }
 
     // Upsert events and attendance
-    const upsertEvent = db.prepare(`
-      INSERT INTO spond_events (id, name, start_time, event_type, synced_at)
-      VALUES (?, ?, ?, ?, datetime('now'))
-      ON CONFLICT(id) DO UPDATE SET
-        name = excluded.name,
-        synced_at = datetime('now')
-    `);
-
-    const upsertAttendance = db.prepare(`
-      INSERT INTO spond_attendance (event_id, player_id, response)
-      VALUES (?, ?, ?)
-      ON CONFLICT(event_id, player_id) DO UPDATE SET
-        response = excluded.response
-    `);
-
     for (const event of events) {
-      upsertEvent.run(event.id, event.heading, event.startTimestamp, event.type);
+      await sql`
+        INSERT INTO spond_events (id, name, start_time, event_type, synced_at)
+        VALUES (${event.id}, ${event.heading}, ${event.startTimestamp}, ${event.type}, NOW())
+        ON CONFLICT(id) DO UPDATE SET
+          name = EXCLUDED.name,
+          synced_at = NOW()
+      `;
+
       const responses = event.responses || {};
       for (const pid of responses.acceptedIds || []) {
-        upsertAttendance.run(event.id, pid, "accepted");
+        await sql`
+          INSERT INTO spond_attendance (event_id, player_id, response)
+          VALUES (${event.id}, ${pid}, 'accepted')
+          ON CONFLICT(event_id, player_id) DO UPDATE SET response = EXCLUDED.response
+        `;
       }
       for (const pid of responses.declinedIds || []) {
-        upsertAttendance.run(event.id, pid, "declined");
+        await sql`
+          INSERT INTO spond_attendance (event_id, player_id, response)
+          VALUES (${event.id}, ${pid}, 'declined')
+          ON CONFLICT(event_id, player_id) DO UPDATE SET response = EXCLUDED.response
+        `;
       }
       for (const pid of responses.unansweredIds || []) {
-        upsertAttendance.run(event.id, pid, "unanswered");
+        await sql`
+          INSERT INTO spond_attendance (event_id, player_id, response)
+          VALUES (${event.id}, ${pid}, 'unanswered')
+          ON CONFLICT(event_id, player_id) DO UPDATE SET response = EXCLUDED.response
+        `;
       }
     }
 
@@ -102,26 +102,22 @@ sync.post("/dbu", async (c) => {
       scrapeMatchHistory(teamId),
     ]);
 
-    const db = getDb();
-
     // Replace standings
-    db.run("DELETE FROM dbu_standings");
-    const insertStanding = db.prepare(`
-      INSERT INTO dbu_standings (position, team_name, matches_played, wins, draws, losses, goal_diff, points)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    await sql`DELETE FROM dbu_standings`;
     for (const s of standings) {
-      insertStanding.run(s.position, s.teamName, s.matchesPlayed, s.wins, s.draws, s.losses, s.goalDiff, s.points);
+      await sql`
+        INSERT INTO dbu_standings (position, team_name, matches_played, wins, draws, losses, goal_diff, points)
+        VALUES (${s.position}, ${s.teamName}, ${s.matchesPlayed}, ${s.wins}, ${s.draws}, ${s.losses}, ${s.goalDiff}, ${s.points})
+      `;
     }
 
     // Replace matches
-    db.run("DELETE FROM dbu_matches");
-    const insertMatch = db.prepare(`
-      INSERT INTO dbu_matches (date, home_team, away_team, home_score, away_score)
-      VALUES (?, ?, ?, ?, ?)
-    `);
+    await sql`DELETE FROM dbu_matches`;
     for (const m of matches) {
-      insertMatch.run(m.date, m.homeTeam, m.awayTeam, m.homeScore, m.awayScore);
+      await sql`
+        INSERT INTO dbu_matches (date, home_team, away_team, home_score, away_score)
+        VALUES (${m.date}, ${m.homeTeam}, ${m.awayTeam}, ${m.homeScore}, ${m.awayScore})
+      `;
     }
 
     // Clear cache so next read gets fresh data

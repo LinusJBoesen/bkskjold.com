@@ -1,4 +1,4 @@
-import { getDb } from "../lib/db";
+import { sql } from "../lib/db";
 
 interface PlayerStats {
   id: string;
@@ -20,21 +20,20 @@ interface TeamResult {
   };
 }
 
-export function calculatePlayerStats(): PlayerStats[] {
-  const db = getDb();
-  const rows = db.query(`
+export async function calculatePlayerStats(): Promise<PlayerStats[]> {
+  const rows = await sql`
     SELECT
       p.id,
       p.display_name,
       COUNT(mp.match_id) as matches,
-      SUM(CASE WHEN m.winning_team = mp.team THEN 1 ELSE 0 END) as wins,
-      SUM(CASE WHEN m.winning_team IS NOT NULL AND m.winning_team != mp.team THEN 1 ELSE 0 END) as losses
+      COALESCE(SUM(CASE WHEN m.winning_team = mp.team THEN 1 ELSE 0 END), 0) as wins,
+      COALESCE(SUM(CASE WHEN m.winning_team IS NOT NULL AND m.winning_team != mp.team THEN 1 ELSE 0 END), 0) as losses
     FROM players p
     LEFT JOIN match_players mp ON p.id = mp.player_id
     LEFT JOIN matches m ON mp.match_id = m.id AND m.status = 'completed'
     WHERE p.active = 1
-    GROUP BY p.id
-  `).all() as Array<{
+    GROUP BY p.id, p.display_name
+  ` as Array<{
     id: string;
     display_name: string;
     matches: number;
@@ -45,15 +44,14 @@ export function calculatePlayerStats(): PlayerStats[] {
   return rows.map((r) => ({
     id: r.id,
     displayName: r.display_name,
-    matches: r.matches || 0,
-    wins: r.wins || 0,
-    losses: r.losses || 0,
-    winRate: r.matches > 0 ? r.wins / r.matches : 0.5,
+    matches: Number(r.matches) || 0,
+    wins: Number(r.wins) || 0,
+    losses: Number(r.losses) || 0,
+    winRate: Number(r.matches) > 0 ? Number(r.wins) / Number(r.matches) : 0.5,
   }));
 }
 
-export function getPlayerWinRate(playerId: string): number {
-  const stats = calculatePlayerStats();
+export function getPlayerWinRate(stats: PlayerStats[], playerId: string): number {
   const player = stats.find((s) => s.id === playerId);
   return player?.winRate ?? 0.5;
 }
@@ -121,11 +119,11 @@ function optimal(players: PlayerStats[]): TeamResult {
   return bestResult!;
 }
 
-export function generateBalancedTeams(
+export async function generateBalancedTeams(
   playerIds: string[],
   algorithm: "greedy" | "optimal" = "greedy"
-): TeamResult {
-  const allStats = calculatePlayerStats();
+): Promise<TeamResult> {
+  const allStats = await calculatePlayerStats();
   const players = playerIds
     .map((id) => allStats.find((s) => s.id === id))
     .filter((s): s is PlayerStats => s !== undefined);
@@ -160,10 +158,10 @@ export function swapPlayers(
 
   if (inTeam1 !== -1) {
     const [player] = newTeam1.splice(inTeam1, 1);
-    newTeam2.push(player);
+    newTeam2.push(player!);
   } else if (inTeam2 !== -1) {
     const [player] = newTeam2.splice(inTeam2, 1);
-    newTeam1.push(player);
+    newTeam1.push(player!);
   }
 
   return { team1: newTeam1, team2: newTeam2, balance: getTeamBalance(newTeam1, newTeam2) };

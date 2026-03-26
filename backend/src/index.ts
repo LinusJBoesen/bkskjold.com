@@ -15,10 +15,11 @@ import analysisRoutes from "./routes/analysis";
 import adminRoutes from "./routes/admin";
 import formationRoutes from "./routes/formations";
 import { authMiddleware } from "./middleware/auth";
+import { sql } from "./lib/db";
 
 // Run migrations and seed on startup
-migrate();
-seed();
+await migrate();
+await seed();
 
 const app = new Hono();
 
@@ -41,9 +42,7 @@ app.route("/api/auth", authRoutes);
 
 // Test seed endpoint — creates test data for E2E tests (non-production only)
 app.post("/api/test/seed", async (c) => {
-  const { getDb } = await import("./lib/db");
   const { randomUUID } = await import("crypto");
-  const db = getDb();
 
   const players = [
     { id: "player-1", first_name: "Anders", last_name: "Jensen", display_name: "Anders J." },
@@ -54,11 +53,12 @@ app.post("/api/test/seed", async (c) => {
     { id: "player-6", first_name: "Søren", last_name: "Christensen", display_name: "Søren C." },
   ];
 
-  const insertPlayer = db.prepare(
-    "INSERT OR IGNORE INTO players (id, first_name, last_name, display_name) VALUES (?, ?, ?, ?)"
-  );
   for (const p of players) {
-    insertPlayer.run(p.id, p.first_name, p.last_name, p.display_name);
+    await sql`
+      INSERT INTO players (id, first_name, last_name, display_name)
+      VALUES (${p.id}, ${p.first_name}, ${p.last_name}, ${p.display_name})
+      ON CONFLICT (id) DO NOTHING
+    `;
   }
 
   const fines = [
@@ -68,11 +68,12 @@ app.post("/api/test/seed", async (c) => {
     { id: randomUUID(), player_id: "player-3", fine_type_id: "training_loss", amount: 25, paid: 0 },
   ];
 
-  const insertFine = db.prepare(
-    "INSERT OR IGNORE INTO fines (id, player_id, fine_type_id, amount, paid) VALUES (?, ?, ?, ?, ?)"
-  );
   for (const f of fines) {
-    insertFine.run(f.id, f.player_id, f.fine_type_id, f.amount, f.paid);
+    await sql`
+      INSERT INTO fines (id, player_id, fine_type_id, amount, paid)
+      VALUES (${f.id}, ${f.player_id}, ${f.fine_type_id}, ${f.amount}, ${f.paid})
+      ON CONFLICT DO NOTHING
+    `;
   }
 
   // DBU standings test data
@@ -89,11 +90,11 @@ app.post("/api/test/seed", async (c) => {
     { position: 10, team_name: "Amager BK", matches_played: 14, wins: 1, draws: 2, losses: 11, goal_diff: "-24", points: 5 },
   ];
 
-  const insertStanding = db.prepare(
-    "INSERT OR IGNORE INTO dbu_standings (position, team_name, matches_played, wins, draws, losses, goal_diff, points) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-  );
   for (const s of standings) {
-    insertStanding.run(s.position, s.team_name, s.matches_played, s.wins, s.draws, s.losses, s.goal_diff, s.points);
+    await sql`
+      INSERT INTO dbu_standings (position, team_name, matches_played, wins, draws, losses, goal_diff, points)
+      VALUES (${s.position}, ${s.team_name}, ${s.matches_played}, ${s.wins}, ${s.draws}, ${s.losses}, ${s.goal_diff}, ${s.points})
+    `;
   }
 
   // DBU matches test data
@@ -105,11 +106,11 @@ app.post("/api/test/seed", async (c) => {
     { date: "2025-02-15", home_team: "BK Skjold", away_team: "Nørrebro United", home_score: 2, away_score: 2 },
   ];
 
-  const insertMatch = db.prepare(
-    "INSERT OR IGNORE INTO dbu_matches (date, home_team, away_team, home_score, away_score) VALUES (?, ?, ?, ?, ?)"
-  );
   for (const m of dbuMatches) {
-    insertMatch.run(m.date, m.home_team, m.away_team, m.home_score, m.away_score);
+    await sql`
+      INSERT INTO dbu_matches (date, home_team, away_team, home_score, away_score)
+      VALUES (${m.date}, ${m.home_team}, ${m.away_team}, ${m.home_score}, ${m.away_score})
+    `;
   }
 
   return c.json({ success: true, players: players.length, fines: fines.length });

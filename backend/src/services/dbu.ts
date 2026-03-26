@@ -1,5 +1,5 @@
 import { parse } from "node-html-parser";
-import { getDb } from "../lib/db";
+import { sql } from "../lib/db";
 
 const DBU_BASE = "https://www.dbu.dk/resultater/hold";
 const USER_AGENT =
@@ -163,10 +163,7 @@ export async function fetchStandings(): Promise<Standing[]> {
     return standingsCache.data;
   }
 
-  const db = getDb();
-  const rows = db
-    .query("SELECT * FROM dbu_standings ORDER BY position ASC")
-    .all() as any[];
+  const rows = await sql`SELECT * FROM dbu_standings ORDER BY position ASC` as any[];
 
   const standings = rows.map((r) => ({
     position: r.position,
@@ -188,10 +185,7 @@ export async function fetchMatchResults(): Promise<DbuMatch[]> {
     return matchesCache.data;
   }
 
-  const db = getDb();
-  const rows = db
-    .query("SELECT * FROM dbu_matches ORDER BY date DESC")
-    .all() as any[];
+  const rows = await sql`SELECT * FROM dbu_matches ORDER BY date DESC` as any[];
 
   const matches = rows.map((r) => ({
     date: r.date,
@@ -209,4 +203,3 @@ export function clearCache() {
   standingsCache = null;
   matchesCache = null;
 }
-

@@ -1,12 +1,11 @@
 import { Hono } from "hono";
-import { getDb } from "../lib/db";
+import { sql } from "../lib/db";
 import { fetchMatchResults } from "../services/dbu";
 
 const analysis = new Hono();
 
 // Cross-reference DBU matches with Spond attendance to get player-level match stats
 analysis.get("/player-rates", async (c) => {
-  const db = getDb();
   const dbuMatches = await fetchMatchResults();
 
   // Find DBU matches involving BK Skjold
@@ -28,19 +27,19 @@ analysis.get("/player-rates", async (c) => {
   });
 
   // Get all active players with their attendance at Spond events near match dates
-  const players = db
-    .query("SELECT id, display_name FROM players WHERE active = 1 ORDER BY display_name")
-    .all() as { id: string; display_name: string }[];
+  const players = await sql`
+    SELECT id, display_name FROM players WHERE active = 1 ORDER BY display_name
+  ` as { id: string; display_name: string }[];
 
   // Get spond events (which may correspond to match days)
-  const spondEvents = db
-    .query("SELECT id, name, start_time FROM spond_events ORDER BY start_time DESC")
-    .all() as { id: string; name: string; start_time: string }[];
+  const spondEvents = await sql`
+    SELECT id, name, start_time FROM spond_events ORDER BY start_time DESC
+  ` as { id: string; name: string; start_time: string }[];
 
   // Build player attendance map from spond_attendance
-  const attendanceRows = db
-    .query("SELECT event_id, player_id, response FROM spond_attendance")
-    .all() as { event_id: string; player_id: string; response: string }[];
+  const attendanceRows = await sql`
+    SELECT event_id, player_id, response FROM spond_attendance
+  ` as { event_id: string; player_id: string; response: string }[];
 
   const attendanceMap = new Map<string, Map<string, string>>();
   for (const row of attendanceRows) {
@@ -51,21 +50,21 @@ analysis.get("/player-rates", async (c) => {
   }
 
   // Calculate per-player stats from internal training matches
-  const statsRows = db.query(`
+  const statsRows = await sql`
     SELECT
       p.id,
       p.display_name,
       p.profile_picture,
       COUNT(mp.match_id) as matches,
-      SUM(CASE WHEN m.winning_team = mp.team THEN 1 ELSE 0 END) as wins,
-      SUM(CASE WHEN m.winning_team IS NOT NULL AND m.winning_team != mp.team THEN 1 ELSE 0 END) as losses
+      COALESCE(SUM(CASE WHEN m.winning_team = mp.team THEN 1 ELSE 0 END), 0) as wins,
+      COALESCE(SUM(CASE WHEN m.winning_team IS NOT NULL AND m.winning_team != mp.team THEN 1 ELSE 0 END), 0) as losses
     FROM players p
     LEFT JOIN match_players mp ON mp.player_id = p.id
     LEFT JOIN matches m ON m.id = mp.match_id AND m.status = 'completed'
     WHERE p.active = 1
-    GROUP BY p.id
+    GROUP BY p.id, p.display_name, p.profile_picture
     ORDER BY p.display_name
-  `).all() as {
+  ` as {
     id: string;
     display_name: string;
     profile_picture: string | null;
@@ -78,10 +77,10 @@ analysis.get("/player-rates", async (c) => {
     id: s.id,
     displayName: s.display_name,
     profilePicture: s.profile_picture || null,
-    trainingMatches: s.matches,
-    trainingWins: s.wins,
-    trainingLosses: s.losses,
-    trainingWinRate: s.matches > 0 ? Math.round((s.wins / s.matches) * 100) : 0,
+    trainingMatches: Number(s.matches),
+    trainingWins: Number(s.wins),
+    trainingLosses: Number(s.losses),
+    trainingWinRate: Number(s.matches) > 0 ? Math.round((Number(s.wins) / Number(s.matches)) * 100) : 0,
   }));
 
   return c.json({

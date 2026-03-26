@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getDb } from "../lib/db";
+import { sql } from "../lib/db";
 import { generateBalancedTeams, swapPlayers, calculatePlayerStats } from "../services/team-generator";
 import { SpondClient } from "../services/spond";
 
@@ -14,7 +14,7 @@ teams.post("/generate", async (c) => {
     return c.json({ error: "Mindst 2 spillere kræves" }, 400);
   }
 
-  const result = generateBalancedTeams(playerIds, algorithm);
+  const result = await generateBalancedTeams(playerIds, algorithm);
   return c.json(result);
 });
 
@@ -27,13 +27,12 @@ teams.post("/swap", async (c) => {
   return c.json(result);
 });
 
-function getPlayersById(ids: string[], stats: ReturnType<typeof calculatePlayerStats>) {
-  const db = getDb();
+async function getPlayersById(ids: string[], stats: Awaited<ReturnType<typeof calculatePlayerStats>>) {
   if (ids.length === 0) return [];
-  const placeholders = ids.map(() => "?").join(",");
-  const players = db.query(
-    `SELECT * FROM players WHERE active = 1 AND id IN (${placeholders}) ORDER BY display_name`
-  ).all(...ids) as any[];
+  const players = await sql.unsafe(
+    `SELECT * FROM players WHERE active = 1 AND id = ANY($1) ORDER BY display_name`,
+    [ids]
+  ) as any[];
 
   return players.map((p: any) => {
     const stat = stats.find((s) => s.id === p.id);
@@ -49,9 +48,8 @@ function getPlayersById(ids: string[], stats: ReturnType<typeof calculatePlayerS
 
 // GET /api/teams/available — players who accepted next training + match in Spond
 teams.get("/available", async (c) => {
-  const db = getDb();
   const groupId = process.env.SPOND_GROUP_ID;
-  const stats = calculatePlayerStats();
+  const stats = await calculatePlayerStats();
 
   let trainingEvent: { heading: string; startTimestamp: string; acceptedIds: string[] } | null = null;
   let matchEvent: { heading: string; startTimestamp: string; acceptedIds: string[] } | null = null;
@@ -68,15 +66,15 @@ teams.get("/available", async (c) => {
   }
 
   const trainingPlayers = trainingEvent && trainingEvent.acceptedIds.length > 0
-    ? getPlayersById(trainingEvent.acceptedIds, stats)
+    ? await getPlayersById(trainingEvent.acceptedIds, stats)
     : [];
 
   const matchPlayers = matchEvent && matchEvent.acceptedIds.length > 0
-    ? getPlayersById(matchEvent.acceptedIds, stats)
+    ? await getPlayersById(matchEvent.acceptedIds, stats)
     : [];
 
   // Always return all active players so the frontend can offer manual selection
-  const rows = db.query("SELECT * FROM players WHERE active = 1 ORDER BY display_name").all() as any[];
+  const rows = await sql`SELECT * FROM players WHERE active = 1 ORDER BY display_name` as any[];
   const allPlayers = rows.map((p: any) => {
     const stat = stats.find((s) => s.id === p.id);
     return {

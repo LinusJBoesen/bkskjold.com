@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getDb } from "../lib/db";
+import { sql } from "../lib/db";
 import { randomUUID } from "crypto";
 
 const formations = new Hono();
@@ -42,7 +42,6 @@ formations.get("/slots", (c) => {
 
 // POST /api/formations — create/save a formation
 formations.post("/", async (c) => {
-  const db = getDb();
   const body = await c.req.json();
   const { matchId, teamNumber, formation, slots } = body;
 
@@ -52,16 +51,17 @@ formations.post("/", async (c) => {
 
   const id = randomUUID();
 
-  db.query(
-    "INSERT INTO lineup_formations (id, match_id, team_number, formation) VALUES (?, ?, ?, ?)"
-  ).run(id, matchId || null, teamNumber, formation);
+  await sql`
+    INSERT INTO lineup_formations (id, match_id, team_number, formation)
+    VALUES (${id}, ${matchId || null}, ${teamNumber}, ${formation})
+  `;
 
   if (slots && Array.isArray(slots)) {
-    const insertSlot = db.prepare(
-      "INSERT INTO lineup_slots (formation_id, slot_index, player_id, position, is_bench) VALUES (?, ?, ?, ?, ?)"
-    );
     for (const slot of slots) {
-      insertSlot.run(id, slot.slotIndex, slot.playerId || null, slot.position, slot.isBench ? 1 : 0);
+      await sql`
+        INSERT INTO lineup_slots (formation_id, slot_index, player_id, position, is_bench)
+        VALUES (${id}, ${slot.slotIndex}, ${slot.playerId || null}, ${slot.position}, ${slot.isBench ? 1 : 0})
+      `;
     }
   }
 
@@ -69,48 +69,52 @@ formations.post("/", async (c) => {
 });
 
 // GET /api/formations/:matchId/:teamNumber — get saved formation
-formations.get("/:matchId/:teamNumber", (c) => {
-  const db = getDb();
+formations.get("/:matchId/:teamNumber", async (c) => {
   const { matchId, teamNumber } = c.req.param();
 
-  const formation = db.query(
-    "SELECT * FROM lineup_formations WHERE match_id = ? AND team_number = ? ORDER BY created_at DESC LIMIT 1"
-  ).get(matchId, parseInt(teamNumber)) as any;
+  const [formation] = await sql`
+    SELECT * FROM lineup_formations
+    WHERE match_id = ${matchId} AND team_number = ${parseInt(teamNumber)}
+    ORDER BY created_at DESC LIMIT 1
+  `;
 
   if (!formation) {
     return c.json({ formation: null });
   }
 
-  const slots = db.query(
-    "SELECT ls.*, p.display_name, p.profile_picture FROM lineup_slots ls LEFT JOIN players p ON ls.player_id = p.id WHERE ls.formation_id = ? ORDER BY ls.slot_index"
-  ).all(formation.id) as any[];
+  const slots = await sql`
+    SELECT ls.*, p.display_name, p.profile_picture
+    FROM lineup_slots ls
+    LEFT JOIN players p ON ls.player_id = p.id
+    WHERE ls.formation_id = ${formation.id}
+    ORDER BY ls.slot_index
+  `;
 
   return c.json({ formation: { ...formation, slots } });
 });
 
 // PUT /api/formations/:id — update formation
 formations.put("/:id", async (c) => {
-  const db = getDb();
   const { id } = c.req.param();
   const body = await c.req.json();
   const { formation, slots } = body;
 
-  const existing = db.query("SELECT * FROM lineup_formations WHERE id = ?").get(id);
+  const [existing] = await sql`SELECT * FROM lineup_formations WHERE id = ${id}`;
   if (!existing) {
     return c.json({ error: "Formation ikke fundet" }, 404);
   }
 
   if (formation && FORMATION_SLOTS[formation]) {
-    db.query("UPDATE lineup_formations SET formation = ? WHERE id = ?").run(formation, id);
+    await sql`UPDATE lineup_formations SET formation = ${formation} WHERE id = ${id}`;
   }
 
   if (slots && Array.isArray(slots)) {
-    db.query("DELETE FROM lineup_slots WHERE formation_id = ?").run(id);
-    const insertSlot = db.prepare(
-      "INSERT INTO lineup_slots (formation_id, slot_index, player_id, position, is_bench) VALUES (?, ?, ?, ?, ?)"
-    );
+    await sql`DELETE FROM lineup_slots WHERE formation_id = ${id}`;
     for (const slot of slots) {
-      insertSlot.run(id, slot.slotIndex, slot.playerId || null, slot.position, slot.isBench ? 1 : 0);
+      await sql`
+        INSERT INTO lineup_slots (formation_id, slot_index, player_id, position, is_bench)
+        VALUES (${id}, ${slot.slotIndex}, ${slot.playerId || null}, ${slot.position}, ${slot.isBench ? 1 : 0})
+      `;
     }
   }
 
@@ -118,29 +122,27 @@ formations.put("/:id", async (c) => {
 });
 
 // DELETE /api/formations/:id — delete formation
-formations.delete("/:id", (c) => {
-  const db = getDb();
+formations.delete("/:id", async (c) => {
   const { id } = c.req.param();
 
-  const existing = db.query("SELECT * FROM lineup_formations WHERE id = ?").get(id);
+  const [existing] = await sql`SELECT * FROM lineup_formations WHERE id = ${id}`;
   if (!existing) {
     return c.json({ error: "Formation ikke fundet" }, 404);
   }
 
-  db.query("DELETE FROM lineup_formations WHERE id = ?").run(id);
+  await sql`DELETE FROM lineup_formations WHERE id = ${id}`;
   return c.json({ success: true });
 });
 
 // GET /api/formations/players/positions — get all players with their positions
-formations.get("/players/positions", (c) => {
-  const db = getDb();
-  const players = db.query("SELECT * FROM players WHERE active = 1 ORDER BY display_name").all() as any[];
-  const positions = db.query("SELECT * FROM player_positions").all() as any[];
+formations.get("/players/positions", async (c) => {
+  const players = await sql`SELECT * FROM players WHERE active = 1 ORDER BY display_name` as any[];
+  const positions = await sql`SELECT * FROM player_positions` as any[];
 
   const positionMap: Record<string, string[]> = {};
   for (const p of positions) {
     if (!positionMap[p.player_id]) positionMap[p.player_id] = [];
-    positionMap[p.player_id].push(p.position);
+    positionMap[p.player_id]!.push(p.position);
   }
 
   const result = players.map((p: any) => ({
@@ -154,16 +156,14 @@ formations.get("/players/positions", (c) => {
 });
 
 // GET /api/formations/players/:id/positions — get player's positions
-formations.get("/players/:id/positions", (c) => {
-  const db = getDb();
+formations.get("/players/:id/positions", async (c) => {
   const { id } = c.req.param();
-  const rows = db.query("SELECT position FROM player_positions WHERE player_id = ?").all(id) as any[];
+  const rows = await sql`SELECT position FROM player_positions WHERE player_id = ${id}` as any[];
   return c.json({ playerId: id, positions: rows.map((r: any) => r.position) });
 });
 
 // PUT /api/formations/players/:id/positions — set player's positions
 formations.put("/players/:id/positions", async (c) => {
-  const db = getDb();
   const { id } = c.req.param();
   const body = await c.req.json();
   const { positions } = body;
@@ -179,10 +179,9 @@ formations.put("/players/:id/positions", async (c) => {
     }
   }
 
-  db.query("DELETE FROM player_positions WHERE player_id = ?").run(id);
-  const insert = db.prepare("INSERT INTO player_positions (player_id, position) VALUES (?, ?)");
+  await sql`DELETE FROM player_positions WHERE player_id = ${id}`;
   for (const pos of positions) {
-    insert.run(id, pos);
+    await sql`INSERT INTO player_positions (player_id, position) VALUES (${id}, ${pos})`;
   }
 
   return c.json({ playerId: id, positions });

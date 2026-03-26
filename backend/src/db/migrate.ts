@@ -1,16 +1,9 @@
-import { getDb } from "../lib/db";
-import { schema } from "./schema";
+import { sql } from "../lib/db";
+import { tables } from "./schema";
 
-export function migrate(): void {
-  const db = getDb();
-  // Execute each statement separately for compatibility
-  const statements = schema
-    .split(";")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-
-  for (const stmt of statements) {
-    db.exec(stmt + ";");
+export async function migrate(): Promise<void> {
+  for (const stmt of tables) {
+    await sql.unsafe(stmt);
   }
   console.log("Database migrated");
 }
