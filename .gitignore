@@ -6,3 +6,5 @@ e2e/test-results/
 e2e/playwright-report/
 *.db
 .DS_Store
+tmp/
+.claude/
