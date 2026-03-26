@@ -16,8 +16,16 @@ import TournamentStandingsPage from "@/pages/tournament/standings";
 import MatchAnalysisPage from "@/pages/analysis/match";
 import AdminSettingsPage from "@/pages/admin/settings";
 
+function RoleGuard({ allowed, children }: { allowed: string[]; children: React.ReactNode }) {
+  const { role } = useAuth();
+  if (role && !allowed.includes(role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+}
+
 function ProtectedLayout() {
-  const { isAuthenticated, loading, email, logout } = useAuth();
+  const { isAuthenticated, loading, email, role, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (loading) {
@@ -46,10 +54,10 @@ function ProtectedLayout() {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <Sidebar onNavigate={() => setSidebarOpen(false)} />
+        <Sidebar onNavigate={() => setSidebarOpen(false)} role={role} />
       </div>
       <div className="flex-1 flex flex-col min-w-0">
-        <Header email={email} onLogout={logout} onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+        <Header email={email} role={role} onLogout={logout} onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
           <Outlet />
         </main>
@@ -122,13 +130,13 @@ export default function App() {
           <Route path="/register" element={<RegisterRoute />} />
           <Route element={<ProtectedLayout />}>
             <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="fines" element={<FinesOverviewPage />} />
-            <Route path="fines/:playerId" element={<FineDetailPage />} />
-            <Route path="teams" element={<TeamSelectorPage />} />
-            <Route path="history" element={<TrainingHistoryPage />} />
+            <Route path="fines" element={<RoleGuard allowed={["admin", "spiller"]}><FinesOverviewPage /></RoleGuard>} />
+            <Route path="fines/:playerId" element={<RoleGuard allowed={["admin", "spiller"]}><FineDetailPage /></RoleGuard>} />
+            <Route path="teams" element={<RoleGuard allowed={["admin", "spiller"]}><TeamSelectorPage /></RoleGuard>} />
+            <Route path="history" element={<RoleGuard allowed={["admin", "spiller"]}><TrainingHistoryPage /></RoleGuard>} />
             <Route path="tournament" element={<TournamentStandingsPage />} />
             <Route path="analysis" element={<MatchAnalysisPage />} />
-            <Route path="admin" element={<AdminSettingsPage />} />
+            <Route path="admin" element={<RoleGuard allowed={["admin"]}><AdminSettingsPage /></RoleGuard>} />
           </Route>
         </Routes>
       </ToastProvider>

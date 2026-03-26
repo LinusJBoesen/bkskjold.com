@@ -79,6 +79,13 @@ export const da = {
   },
 
   // Admin
+  // Roles
+  roles: {
+    admin: "Admin",
+    spiller: "Spiller",
+    fan: "Fan",
+  },
+
   admin: {
     title: "Admin",
     tabs: {
@@ -86,6 +93,21 @@ export const da = {
       fineTypes: "Bødetyper",
       positions: "Spillerpositioner",
       data: "Data",
+      users: "Brugere",
+    },
+    users: {
+      title: "Brugerhåndtering",
+      pending: "Afventer godkendelse",
+      approve: "Godkend",
+      reject: "Afvis",
+      noPending: "Ingen ventende tilmeldinger",
+      name: "Navn",
+      email: "E-mail",
+      role: "Rolle",
+      status: "Status",
+      created: "Oprettet",
+      approved: "Godkendt",
+      deleted: "Bruger slettet",
     },
     config: {
       title: "Systemkonfiguration",

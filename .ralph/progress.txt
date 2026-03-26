@@ -1,8 +1,8 @@
 # Skjold Bode Brugerregistrering & Rollesystem — PROGRESS
 
 ## Current Status
-- **Round**: 3 (COMPLETE)
-- **Task**: Frontend — Registrering, Auth-hook, UI-tweaks
+- **Round**: 4 (COMPLETE)
+- **Task**: Frontend — Rolle-baseret UI + Admin Godkendelsespanel
 - **Last updated**: 2026-03-26
 
 ## Checklist
@@ -39,13 +39,14 @@
 - [x] Commit
 
 ### Round 4: Frontend — Rolle-baseret UI + Admin Godkendelsespanel
-- [ ] Role-based sidebar filtering
-- [ ] Route guards for fan
-- [ ] Hide action buttons for non-admins
-- [ ] Admin users tab with approve/reject
-- [ ] Role badge in header
-- [ ] Run E2E tests — all pass
-- [ ] Commit
+- [x] Role-based sidebar filtering
+- [x] Route guards for fan
+- [x] Hide action buttons for non-admins
+- [x] Admin users tab with approve/reject
+- [x] Role badge in header
+- [x] i18n strings for roles and admin users
+- [x] Run E2E tests — all pass (8 pre-existing failures, 0 new)
+- [x] Commit
 
 ### Round 5: Polish, Edge Cases & E2E Tests
 - [ ] E2E: register.spec.ts
@@ -68,3 +69,4 @@
 | 2026-03-26 | TBD | feat(skjold): user registration backend with roles, password hashing, admin bootstrap |
 | 2026-03-26 | TBD | feat(skjold): admin user management API and role-based route protection |
 | 2026-03-26 | TBD | feat(skjold): registration page, auth role support, signup buttons on landing/login |
+| 2026-03-26 | TBD | feat(skjold): role-based sidebar, action gating, admin user approval panel |

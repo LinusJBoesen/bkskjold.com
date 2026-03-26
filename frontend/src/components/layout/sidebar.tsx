@@ -11,20 +11,25 @@ import {
 import { da } from "@/i18n/da";
 
 const navItems = [
-  { to: "/dashboard", label: da.nav.dashboard, testId: "nav-dashboard", icon: LayoutDashboard },
-  { to: "/fines", label: da.nav.fines, testId: "nav-fines", icon: Receipt },
-  { to: "/teams", label: da.nav.teams, testId: "nav-teams", icon: Users },
-  { to: "/history", label: da.nav.history, testId: "nav-history", icon: History },
-  { to: "/tournament", label: da.nav.tournament, testId: "nav-tournament", icon: Trophy },
-  { to: "/analysis", label: da.nav.analysis, testId: "nav-analysis", icon: BarChart3 },
-  { to: "/admin", label: da.nav.admin, testId: "nav-admin", icon: Settings },
+  { to: "/dashboard", label: da.nav.dashboard, testId: "nav-dashboard", icon: LayoutDashboard, roles: ["admin", "spiller", "fan"] },
+  { to: "/fines", label: da.nav.fines, testId: "nav-fines", icon: Receipt, roles: ["admin", "spiller"] },
+  { to: "/teams", label: da.nav.teams, testId: "nav-teams", icon: Users, roles: ["admin", "spiller"] },
+  { to: "/history", label: da.nav.history, testId: "nav-history", icon: History, roles: ["admin", "spiller"] },
+  { to: "/tournament", label: da.nav.tournament, testId: "nav-tournament", icon: Trophy, roles: ["admin", "spiller", "fan"] },
+  { to: "/analysis", label: da.nav.analysis, testId: "nav-analysis", icon: BarChart3, roles: ["admin", "spiller", "fan"] },
+  { to: "/admin", label: da.nav.admin, testId: "nav-admin", icon: Settings, roles: ["admin"] },
 ];
 
 interface SidebarProps {
   onNavigate?: () => void;
+  role?: string | null;
 }
 
-export function Sidebar({ onNavigate }: SidebarProps) {
+export function Sidebar({ onNavigate, role }: SidebarProps) {
+  const filteredItems = role
+    ? navItems.filter((item) => item.roles.includes(role))
+    : navItems;
+
   return (
     <aside
       className="w-60 bg-[#0A0A0A] text-white min-h-screen flex flex-col border-r border-white/5"
@@ -37,7 +42,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         </h1>
       </div>
       <nav className="flex-1 py-2" data-testid="sidebar-nav">
-        {navItems.map((item) => (
+        {filteredItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
