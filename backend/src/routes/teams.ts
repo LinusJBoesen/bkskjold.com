@@ -30,7 +30,7 @@ teams.post("/swap", async (c) => {
 async function getPlayersById(ids: string[], stats: Awaited<ReturnType<typeof calculatePlayerStats>>) {
   if (ids.length === 0) return [];
   const players = await sql`
-    SELECT * FROM players WHERE active = 1 AND id = ANY(${ids}) ORDER BY display_name
+    SELECT * FROM players WHERE active = 1 AND id = ANY(${sql.array(ids, 'TEXT')}) ORDER BY display_name
   ` as any[];
 
   return players.map((p: any) => {
