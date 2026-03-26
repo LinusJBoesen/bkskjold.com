@@ -6,6 +6,25 @@ export const da = {
     password: "Adgangskode",
     submit: "Log ind",
     error: "Ugyldige loginoplysninger",
+    registerLink: "Har du ikke en konto? Tilmeld dig",
+  },
+
+  // Registration
+  register: {
+    title: "Opret konto",
+    name: "Navn",
+    email: "E-mail",
+    password: "Adgangskode",
+    role: "Rolle",
+    fan: "Fan",
+    player: "Spiller",
+    spondEmail: "Spond e-mail",
+    spondHint: "Angiv din Spond e-mail for at koble til din spillerprofil",
+    submit: "Opret konto",
+    loginLink: "Har du allerede en konto? Log ind",
+    success: "Konto oprettet",
+    pendingApproval: "Afventer godkendelse fra administrator",
+    fanReady: "Du kan nu logge ind",
   },
 
   // Navigation

@@ -188,14 +188,8 @@ export default function DashboardPage() {
 
   return (
     <div data-testid="page-dashboard" className="animate-fade-in-up">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <img src="/logo.webp" alt="BK Skjold" className="h-10 w-10" />
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-50 tracking-tight">{da.nav.dashboard}</h1>
-            <p className="text-sm text-zinc-500 mt-0.5">Overblik over holdet</p>
-          </div>
-        </div>
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl font-bold text-zinc-50 tracking-tight">{da.nav.dashboard}</h1>
         <Button
           onClick={handleSync}
           disabled={syncing}

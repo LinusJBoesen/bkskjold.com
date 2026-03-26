@@ -4,6 +4,8 @@ import { api, ApiError } from "@/lib/api";
 interface AuthState {
   isAuthenticated: boolean;
   email: string | null;
+  name: string | null;
+  role: 'admin' | 'spiller' | 'fan' | null;
   loading: boolean;
 }
 
@@ -11,15 +13,17 @@ export function useAuth() {
   const [state, setState] = useState<AuthState>({
     isAuthenticated: false,
     email: null,
+    name: null,
+    role: null,
     loading: true,
   });
 
   const checkAuth = useCallback(async () => {
     try {
-      const data = await api.get<{ email: string }>("/auth/me");
-      setState({ isAuthenticated: true, email: data.email, loading: false });
+      const data = await api.get<{ email: string; name: string; role: 'admin' | 'spiller' | 'fan' }>("/auth/me");
+      setState({ isAuthenticated: true, email: data.email, name: data.name, role: data.role, loading: false });
     } catch {
-      setState({ isAuthenticated: false, email: null, loading: false });
+      setState({ isAuthenticated: false, email: null, name: null, role: null, loading: false });
     }
   }, []);
 
@@ -30,7 +34,8 @@ export function useAuth() {
   const login = async (email: string, password: string) => {
     try {
       await api.post("/auth/login", { email, password });
-      setState({ isAuthenticated: true, email, loading: false });
+      const data = await api.get<{ email: string; name: string; role: 'admin' | 'spiller' | 'fan' }>("/auth/me");
+      setState({ isAuthenticated: true, email: data.email, name: data.name, role: data.role, loading: false });
       return { success: true };
     } catch (err) {
       if (err instanceof ApiError) {
@@ -42,7 +47,7 @@ export function useAuth() {
 
   const logout = async () => {
     await api.post("/auth/logout");
-    setState({ isAuthenticated: false, email: null, loading: false });
+    setState({ isAuthenticated: false, email: null, name: null, role: null, loading: false });
   };
 
   return { ...state, login, logout };

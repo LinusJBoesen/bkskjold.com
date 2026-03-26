@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/header";
 import { ToastProvider } from "@/components/toast";
 import LandingPage from "@/pages/landing";
 import LoginPage from "@/pages/login";
+import RegisterPage from "@/pages/register";
 import DashboardPage from "@/pages/dashboard";
 import FinesOverviewPage from "@/pages/fines/overview";
 import FineDetailPage from "@/pages/fines/detail";
@@ -93,6 +94,24 @@ function LoginRoute() {
   return <LoginPage onLogin={login} />;
 }
 
+function RegisterRoute() {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <p className="text-zinc-400">Indlæser...</p>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <RegisterPage />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -100,6 +119,7 @@ export default function App() {
         <Routes>
           <Route index element={<LandingRoute />} />
           <Route path="/login" element={<LoginRoute />} />
+          <Route path="/register" element={<RegisterRoute />} />
           <Route element={<ProtectedLayout />}>
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="fines" element={<FinesOverviewPage />} />

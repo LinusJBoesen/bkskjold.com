@@ -1,8 +1,8 @@
 # Skjold Bode Brugerregistrering & Rollesystem — PROGRESS
 
 ## Current Status
-- **Round**: 2 (COMPLETE)
-- **Task**: Admin Bruger-API + Rute-beskyttelse
+- **Round**: 3 (COMPLETE)
+- **Task**: Frontend — Registrering, Auth-hook, UI-tweaks
 - **Last updated**: 2026-03-26
 
 ## Checklist
@@ -29,14 +29,14 @@
 - [x] Commit
 
 ### Round 3: Frontend — Registrering, Auth-hook, UI-tweaks
-- [ ] i18n strings for registration
-- [ ] Registration page (register.tsx)
-- [ ] Update useAuth hook with role/name
-- [ ] Add /register route
-- [ ] Tilmeld dig links on login + landing
-- [ ] Compress dashboard heading
-- [ ] Run E2E tests — all pass
-- [ ] Commit
+- [x] i18n strings for registration
+- [x] Registration page (register.tsx)
+- [x] Update useAuth hook with role/name
+- [x] Add /register route
+- [x] Tilmeld dig links on login + landing
+- [x] Compress dashboard heading
+- [x] Run E2E tests — all pass (8 pre-existing failures, 0 new)
+- [x] Commit
 
 ### Round 4: Frontend — Rolle-baseret UI + Admin Godkendelsespanel
 - [ ] Role-based sidebar filtering
@@ -67,3 +67,4 @@
 |------|------|-------------|
 | 2026-03-26 | TBD | feat(skjold): user registration backend with roles, password hashing, admin bootstrap |
 | 2026-03-26 | TBD | feat(skjold): admin user management API and role-based route protection |
+| 2026-03-26 | TBD | feat(skjold): registration page, auth role support, signup buttons on landing/login |
