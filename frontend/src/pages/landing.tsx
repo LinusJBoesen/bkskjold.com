@@ -27,7 +27,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <main className="relative z-10 flex flex-col items-center justify-center text-center px-6 pt-24 md:pt-36 pb-20">
+      <main className="relative z-10 flex flex-col items-center justify-center text-center px-6 pt-12 md:pt-24 pb-20">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-600/10 border border-red-600/20 text-red-400 text-xs font-medium mb-8 animate-fade-in-up">
           <img src="/logo.webp" alt="" className="h-3.5 w-3.5" />
