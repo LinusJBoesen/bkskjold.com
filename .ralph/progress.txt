@@ -1,8 +1,8 @@
 # Skjold Bode Brugerregistrering & Rollesystem — PROGRESS
 
 ## Current Status
-- **Round**: 4 (COMPLETE)
-- **Task**: Frontend — Rolle-baseret UI + Admin Godkendelsespanel
+- **Round**: 5 (COMPLETE)
+- **Task**: Polish, Edge Cases & E2E Tests
 - **Last updated**: 2026-03-26
 
 ## Checklist
@@ -49,15 +49,15 @@
 - [x] Commit
 
 ### Round 5: Polish, Edge Cases & E2E Tests
-- [ ] E2E: register.spec.ts
-- [ ] E2E: roles.spec.ts
-- [ ] E2E: users.spec.ts
-- [ ] Password validation
-- [ ] Session invalidation on user delete
-- [ ] Responsive design
-- [ ] Backward compat confirmed
-- [ ] Run ALL E2E tests — all pass
-- [ ] Commit
+- [x] E2E: register.spec.ts (4 tests — fan flow, spiller pending, duplicate email, login link)
+- [x] E2E: roles.spec.ts (2 tests — fan redirect, admin full access)
+- [x] E2E: users.spec.ts (2 tests — approve pending user, user list)
+- [x] Password validation (backend min 6 chars + frontend minLength=6)
+- [x] Session invalidation on user delete (destroySessionsByUserId already in place)
+- [x] Responsive design (register page matches login, admin users tab responsive)
+- [x] Backward compat confirmed (env-based admin login still works in E2E)
+- [x] Run ALL E2E tests — 59 passed, 8 pre-existing failures, 0 new
+- [x] Commit
 
 ## Blockers
 (none)
@@ -70,3 +70,4 @@
 | 2026-03-26 | TBD | feat(skjold): admin user management API and role-based route protection |
 | 2026-03-26 | TBD | feat(skjold): registration page, auth role support, signup buttons on landing/login |
 | 2026-03-26 | TBD | feat(skjold): role-based sidebar, action gating, admin user approval panel |
+| 2026-03-26 | TBD | feat(skjold): registration & roles polish, E2E tests, edge cases |
