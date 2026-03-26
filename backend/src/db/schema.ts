@@ -89,6 +89,18 @@ export const tables = [
     synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
 
+  `CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('admin','spiller','fan')) DEFAULT 'fan',
+    player_id TEXT REFERENCES players(id),
+    approved INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+
   `CREATE TABLE IF NOT EXISTS config (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL,

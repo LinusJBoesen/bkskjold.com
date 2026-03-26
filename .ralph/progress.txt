@@ -1,60 +1,62 @@
-# Skjold Bode Formation Builder — PROGRESS
+# Skjold Bode Brugerregistrering & Rollesystem — PROGRESS
 
 ## Current Status
-- **Round**: 5 (COMPLETE)
-- **Task**: ALL ROUNDS COMPLETE
-- **Last updated**: 2026-03-25
+- **Round**: 1 (COMPLETE)
+- **Task**: Database + Registrerings-API
+- **Last updated**: 2026-03-26
 
 ## Checklist
 
-### Round 1: Database + API — Player Positions & Formations
-- [x] Add player_positions table
-- [x] Add lineup_formations table
-- [x] Add lineup_slots table
-- [x] Add migration for new tables (via schema.ts CREATE IF NOT EXISTS)
-- [x] API routes for player positions (GET/PUT)
-- [x] API routes for formations (CRUD)
-- [x] Formation slot definitions
-- [x] Run E2E tests — all pass (pre-existing failures unchanged)
+### Round 1: Database + Registrerings-API
+- [x] Add users table to schema.ts
+- [x] Admin bootstrap in migrate.ts
+- [x] Extend session type in auth middleware
+- [x] Update createSession() with role and userId
+- [x] Create requireRole() middleware
+- [x] POST /api/auth/register endpoint
+- [x] Refactor POST /api/auth/login for DB users
+- [x] Update GET /api/auth/me with role info
+- [x] Run E2E tests — all pass (8 pre-existing failures, 0 new)
 - [x] Commit
 
-### Round 2: Frontend — Pitch Component & Formation Rendering
-- [x] Create pitch components (Pitch, FormationSlot, PlayerCard, BenchArea, FormationSelector)
-- [x] Pitch layout with CSS positioning per formation
-- [x] Player cards on pitch (dark bg, name, position, avatar)
-- [x] Empty slots with dashed border and position label
-- [x] Danish strings in i18n/da.ts
-- [x] Run E2E tests — 45 passed
-- [x] Commit
+### Round 2: Admin Bruger-API + Rute-beskyttelse
+- [ ] GET /api/admin/users
+- [ ] GET /api/admin/users/pending
+- [ ] PATCH /api/admin/users/:id/approve
+- [ ] DELETE /api/admin/users/:id
+- [ ] Role-based route protection
+- [ ] Run E2E tests — all pass
+- [ ] Commit
 
-### Round 3: Frontend — Drag and Drop & Player Panel
-- [x] PlayerPanel component with search, drag-from-panel, drop-to-remove
-- [x] HTML5 Drag and Drop implementation
-- [x] Drop zone validation and visual feedback
-- [x] Drag feedback (cursor-grab, scale on hover, ghost card)
-- [x] data-testid attributes on all elements
-- [x] Run E2E tests — 45 passed
-- [x] Commit
+### Round 3: Frontend — Registrering, Auth-hook, UI-tweaks
+- [ ] i18n strings for registration
+- [ ] Registration page (register.tsx)
+- [ ] Update useAuth hook with role/name
+- [ ] Add /register route
+- [ ] Tilmeld dig links on login + landing
+- [ ] Compress dashboard heading
+- [ ] Run E2E tests — all pass
+- [ ] Commit
 
-### Round 4: Integration — Team Selector + Formation View + Position Admin
-- [x] Formation tab in team selector page (List/Opstilling toggle + Team 1/2 selector)
-- [x] Auto-assignment logic (positions → slots with priority matching)
-- [x] Player position management in admin settings (Spillerpositioner tab with checkbox grid)
-- [x] Save/load formations via FormationView component
-- [x] FormationView wires Pitch + BenchArea + PlayerPanel + FormationSelector
-- [x] Run E2E tests — 45 passed
-- [x] Commit
+### Round 4: Frontend — Rolle-baseret UI + Admin Godkendelsespanel
+- [ ] Role-based sidebar filtering
+- [ ] Route guards for fan
+- [ ] Hide action buttons for non-admins
+- [ ] Admin users tab with approve/reject
+- [ ] Role badge in header
+- [ ] Run E2E tests — all pass
+- [ ] Commit
 
-### Round 5: Polish, E2E Tests & Edge Cases
-- [x] New E2E tests: pitch-display.spec.ts (7 tests), position-admin.spec.ts (3 tests)
-- [x] Edge case handling (API error handling, empty data, array validation)
-- [x] Responsive design: mobile tap-to-assign (selectedPlayer indicator, tap slot to place)
-- [x] Tap-to-assign: select player in panel, tap slot on pitch (no drag needed on mobile)
-- [x] Highlight empty slots when player is selected
-- [x] Formation page object for E2E tests
-- [x] Updated admin page object with positions tab
-- [x] Run ALL E2E tests — 55 passed, 4 pre-existing tournament failures
-- [x] Commit
+### Round 5: Polish, Edge Cases & E2E Tests
+- [ ] E2E: register.spec.ts
+- [ ] E2E: roles.spec.ts
+- [ ] E2E: users.spec.ts
+- [ ] Password validation
+- [ ] Session invalidation on user delete
+- [ ] Responsive design
+- [ ] Backward compat confirmed
+- [ ] Run ALL E2E tests — all pass
+- [ ] Commit
 
 ## Blockers
 (none)
@@ -63,8 +65,4 @@
 
 | Date | Hash | Description |
 |------|------|-------------|
-| 2026-03-25 | d733f6c | feat(skjold): formation builder backend — positions, formations, lineups API |
-| 2026-03-25 | 37d158c | feat(skjold): formation pitch component with visual field and player cards |
-| 2026-03-25 | 5e20607 | feat(skjold): drag and drop formation builder with player panel |
-| 2026-03-25 | eb306f7 | feat(skjold): formation builder integration with team selector and admin |
-| 2026-03-25 | TBD | feat(skjold): formation builder polish, E2E tests, and responsive design |
+| 2026-03-26 | TBD | feat(skjold): user registration backend with roles, password hashing, admin bootstrap |
