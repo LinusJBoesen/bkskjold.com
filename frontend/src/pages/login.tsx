@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,14 @@ export default function LoginPage({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative">
+      <Link
+        to="/"
+        className="absolute top-6 left-6 flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Tilbage
+      </Link>
       <div className="w-full max-w-sm animate-fade-in-up">
         <Card className="border-zinc-800 shadow-2xl shadow-black/50 relative overflow-visible">
           <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-red-600/5 to-transparent pointer-events-none" />
