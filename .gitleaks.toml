@@ -1,0 +1,26 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "postgres-connection-string"
+description = "PostgreSQL connection string with embedded credentials"
+regex = '''postgres(?:ql)?://[^:]+:[^@]{8,}@'''
+tags = ["database", "credentials"]
+
+[[rules]]
+id = "railway-database-url"
+description = "Railway database proxy URL"
+regex = '''[a-zA-Z0-9]{20,}@[a-z]+\.proxy\.rlwy\.net'''
+tags = ["database", "railway"]
+
+[[rules]]
+id = "env-password-assignment"
+description = "PASSWORD variable with a non-empty value"
+regex = '''(?i)password\s*=\s*['"]?[^\s'"]{6,}'''
+tags = ["credentials"]
+
+[[rules]]
+id = "env-secret-assignment"
+description = "SECRET or TOKEN variable with a non-empty value"
+regex = '''(?i)(secret|token|api_key)\s*=\s*['"]?[a-zA-Z0-9+/=_\-]{8,}'''
+tags = ["credentials"]
