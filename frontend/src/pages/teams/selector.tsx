@@ -7,6 +7,7 @@ import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
 import { FormationView, autoAssign, type PlayerInfo, type Position } from "@/components/pitch";
 import { Users, Shuffle, Save, UserPlus, ClipboardCopy, Check, ArrowRightLeft, Calendar, Trophy, LayoutGrid, List } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 interface AvailablePlayer {
   id: string;
@@ -81,6 +82,8 @@ type ActiveTab = "training" | "match";
 type ViewMode = "list" | "formation";
 
 export default function TeamSelectorPage() {
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const [data, setData] = useState<AvailableResponse | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("training");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -550,15 +553,17 @@ export default function TeamSelectorPage() {
                   </Button>
                 </div>
 
-                <Button
-                  className="w-full mt-4"
-                  onClick={generateTeams}
-                  disabled={selected.size + guests.length < 2}
-                  data-testid="team-generate-button"
-                >
-                  <Shuffle className="h-4 w-4 mr-2" />
-                  Generer hold
-                </Button>
+                {isAdmin && (
+                  <Button
+                    className="w-full mt-4"
+                    onClick={generateTeams}
+                    disabled={selected.size + guests.length < 2}
+                    data-testid="team-generate-button"
+                  >
+                    <Shuffle className="h-4 w-4 mr-2" />
+                    Generer hold
+                  </Button>
+                )}
               </CardContent>
             </Card>
 

@@ -6,6 +6,25 @@ export const da = {
     password: "Adgangskode",
     submit: "Log ind",
     error: "Ugyldige loginoplysninger",
+    registerLink: "Har du ikke en konto? Tilmeld dig",
+  },
+
+  // Registration
+  register: {
+    title: "Opret konto",
+    name: "Navn",
+    email: "E-mail",
+    password: "Adgangskode",
+    role: "Rolle",
+    fan: "Fan",
+    player: "Spiller",
+    spondEmail: "Spond e-mail",
+    spondHint: "Angiv din Spond e-mail for at koble til din spillerprofil",
+    submit: "Opret konto",
+    loginLink: "Har du allerede en konto? Log ind",
+    success: "Konto oprettet",
+    pendingApproval: "Afventer godkendelse fra administrator",
+    fanReady: "Du kan nu logge ind",
   },
 
   // Navigation
@@ -60,6 +79,13 @@ export const da = {
   },
 
   // Admin
+  // Roles
+  roles: {
+    admin: "Admin",
+    spiller: "Spiller",
+    fan: "Fan",
+  },
+
   admin: {
     title: "Admin",
     tabs: {
@@ -67,15 +93,26 @@ export const da = {
       fineTypes: "Bødetyper",
       positions: "Spillerpositioner",
       data: "Data",
+      users: "Brugere",
+    },
+    users: {
+      title: "Brugerhåndtering",
+      pending: "Afventer godkendelse",
+      approve: "Godkend",
+      reject: "Afvis",
+      noPending: "Ingen ventende tilmeldinger",
+      name: "Navn",
+      email: "E-mail",
+      role: "Rolle",
+      status: "Status",
+      created: "Oprettet",
+      approved: "Godkendt",
+      deleted: "Bruger slettet",
     },
     config: {
       title: "Systemkonfiguration",
       spondGroupId: "Spond Gruppe-ID",
       lateResponseHours: "Svarfrist (timer)",
-      fineMissingMatch: "Bøde: Manglende kamp (kr)",
-      fineMissingTraining: "Bøde: Manglende træning (kr)",
-      fineNoResponse: "Bøde: Intet svar (kr)",
-      fineTrainingLoss: "Bøde: Tabt træning (kr)",
       saved: "Konfiguration gemt",
     },
     fineTypes: {

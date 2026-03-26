@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,6 +84,12 @@ export default function LoginPage({ onLogin }: LoginProps) {
               >
                 {loading ? da.common.loading : da.login.submit}
               </Button>
+
+              <p className="text-center text-sm text-zinc-500">
+                <Link to="/register" className="text-red-400 hover:text-red-300 transition-colors" data-testid="login-register-link">
+                  {da.login.registerLink}
+                </Link>
+              </p>
             </form>
           </CardContent>
         </Card>

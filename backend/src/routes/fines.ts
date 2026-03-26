@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { sql } from "../lib/db";
 import { randomUUID } from "crypto";
+import { requireRole } from "../middleware/auth";
 
 const fines = new Hono();
 
-// GET /api/fines — all fines with player info
-fines.get("/", async (c) => {
+// GET /api/fines — all fines with player info (admin + spiller)
+fines.get("/", requireRole("admin", "spiller"), async (c) => {
   const playerId = c.req.query("player_id");
 
   const rows = playerId
@@ -28,8 +29,8 @@ fines.get("/", async (c) => {
   return c.json(rows);
 });
 
-// GET /api/fines/summary — per-player totals
-fines.get("/summary", async (c) => {
+// GET /api/fines/summary — per-player totals (admin + spiller)
+fines.get("/summary", requireRole("admin", "spiller"), async (c) => {
   const rows = await sql`
     SELECT
       p.id,
@@ -48,8 +49,8 @@ fines.get("/summary", async (c) => {
   return c.json(rows);
 });
 
-// POST /api/fines — create manual fine
-fines.post("/", async (c) => {
+// POST /api/fines — create manual fine (admin only)
+fines.post("/", requireRole("admin"), async (c) => {
   const body = await c.req.json();
   const { player_id, fine_type_id, amount, notes } = body;
   const id = randomUUID();
@@ -62,28 +63,28 @@ fines.post("/", async (c) => {
   return c.json({ id, success: true }, 201);
 });
 
-// PATCH /api/fines/:id/pay — mark as paid
-fines.patch("/:id/pay", async (c) => {
+// PATCH /api/fines/:id/pay — mark as paid (admin only)
+fines.patch("/:id/pay", requireRole("admin"), async (c) => {
   const id = c.req.param("id");
   await sql`UPDATE fines SET paid = 1, paid_date = NOW() WHERE id = ${id}`;
   return c.json({ success: true });
 });
 
-// DELETE /api/fines/:id
-fines.delete("/:id", async (c) => {
+// DELETE /api/fines/:id (admin only)
+fines.delete("/:id", requireRole("admin"), async (c) => {
   const id = c.req.param("id");
   await sql`DELETE FROM fines WHERE id = ${id}`;
   return c.json({ success: true });
 });
 
-// GET /api/fine-types
-fines.get("/types", async (c) => {
+// GET /api/fine-types (admin + spiller)
+fines.get("/types", requireRole("admin", "spiller"), async (c) => {
   const rows = await sql`SELECT * FROM fine_types ORDER BY is_system DESC, name`;
   return c.json(rows);
 });
 
-// POST /api/fine-types
-fines.post("/types", async (c) => {
+// POST /api/fine-types (admin only)
+fines.post("/types", requireRole("admin"), async (c) => {
   const body = await c.req.json();
   const { name, amount, description } = body;
   const id = randomUUID();
@@ -96,8 +97,8 @@ fines.post("/types", async (c) => {
   return c.json({ id, success: true }, 201);
 });
 
-// PUT /api/fine-types/:id
-fines.put("/types/:id", async (c) => {
+// PUT /api/fine-types/:id (admin only)
+fines.put("/types/:id", requireRole("admin"), async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json();
   const { name, amount, description } = body;
@@ -110,8 +111,8 @@ fines.put("/types/:id", async (c) => {
   return c.json({ success: true });
 });
 
-// DELETE /api/fine-types/:id
-fines.delete("/types/:id", async (c) => {
+// DELETE /api/fine-types/:id (admin only)
+fines.delete("/types/:id", requireRole("admin"), async (c) => {
   const id = c.req.param("id");
   await sql`DELETE FROM fine_types WHERE id = ${id} AND is_system = 0`;
   return c.json({ success: true });

@@ -2,11 +2,12 @@ import { Hono } from "hono";
 import { sql } from "../lib/db";
 import { generateBalancedTeams, swapPlayers, calculatePlayerStats } from "../services/team-generator";
 import { SpondClient } from "../services/spond";
+import { requireRole } from "../middleware/auth";
 
 const teams = new Hono();
 
-// POST /api/teams/generate — generate balanced teams
-teams.post("/generate", async (c) => {
+// POST /api/teams/generate — generate balanced teams (admin only)
+teams.post("/generate", requireRole("admin"), async (c) => {
   const body = await c.req.json();
   const { playerIds, algorithm = "greedy" } = body;
 
@@ -18,8 +19,8 @@ teams.post("/generate", async (c) => {
   return c.json(result);
 });
 
-// POST /api/teams/swap — swap player between teams
-teams.post("/swap", async (c) => {
+// POST /api/teams/swap — swap player between teams (admin only)
+teams.post("/swap", requireRole("admin"), async (c) => {
   const body = await c.req.json();
   const { team1, team2, playerId } = body;
 
@@ -45,8 +46,8 @@ async function getPlayersById(ids: string[], stats: Awaited<ReturnType<typeof ca
   });
 }
 
-// GET /api/teams/available — players who accepted next training + match in Spond
-teams.get("/available", async (c) => {
+// GET /api/teams/available — players who accepted next training + match in Spond (admin + spiller)
+teams.get("/available", requireRole("admin", "spiller"), async (c) => {
   const groupId = process.env.SPOND_GROUP_ID;
   const stats = await calculatePlayerStats();
 

@@ -15,6 +15,7 @@ import {
 import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
 import { ArrowLeft, Plus, Banknote, CheckCircle, AlertTriangle, X } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Fine {
   id: string;
@@ -41,6 +42,8 @@ export default function FineDetailPage() {
   const { playerId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const [fines, setFines] = useState<Fine[]>([]);
   const [fineTypes, setFineTypes] = useState<FineType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -181,21 +184,23 @@ export default function FineDetailPage() {
         </Card>
       </div>
 
-      <div className="flex justify-end mb-4">
-        <Button onClick={() => setShowForm(!showForm)} data-testid="fine-add-button">
-          {showForm ? (
-            <>
-              <X className="h-4 w-4 mr-2" />
-              Annuller
-            </>
-          ) : (
-            <>
-              <Plus className="h-4 w-4 mr-2" />
-              Tilføj bøde
-            </>
-          )}
-        </Button>
-      </div>
+      {isAdmin && (
+        <div className="flex justify-end mb-4">
+          <Button onClick={() => setShowForm(!showForm)} data-testid="fine-add-button">
+            {showForm ? (
+              <>
+                <X className="h-4 w-4 mr-2" />
+                Annuller
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4 mr-2" />
+                Tilføj bøde
+              </>
+            )}
+          </Button>
+        </div>
+      )}
 
       {showForm && (
         <Card className="mb-4">
@@ -261,7 +266,7 @@ export default function FineDetailPage() {
                     <TableHead>Type</TableHead>
                     <TableHead className="text-right">Beløb</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Handling</TableHead>
+                    {isAdmin && <TableHead>Handling</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -284,19 +289,21 @@ export default function FineDetailPage() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell>
-                        {!f.paid && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handlePay(f.id)}
-                            data-testid={`fine-pay-${f.id}`}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1.5 text-emerald-400" />
-                            Markér betalt
-                          </Button>
-                        )}
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          {!f.paid && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePay(f.id)}
+                              data-testid={`fine-pay-${f.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1.5 text-emerald-400" />
+                              Markér betalt
+                            </Button>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
