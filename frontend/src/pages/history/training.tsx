@@ -15,7 +15,7 @@ import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Download, Trophy, Clock, Users, Swords, Plus, X, ClipboardList } from "lucide-react";
+import { Download, Trophy, Clock, Users, Swords, Plus, X, ClipboardList, Trash2 } from "lucide-react";
 
 function PlayerAvatar({ name, src }: { name: string; src?: string | null }) {
   if (src) {
@@ -286,6 +286,17 @@ export default function TrainingHistoryPage() {
     window.open("/api/matches/export/csv", "_blank");
   };
 
+  const deleteMatch = async (matchId: string) => {
+    if (!confirm("Er du sikker på, at du vil slette denne kamp?")) return;
+    try {
+      await api.delete(`/matches/${matchId}`);
+      toast("Kamp slettet", "success");
+      loadData();
+    } catch {
+      toast("Kunne ikke slette kamp", "error");
+    }
+  };
+
   const winRateColor = (stat: PlayerStat) => {
     if (stat.matches === 0) return "text-zinc-400";
     const rate = stat.wins / stat.matches;
@@ -386,6 +397,15 @@ export default function TrainingHistoryPage() {
                             data-testid={`result-team2-${m.id}`}
                           >
                             Hold 2 Vandt
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => deleteMatch(m.id)}
+                            data-testid={`delete-match-${m.id}`}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       )}
@@ -512,6 +532,15 @@ export default function TrainingHistoryPage() {
                       <Badge variant={m.winning_team === 1 ? "success" : "info"}>
                         Hold {m.winning_team} vandt
                       </Badge>
+                      {role === "admin" && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteMatch(m.id); }}
+                          className="text-zinc-600 hover:text-red-400 transition-colors"
+                          data-testid={`delete-completed-match-${m.id}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">

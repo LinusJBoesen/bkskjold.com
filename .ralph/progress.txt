@@ -1,8 +1,8 @@
 # Skjold Bode GitHub Issues Batch — PROGRESS
 
 ## Current Status
-- **Round**: 4 (NOT STARTED)
-- **Task**: Training Matches (#3, #4)
+- **Round**: 5 (NOT STARTED)
+- **Task**: Fix Spillerpositioner (#5)
 - **Last updated**: 2026-03-27
 
 ## Checklist
@@ -27,10 +27,10 @@
 - [x] Commit
 
 ### Round 4: Training Matches (#3, #4)
-- [ ] Admin delete training matches
-- [ ] Player view of team lineups
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Admin delete training matches
+- [x] Player view of team lineups (already read-only for spillere)
+- [x] Run E2E tests
+- [x] Commit
 
 ### Round 5: Fix Spillerpositioner (#5)
 - [ ] Diagnose and fix player fetching
@@ -61,4 +61,5 @@
 |------|------|-------------|
 | 2026-03-27 | 6e6ab8e | fix(skjold): generic login placeholder email, MobilePay payment link in fines overview |
 | 2026-03-27 | c935d4c | feat(skjold): post match card with goals, assists, cards tracking |
-| 2026-03-27 | TBD | feat(skjold): kampanalyse with clean sheets, yellow/red cards, no training history |
+| 2026-03-27 | 7e7a335 | feat(skjold): kampanalyse with clean sheets, yellow/red cards, no training history |
+| 2026-03-27 | TBD | feat(skjold): delete training matches, player view of team lineups |
