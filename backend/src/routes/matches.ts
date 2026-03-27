@@ -96,6 +96,87 @@ matches.patch("/:id/result", requireRole("admin"), async (c) => {
   return c.json({ success: true });
 });
 
+// PATCH /api/matches/:id/complete — mark match as completed with score + events (admin only)
+matches.patch("/:id/complete", requireRole("admin"), async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json();
+  const { score_team1, score_team2, winning_team, events } = body as {
+    score_team1: number;
+    score_team2: number;
+    winning_team: number;
+    events?: { player_id: string; event_type: string; minute?: number }[];
+  };
+
+  await sql`
+    UPDATE matches
+    SET status = 'completed', winning_team = ${winning_team},
+        score_team1 = ${score_team1}, score_team2 = ${score_team2},
+        completed_at = NOW()
+    WHERE id = ${id}
+  `;
+
+  // Insert match events
+  if (events && events.length > 0) {
+    for (const event of events) {
+      const eventId = randomUUID();
+      await sql`
+        INSERT INTO match_events (id, match_id, player_id, event_type, minute)
+        VALUES (${eventId}, ${id}, ${event.player_id}, ${event.event_type}, ${event.minute ?? null})
+      `;
+    }
+  }
+
+  // Auto-create training_loss fines for losing team
+  const losingTeam = winning_team === 1 ? 2 : 1;
+  const losers = await sql`
+    SELECT player_id FROM match_players WHERE match_id = ${id} AND team = ${losingTeam}
+  `;
+  const [match] = await sql`SELECT date FROM matches WHERE id = ${id}`;
+
+  for (const loser of losers) {
+    const fineId = `loss-${id}-${loser.player_id}`;
+    await sql`
+      INSERT INTO fines (id, player_id, fine_type_id, event_name, event_date, amount)
+      VALUES (${fineId}, ${loser.player_id}, 'training_loss', 'Tabt træningsmatch', ${match.date}, 25)
+      ON CONFLICT DO NOTHING
+    `;
+  }
+
+  return c.json({ success: true });
+});
+
+// GET /api/matches/:id/events — get events for a match (admin + spiller)
+matches.get("/:id/events", requireRole("admin", "spiller"), async (c) => {
+  const id = c.req.param("id");
+  const events = await sql`
+    SELECT me.*, p.display_name
+    FROM match_events me
+    JOIN players p ON me.player_id = p.id
+    WHERE me.match_id = ${id}
+    ORDER BY me.minute ASC NULLS LAST, me.created_at ASC
+  `;
+  return c.json(events);
+});
+
+// POST /api/matches/:id/events — add match events (admin only)
+matches.post("/:id/events", requireRole("admin"), async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json();
+  const { events } = body as {
+    events: { player_id: string; event_type: string; minute?: number }[];
+  };
+
+  for (const event of events) {
+    const eventId = randomUUID();
+    await sql`
+      INSERT INTO match_events (id, match_id, player_id, event_type, minute)
+      VALUES (${eventId}, ${id}, ${event.player_id}, ${event.event_type}, ${event.minute ?? null})
+    `;
+  }
+
+  return c.json({ success: true });
+});
+
 // DELETE /api/matches/:id (admin only)
 matches.delete("/:id", requireRole("admin"), async (c) => {
   const id = c.req.param("id");
