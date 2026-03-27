@@ -44,6 +44,11 @@ export const da = {
     appName: "BK Skjold",
   },
 
+  // Fines
+  fines: {
+    payWithMobilePay: "Betal med MobilePay",
+  },
+
   // Common
   common: {
     loading: "Indlæser...",
