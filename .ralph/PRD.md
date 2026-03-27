@@ -1,257 +1,146 @@
-# Skjold Bode Brugerregistrering & Rollesystem — PRD
+# Skjold Bode GitHub Issues Batch — PRD
 
 ## Goal
 
-Byg et brugerregistrerings- og rollesystem til BK Skjold appen. Tre roller: Admin (fuld adgang), Spiller (kan se alt men ikke oprette/redigere), Fan (begrænset adgang). Inkluderer registreringsside, admin-godkendelse af spillere, og rolle-baseret UI.
-
-## Feature Overview
-
-### Roller
-| Rolle | Adgang | Godkendelse |
-|-------|--------|-------------|
-| **Admin** | Alt | Env-bootstrap eller manuelt |
-| **Spiller** | Se alt, men kan IKKE oprette hold, tildele bøder, eller tilgå admin | Kræver admin-godkendelse |
-| **Fan** | Dashboard, Turnering, Kampanalyse | Auto-godkendt |
-
-### Registrering
-- Tilmeldingsformular med navn, email, password, rolle-valg (Fan/Spiller)
-- Spillere kan angive Spond email for at koble til eksisterende spiller-profil
-- Fans godkendes automatisk, spillere afventer admin-godkendelse
-- "Tilmeld dig"-knap på både landing-side og login-side
-
-### Admin Brugerhåndtering
-- Admin ser ventende tilmeldinger i admin-panelet
-- Godkend eller afvis spillere
-- Fuld brugerliste med roller og status
-
-### UI Ændringer
-- Dashboard overskrift komprimeret (mere plads til indhold)
-- Sidebar filtreret efter rolle
-- Handlingsknapper skjult for ikke-admins
-- Rolle-badge i header
+Fix and implement features from GitHub issues #3, #4, #5, #6, #7, #9, #10, #11, #12. Covers quick UI fixes, match data improvements, training match management, kampanalyse upgrades, turnering enhancements, and fan signup.
 
 ---
 
 ## Rounds
 
-### Round 1: Database + Registrerings-API
+### Round 1: Quick Fixes (#9, #10)
 
-**Backend changes:**
+**Issue #9 — Default mail should not be admin:**
+- [ ] Change the placeholder/default email on the login page from any bkskjold-specific email to a generic example like `email@example.com`
+- [ ] Ensure the login page still works correctly
 
-- [ ] Add `users` table to `backend/src/db/schema.ts`:
+**Issue #10 — Add MobilePay link in Bødeoversigt:**
+- [ ] Add a clickable MobilePay payment link to the fines overview page: `https://qr.mobilepay.dk/box/ed7689f5-3718-4168-ad64-bdf9081d0fda/pay-in`
+- [ ] Style it as a prominent button or link so users can easily pay their fines
+- [ ] Add appropriate i18n string in `da.ts`
+
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `fix(skjold): generic login placeholder email, MobilePay payment link in fines overview`
+
+### Round 2: Post Match Card (#7)
+
+**Issue #7 — Tilføj post match card:**
+- [ ] Add ability to mark a match as "completed" (afsluttet)
+- [ ] Create a post-match data entry form/card where admin can record:
+  - Final score (hjemme/ude)
+  - Goal scorers (which players scored, how many)
+  - Assists (which players assisted)
+  - Yellow cards
+  - Red cards
+- [ ] Store match events in database (goals, assists, cards per player per match)
+- [ ] Add `match_events` table if needed:
   ```sql
-  CREATE TABLE IF NOT EXISTS users (
+  CREATE TABLE IF NOT EXISTS match_events (
     id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    role TEXT NOT NULL CHECK(role IN ('admin','spiller','fan')) DEFAULT 'fan',
-    player_id TEXT REFERENCES players(id),
-    approved INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    match_id TEXT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    player_id TEXT NOT NULL REFERENCES players(id),
+    event_type TEXT NOT NULL CHECK(event_type IN ('goal','assist','yellow_card','red_card','clean_sheet')),
+    minute INTEGER,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )
   ```
-- [ ] Admin bootstrap in `backend/src/db/migrate.ts`: If no admin user in DB, create one from `ADMIN_EMAIL`/`ADMIN_PASSWORD` env vars with role=admin, approved=1
-- [ ] Extend session type in `backend/src/middleware/auth.ts`:
-  ```typescript
-  { email: string; role: 'admin' | 'spiller' | 'fan'; userId: string; createdAt: number }
-  ```
-- [ ] Update `createSession()` to accept role and userId
-- [ ] Create `requireRole(...roles)` middleware factory
-- [ ] `POST /api/auth/register` (public):
-  - Accepts `{ name, email, password, role, spondEmail? }`
-  - Uses `Bun.password.hash(password, "bcrypt")` for hashing
-  - Fan: set approved=1 (auto-approved)
-  - Spiller: set approved=0 (pending). If spondEmail provided, lookup player by matching in players table, set player_id
-  - Reject duplicate emails
-  - Password min 6 characters
-- [ ] Refactor `POST /api/auth/login`:
-  - First check DB users with `Bun.password.verify()`
-  - Reject if approved=0 with message "Afventer godkendelse"
-  - Fallback: check env-based ADMIN_EMAIL/ADMIN_PASSWORD (backward compat)
-  - Create session with role and userId
-- [ ] Update `GET /api/auth/me` to return `{ email, name, role, playerId }`
+- [ ] API endpoints:
+  - `POST /api/matches/:id/events` — add match events (admin only)
+  - `GET /api/matches/:id/events` — get events for a match
+  - `PATCH /api/matches/:id/complete` — mark match as completed with result + events
+- [ ] Frontend: post-match card UI accessible from match list, styled with existing dark theme
+- [ ] Add i18n strings for all new UI text
 - [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): user registration backend with roles, password hashing, admin bootstrap`
+- [ ] Commit: `feat(skjold): post match card with goals, assists, cards tracking`
 
-### Round 2: Admin Bruger-API + Rute-beskyttelse
+### Round 3: Kampanalyse Upgrade (#6)
 
-**Backend changes:**
-
-- [ ] `GET /api/admin/users` (admin only) — list all users with player display_name if linked
-- [ ] `GET /api/admin/users/pending` (admin only) — list unapproved spiller users
-- [ ] `PATCH /api/admin/users/:id/approve` (admin only) — set approved=1
-- [ ] `DELETE /api/admin/users/:id` (admin only) — remove user
-- [ ] Apply role-based route protection:
-  - **Admin-only** (write operations):
-    - `POST /api/fines`, `PATCH /api/fines/:id/pay`, `DELETE /api/fines/:id`
-    - All `/api/fines/types/*` mutations (POST, PUT, DELETE)
-    - `POST /api/teams/generate`, `POST /api/teams/swap`
-    - `POST /api/matches`, `PATCH /api/matches/:id/result`, `DELETE /api/matches/:id`
-    - `POST /api/sync/*`
-    - All `/api/admin/*`
-    - `POST /api/formations`, `PUT /api/formations/:id`, `DELETE /api/formations/:id`
-  - **Admin + Spiller** (read operations):
-    - `GET /api/fines/*`, `GET /api/players/*`, `GET /api/matches/*`
-    - `GET /api/teams/*`, `GET /api/formations/*`, `GET /api/analysis/*`
-  - **All authenticated** (admin + spiller + fan):
-    - `GET /api/stats/dashboard`, `GET /api/tournament/*`, `GET /api/auth/me`
-- [ ] Unapproved users return 401 on any protected route
-- [ ] Run E2E tests — all pass (E2E uses env-based admin login)
-- [ ] Commit: `feat(skjold): admin user management API and role-based route protection`
-
-### Round 3: Frontend — Registrering, Auth-hook, UI-tweaks
-
-**Frontend changes:**
-
-- [ ] Add i18n strings to `frontend/src/i18n/da.ts`:
-  - register.title, register.name, register.email, register.password
-  - register.role, register.fan, register.player, register.spondEmail
-  - register.spondHint, register.submit, register.loginLink
-  - register.success, register.pendingApproval, register.fanReady
-  - login.registerLink
-- [ ] Create `frontend/src/pages/register.tsx`:
-  - Name, email, password fields
-  - Role selector: radio/tabs for "Fan" / "Spiller"
-  - Spond email field (visible only when "Spiller" selected)
-  - On submit: call `POST /api/auth/register`
-  - Fan success → show "Du kan nu logge ind" + link to login
-  - Spiller success → show "Afventer godkendelse fra administrator"
-  - Error handling: duplicate email, validation errors
-  - data-testid on all elements
-- [ ] Update `frontend/src/hooks/use-auth.ts`:
-  - Add `role` and `name` to AuthState
-  - Parse from `/api/auth/me` response
-- [ ] Update `frontend/src/App.tsx`:
-  - Add `/register` route (public, like `/login`)
-- [ ] Update `frontend/src/pages/login.tsx`:
-  - Add "Har du ikke en konto? Tilmeld dig" link to `/register`
-- [ ] Update landing page (in `App.tsx` or dedicated landing):
-  - Add "Tilmeld dig" button linking to `/register`
-- [ ] Update `frontend/src/pages/dashboard.tsx`:
-  - Compress heading: remove logo from header area, reduce spacing
-  - Keep sync button and title, just more compact
+**Issue #6 — Kampanalyse:**
+- [ ] Remove træningshistorik from the kampanalyse/analysis page (or separate it clearly)
+- [ ] Add clean sheet tracking to match analysis
+- [ ] Add yellow card and red card statistics to match analysis
+- [ ] Update the analysis page to show per-player:
+  - Goals scored
+  - Assists
+  - Clean sheets (for goalkeepers/defenders or whole team)
+  - Yellow cards
+  - Red cards
+- [ ] Use data from match_events table (from Round 2)
+- [ ] Update i18n strings
 - [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): registration page, auth role support, signup buttons on landing/login`
+- [ ] Commit: `feat(skjold): kampanalyse with clean sheets, yellow/red cards, no training history`
 
-### Round 4: Frontend — Rolle-baseret UI + Admin Godkendelsespanel
+### Round 4: Training Matches — Delete + Player View (#3, #4)
 
-**Frontend changes:**
+**Issue #3 — Admin can delete training matches:**
+- [ ] Add delete button/action for training match lineups
+- [ ] Backend: `DELETE /api/teams/history/:id` or similar endpoint (admin only)
+- [ ] Add confirmation dialog before deletion
+- [ ] Admin can re-generate teams after deleting
 
-- [ ] Update `frontend/src/components/layout/sidebar.tsx`:
-  - Accept `role` from useAuth or prop
-  - Filter navItems by role:
-    - Fan: Oversigt (Dashboard), Turnering, Kampanalyse
-    - Spiller: all except Admin
-    - Admin: all
-- [ ] Update `frontend/src/App.tsx` (ProtectedLayout):
-  - Route guards: redirect fan from /fines, /teams, /history, /admin to /dashboard
-- [ ] Update fines pages:
-  - Hide "Tilføj bøde" button, pay/delete actions for non-admin
-- [ ] Update teams page:
-  - Hide "Generer hold" button for non-admin
-- [ ] Update `frontend/src/pages/admin/settings.tsx`:
-  - Add "Brugere" tab with Users icon
-  - Pending approval section at top with approve/reject buttons
-  - Full user list with role badges
-  - Each pending row: name, email, linked player, created date, approve/reject
-- [ ] Update `frontend/src/components/layout/header.tsx`:
-  - Show role badge next to email
-- [ ] Add i18n strings:
-  - admin.tabs.users, admin.users.title, admin.users.pending
-  - admin.users.approve, admin.users.reject, admin.users.noPending
-  - roles.admin, roles.spiller, roles.fan
-- [ ] data-testid on all new elements
+**Issue #4 — Training match player (spiller) view:**
+- [ ] Players (rolle=spiller) can see saved training lineups
+- [ ] Read-only view of team compositions for upcoming/recent trainings
+- [ ] Accessible from sidebar or training section
+- [ ] Only shows team composition, no edit capabilities for spillere
+
+- [ ] Add i18n strings
 - [ ] Run E2E tests — all pass
-- [ ] Commit: `feat(skjold): role-based sidebar, action gating, admin user approval panel`
+- [ ] Commit: `feat(skjold): delete training matches, player view of team lineups`
 
-### Round 5: Polish, Edge Cases & E2E Tests
+### Round 5: Fix Spillerpositioner (#5)
 
-**Testing & polish:**
+**Issue #5 — Spillerpositioner admin:**
+- [ ] Diagnose why "Ingen spillere fundet" appears — players are not being fetched for position assignment
+- [ ] Fix the player fetching logic so admin can assign positions
+- [ ] Ensure Spond sync populates players correctly for this feature
+- [ ] If no Spond data available, gracefully handle by showing existing DB players
 
-- [ ] E2E test: `e2e/specs/auth/register.spec.ts`:
-  - Fan registration → login → see limited sidebar
-  - Spiller registration → pending message → cannot login
-  - Duplicate email error
-- [ ] E2E test: `e2e/specs/auth/roles.spec.ts`:
-  - Fan cannot access fines page (redirect)
-  - Spiller can view but not create fines
-  - Admin has full access
-- [ ] E2E test: `e2e/specs/admin/users.spec.ts`:
-  - Admin sees pending users
-  - Admin approves user → user can login
-- [ ] Password min-length validation on frontend and backend
-- [ ] Session invalidation: if admin deletes a user with active session, next request returns 401
-- [ ] Registration page responsive on mobile
-- [ ] Admin users tab responsive on mobile
-- [ ] Env-based admin backward compatibility confirmed
-- [ ] Run ALL E2E tests (existing + new) — all pass
-- [ ] Commit: `feat(skjold): registration & roles polish, E2E tests, edge cases`
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `fix(skjold): player positions admin - fix player fetching for position assignment`
+
+### Round 6: Turnering — Upcoming & Previous Matches (#12)
+
+**Issue #12 — Add upcoming and previous matches to Turnering:**
+- [ ] Show upcoming matches with date, opponent, time/location
+- [ ] Show previous match results (score, date, opponent)
+- [ ] Data source: either from DBU scraper or manual match entries
+- [ ] Split the turnering page into sections: Stilling (existing), Kommende kampe, Tidligere kampe
+- [ ] Add i18n strings
+
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): turnering with upcoming matches and previous results`
+
+### Round 7: Fan Sign-up Form (#11)
+
+**Issue #11 — Sign up button for fans:**
+- [ ] Add a fan sign-up / interest form accessible from landing page or fan section
+- [ ] Form fields:
+  - Position (which position they play)
+  - Comment (free text)
+  - "Love for BK Skjold" (fun field — scale or text)
+- [ ] Store submissions in database (new `fan_signups` table)
+- [ ] Backend: `POST /api/fan-signup` (public or fan-authenticated)
+- [ ] Admin can view submitted fan sign-ups in admin panel
+- [ ] Add i18n strings
+
+- [ ] Run E2E tests — all pass
+- [ ] Commit: `feat(skjold): fan signup form with position, comment, and team love`
 
 ---
 
 ## Technical Notes
 
-### Password Hashing (Bun built-in)
-```typescript
-const hash = await Bun.password.hash(password, "bcrypt");
-const valid = await Bun.password.verify(password, hash);
-```
-
-### Database: PostgreSQL via Bun.SQL
-The project uses `Bun.SQL` with PostgreSQL (NOT SQLite). All queries use tagged template literals:
-```typescript
-import { sql } from "../lib/db";
-
-// Parameterized queries (preferred)
-const [user] = await sql`SELECT * FROM users WHERE email = ${email}`;
-await sql`INSERT INTO users (id, name, email, password_hash, role, approved) VALUES (${id}, ${name}, ${email}, ${hash}, ${role}, ${approved})`;
-
-// Dynamic SQL (when query structure varies)
-const rows = await sql.unsafe("SELECT * FROM users WHERE role = $1", [role]);
-```
-
-### Session Type
-```typescript
-// Before
-const sessions = new Map<string, { email: string; createdAt: number }>();
-
-// After
-const sessions = new Map<string, {
-  email: string;
-  role: 'admin' | 'spiller' | 'fan';
-  userId: string;
-  createdAt: number
-}>();
-```
-
-### Role Middleware
-```typescript
-export function requireRole(...roles: string[]) {
-  return createMiddleware(async (c, next) => {
-    const session = c.get("session");
-    if (!session || !roles.includes(session.role)) {
-      return c.json({ error: "Forbidden" }, 403);
-    }
-    await next();
-  });
-}
-```
-
-### Spond Player Matching
-The `players` table has `display_name` and could match on email if Spond stores it. Pragmatic approach: store the claimed Spond email on the user record, attempt auto-match by looking up players. If no match found, `player_id` stays null — admin can see this during approval and manually link if needed.
-
-### Env-Admin Fallback
-The env-based admin login (ADMIN_EMAIL/ADMIN_PASSWORD) is preserved as a fallback. This ensures existing deployments continue to work. On first startup with the new schema, an admin user is auto-created in the DB from these env vars.
+- All UI text in Danish via `frontend/src/i18n/da.ts`
+- Follow existing dark theme (zinc-950, zinc-900/50, red #D42428)
+- Use `data-testid` on all new interactive elements
+- Do not break existing E2E tests
+- Respect role-based access: admin for mutations, spiller for read, fan for limited access
 
 ## Success Criteria
 
-1. Three distinct roles with correct access levels
-2. Registration flow works for both fans and players
-3. Admin can approve/reject player registrations
-4. Sidebar and action buttons respect user role
-5. Existing admin login still works (backward compat)
-6. Spond email matching links players to user accounts
-7. All existing + new E2E tests pass
-8. All UI text in Danish
+1. All 9 GitHub issues addressed
+2. All existing E2E tests still pass
+3. New features follow existing code conventions
+4. UI is responsive and in Danish
+5. Role-based access respected on all new features
