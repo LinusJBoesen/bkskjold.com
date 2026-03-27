@@ -1,73 +1,62 @@
-# Skjold Bode Brugerregistrering & Rollesystem — PROGRESS
+# Skjold Bode GitHub Issues Batch — PROGRESS
 
 ## Current Status
-- **Round**: 5 (COMPLETE)
-- **Task**: Polish, Edge Cases & E2E Tests
-- **Last updated**: 2026-03-26
+- **Round**: 2 (NOT STARTED)
+- **Task**: Post Match Card (#7)
+- **Last updated**: 2026-03-27
 
 ## Checklist
 
-### Round 1: Database + Registrerings-API
-- [x] Add users table to schema.ts
-- [x] Admin bootstrap in migrate.ts
-- [x] Extend session type in auth middleware
-- [x] Update createSession() with role and userId
-- [x] Create requireRole() middleware
-- [x] POST /api/auth/register endpoint
-- [x] Refactor POST /api/auth/login for DB users
-- [x] Update GET /api/auth/me with role info
-- [x] Run E2E tests — all pass (8 pre-existing failures, 0 new)
+### Round 1: Quick Fixes (#9, #10)
+- [x] Change login placeholder email to generic
+- [x] Add MobilePay payment link in Bødeoversigt
+- [x] Run E2E tests
 - [x] Commit
 
-### Round 2: Admin Bruger-API + Rute-beskyttelse
-- [x] GET /api/admin/users
-- [x] GET /api/admin/users/pending
-- [x] PATCH /api/admin/users/:id/approve
-- [x] DELETE /api/admin/users/:id
-- [x] Role-based route protection
-- [x] Run E2E tests — all pass (8 pre-existing failures, 0 new)
-- [x] Commit
+### Round 2: Post Match Card (#7)
+- [ ] Match completion flow
+- [ ] Match events table + API
+- [ ] Post-match card UI
+- [ ] Run E2E tests
+- [ ] Commit
 
-### Round 3: Frontend — Registrering, Auth-hook, UI-tweaks
-- [x] i18n strings for registration
-- [x] Registration page (register.tsx)
-- [x] Update useAuth hook with role/name
-- [x] Add /register route
-- [x] Tilmeld dig links on login + landing
-- [x] Compress dashboard heading
-- [x] Run E2E tests — all pass (8 pre-existing failures, 0 new)
-- [x] Commit
+### Round 3: Kampanalyse Upgrade (#6)
+- [ ] Remove træningshistorik from analysis
+- [ ] Add clean sheets, yellow/red cards to analysis
+- [ ] Run E2E tests
+- [ ] Commit
 
-### Round 4: Frontend — Rolle-baseret UI + Admin Godkendelsespanel
-- [x] Role-based sidebar filtering
-- [x] Route guards for fan
-- [x] Hide action buttons for non-admins
-- [x] Admin users tab with approve/reject
-- [x] Role badge in header
-- [x] i18n strings for roles and admin users
-- [x] Run E2E tests — all pass (8 pre-existing failures, 0 new)
-- [x] Commit
+### Round 4: Training Matches (#3, #4)
+- [ ] Admin delete training matches
+- [ ] Player view of team lineups
+- [ ] Run E2E tests
+- [ ] Commit
 
-### Round 5: Polish, Edge Cases & E2E Tests
-- [x] E2E: register.spec.ts (4 tests — fan flow, spiller pending, duplicate email, login link)
-- [x] E2E: roles.spec.ts (2 tests — fan redirect, admin full access)
-- [x] E2E: users.spec.ts (2 tests — approve pending user, user list)
-- [x] Password validation (backend min 6 chars + frontend minLength=6)
-- [x] Session invalidation on user delete (destroySessionsByUserId already in place)
-- [x] Responsive design (register page matches login, admin users tab responsive)
-- [x] Backward compat confirmed (env-based admin login still works in E2E)
-- [x] Run ALL E2E tests — 59 passed, 8 pre-existing failures, 0 new
-- [x] Commit
+### Round 5: Fix Spillerpositioner (#5)
+- [ ] Diagnose and fix player fetching
+- [ ] Run E2E tests
+- [ ] Commit
+
+### Round 6: Turnering Upgrade (#12)
+- [ ] Upcoming matches section
+- [ ] Previous match results section
+- [ ] Run E2E tests
+- [ ] Commit
+
+### Round 7: Fan Sign-up (#11)
+- [ ] Fan signup form + backend
+- [ ] Admin view of signups
+- [ ] Run E2E tests
+- [ ] Commit
 
 ## Blockers
 (none)
+
+## Notes
+- 8 pre-existing E2E test failures (admin/fine-types, admin/settings, formations/position-admin, tournament/standings) — not caused by this work
 
 ## Commit Log
 
 | Date | Hash | Description |
 |------|------|-------------|
-| 2026-03-26 | TBD | feat(skjold): user registration backend with roles, password hashing, admin bootstrap |
-| 2026-03-26 | TBD | feat(skjold): admin user management API and role-based route protection |
-| 2026-03-26 | TBD | feat(skjold): registration page, auth role support, signup buttons on landing/login |
-| 2026-03-26 | TBD | feat(skjold): role-based sidebar, action gating, admin user approval panel |
-| 2026-03-26 | TBD | feat(skjold): registration & roles polish, E2E tests, edge cases |
+| 2026-03-27 | TBD | fix(skjold): generic login placeholder email, MobilePay payment link in fines overview |

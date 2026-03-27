@@ -59,7 +59,7 @@ export default function LoginPage({ onLogin }: LoginProps) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   data-testid="login-email"
-                  placeholder="admin@skjold.dk"
+                  placeholder="email@example.com"
                   required
                 />
               </div>
