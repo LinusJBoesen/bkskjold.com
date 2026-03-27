@@ -4,7 +4,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Swords, Users, Trophy, XCircle } from "lucide-react";
+import { BarChart3, Swords, Users, Trophy, XCircle, Goal, Shield, AlertTriangle } from "lucide-react";
 
 interface DbuMatch {
   date: string;
@@ -14,14 +14,15 @@ interface DbuMatch {
   isHome: boolean;
 }
 
-interface PlayerRate {
+interface PlayerStat {
   id: string;
   displayName: string;
   profilePicture?: string | null;
-  trainingMatches: number;
-  trainingWins: number;
-  trainingLosses: number;
-  trainingWinRate: number;
+  goals: number;
+  assists: number;
+  cleanSheets: number;
+  yellowCards: number;
+  redCards: number;
 }
 
 interface DbuSummary {
@@ -34,7 +35,7 @@ interface DbuSummary {
 interface AnalysisData {
   dbuMatches: DbuMatch[];
   dbuSummary: DbuSummary;
-  playerRates: PlayerRate[];
+  playerStats: PlayerStat[];
 }
 
 const resultBadge = (result: "win" | "draw" | "loss") => {
@@ -65,10 +66,15 @@ function PlayerAvatar({ name, src }: { name: string; src?: string | null }) {
   );
 }
 
-const winRateColor = (rate: number) => {
-  if (rate > 50) return "text-emerald-400";
-  if (rate === 50) return "text-zinc-400";
-  return "text-red-400";
+const eventTypeIcon = (type: string) => {
+  switch (type) {
+    case "goal": return "⚽";
+    case "assist": return "🅰️";
+    case "clean_sheet": return "🛡️";
+    case "yellow_card": return "🟡";
+    case "red_card": return "🔴";
+    default: return "";
+  }
 };
 
 export default function MatchAnalysisPage() {
@@ -175,30 +181,31 @@ export default function MatchAnalysisPage() {
         </div>
       )}
 
-      {/* Player Training Rates */}
-      {data.playerRates.length === 0 ? (
+      {/* Player Match Stats */}
+      {data.playerStats.length === 0 ? (
         <Card><CardContent className="py-8 text-center">
-          <p className="text-zinc-500">Ingen spillerdata endnu</p>
+          <p className="text-zinc-500" data-testid="analysis-no-stats">Ingen spillerstatistik endnu</p>
         </CardContent></Card>
       ) : (
         <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden">
           <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
             <Users className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-semibold text-zinc-50">{da.analysis.playerRates}</h2>
+            <h2 className="text-lg font-semibold text-zinc-50">{da.analysis.playerStats}</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full" data-testid="analysis-player-rates-table">
               <thead>
                 <tr className="bg-zinc-900 text-zinc-400 text-xs font-medium uppercase tracking-wider">
                   <th className="px-4 py-3 text-left">Navn</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.matches}</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.trainingWins}</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.trainingLosses}</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.winRate}</th>
+                  <th className="px-4 py-3 text-center">{da.analysis.goals}</th>
+                  <th className="px-4 py-3 text-center">{da.analysis.assists}</th>
+                  <th className="px-4 py-3 text-center">{da.analysis.cleanSheets}</th>
+                  <th className="px-4 py-3 text-center">{da.analysis.yellowCards}</th>
+                  <th className="px-4 py-3 text-center">{da.analysis.redCards}</th>
                 </tr>
               </thead>
               <tbody>
-                {data.playerRates.map((p) => (
+                {data.playerStats.map((p) => (
                   <tr
                     key={p.id}
                     className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors"
@@ -209,11 +216,14 @@ export default function MatchAnalysisPage() {
                         {p.displayName}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.trainingMatches}</td>
-                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.trainingWins}</td>
-                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.trainingLosses}</td>
-                    <td className={`px-4 py-3 text-center text-sm font-bold tabular-nums ${winRateColor(p.trainingWinRate)}`}>
-                      {p.trainingWinRate}%
+                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.goals}</td>
+                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.assists}</td>
+                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.cleanSheets}</td>
+                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">
+                      {p.yellowCards > 0 ? <span className="text-yellow-400">{p.yellowCards}</span> : 0}
+                    </td>
+                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">
+                      {p.redCards > 0 ? <span className="text-red-400">{p.redCards}</span> : 0}
                     </td>
                   </tr>
                 ))}
