@@ -113,6 +113,15 @@ export const tables = [
     PRIMARY KEY (player_id, position)
   )`,
 
+  `CREATE TABLE IF NOT EXISTS match_events (
+    id TEXT PRIMARY KEY,
+    match_id TEXT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    player_id TEXT NOT NULL REFERENCES players(id),
+    event_type TEXT NOT NULL CHECK(event_type IN ('goal','assist','yellow_card','red_card','clean_sheet')),
+    minute INTEGER,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+
   `CREATE TABLE IF NOT EXISTS lineup_formations (
     id TEXT PRIMARY KEY,
     match_id TEXT,

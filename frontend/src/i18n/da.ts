@@ -163,6 +163,29 @@ export const da = {
     winRate: "Sejrsrate",
     summary: "Oversigt",
   },
+  // Post Match
+  postMatch: {
+    title: "Afslut kamp",
+    score: "Resultat",
+    team1: "Hold 1",
+    team2: "Hold 2",
+    events: "Kamphændelser",
+    addEvent: "Tilføj hændelse",
+    goal: "Mål",
+    assist: "Assist",
+    yellowCard: "Gult kort",
+    redCard: "Rødt kort",
+    cleanSheet: "Clean sheet",
+    player: "Spiller",
+    eventType: "Type",
+    minute: "Minut",
+    complete: "Afslut kamp",
+    completed: "Kamp afsluttet",
+    error: "Kunne ikke afslutte kampen",
+    noEvents: "Ingen hændelser tilføjet",
+    selectPlayer: "Vælg spiller",
+  },
+
   // Formation / Pitch
   formation: {
     title: "Opstilling",

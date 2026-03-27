@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -13,7 +14,8 @@ import {
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
-import { Download, Trophy, Clock, Users, Swords } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { Download, Trophy, Clock, Users, Swords, Plus, X, ClipboardList } from "lucide-react";
 
 function PlayerAvatar({ name, src }: { name: string; src?: string | null }) {
   if (src) {
@@ -40,7 +42,19 @@ interface Match {
   date: string;
   status: string;
   winning_team: number | null;
+  score_team1: number | null;
+  score_team2: number | null;
   players: MatchPlayer[];
+}
+
+interface MatchEvent {
+  player_id: string;
+  event_type: "goal" | "assist" | "yellow_card" | "red_card" | "clean_sheet";
+  minute?: number;
+}
+
+interface MatchEventDisplay extends MatchEvent {
+  display_name?: string;
 }
 
 interface PlayerStat {
@@ -52,6 +66,170 @@ interface PlayerStat {
   losses: number;
 }
 
+function PostMatchCard({
+  match,
+  onComplete,
+  onCancel,
+}: {
+  match: Match;
+  onComplete: () => void;
+  onCancel: () => void;
+}) {
+  const [scoreTeam1, setScoreTeam1] = useState(0);
+  const [scoreTeam2, setScoreTeam2] = useState(0);
+  const [events, setEvents] = useState<MatchEvent[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const allPlayers = match.players;
+  const team1 = allPlayers.filter((p) => p.team === 1);
+  const team2 = allPlayers.filter((p) => p.team === 2);
+
+  const addEvent = () => {
+    setEvents([...events, { player_id: "", event_type: "goal" }]);
+  };
+
+  const removeEvent = (index: number) => {
+    setEvents(events.filter((_, i) => i !== index));
+  };
+
+  const updateEvent = (index: number, field: keyof MatchEvent, value: string | number | undefined) => {
+    const updated = [...events];
+    (updated[index] as any)[field] = value;
+    setEvents(updated);
+  };
+
+  const handleSubmit = async () => {
+    const winningTeam = scoreTeam1 > scoreTeam2 ? 1 : scoreTeam1 < scoreTeam2 ? 2 : 1;
+    const validEvents = events.filter((e) => e.player_id);
+
+    setSubmitting(true);
+    try {
+      await api.patch(`/matches/${match.id}/complete`, {
+        score_team1: scoreTeam1,
+        score_team2: scoreTeam2,
+        winning_team: winningTeam,
+        events: validEvents,
+      });
+      toast(da.postMatch.completed, "success");
+      onComplete();
+    } catch {
+      toast(da.postMatch.error, "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="border border-zinc-700 rounded-lg p-4 bg-zinc-900/80 space-y-4" data-testid={`post-match-card-${match.id}`}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+          <ClipboardList className="w-4 h-4 text-red-400" />
+          {da.postMatch.title} — {match.date}
+        </h3>
+        <button onClick={onCancel} className="text-zinc-500 hover:text-zinc-300" data-testid="post-match-cancel">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Score */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-xs text-zinc-400 block mb-1">{da.postMatch.team1}</label>
+          <Input
+            type="number"
+            min={0}
+            value={scoreTeam1}
+            onChange={(e) => setScoreTeam1(parseInt(e.target.value) || 0)}
+            data-testid="post-match-score-team1"
+          />
+          <div className="text-xs text-zinc-500 mt-1">
+            {team1.map((p) => p.display_name).join(", ")}
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-zinc-400 block mb-1">{da.postMatch.team2}</label>
+          <Input
+            type="number"
+            min={0}
+            value={scoreTeam2}
+            onChange={(e) => setScoreTeam2(parseInt(e.target.value) || 0)}
+            data-testid="post-match-score-team2"
+          />
+          <div className="text-xs text-zinc-500 mt-1">
+            {team2.map((p) => p.display_name).join(", ")}
+          </div>
+        </div>
+      </div>
+
+      {/* Events */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs text-zinc-400 font-medium">{da.postMatch.events}</label>
+          <Button size="sm" variant="secondary" onClick={addEvent} data-testid="post-match-add-event">
+            <Plus className="w-3 h-3 mr-1" />
+            {da.postMatch.addEvent}
+          </Button>
+        </div>
+        {events.length === 0 && (
+          <p className="text-xs text-zinc-600">{da.postMatch.noEvents}</p>
+        )}
+        <div className="space-y-2">
+          {events.map((event, i) => (
+            <div key={i} className="flex gap-2 items-center" data-testid={`post-match-event-${i}`}>
+              <select
+                value={event.player_id}
+                onChange={(e) => updateEvent(i, "player_id", e.target.value)}
+                className="flex-1 text-xs bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg px-2 py-1.5"
+                data-testid={`post-match-event-player-${i}`}
+              >
+                <option value="">{da.postMatch.selectPlayer}</option>
+                {allPlayers.map((p) => (
+                  <option key={p.player_id} value={p.player_id}>{p.display_name}</option>
+                ))}
+              </select>
+              <select
+                value={event.event_type}
+                onChange={(e) => updateEvent(i, "event_type", e.target.value)}
+                className="text-xs bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg px-2 py-1.5"
+                data-testid={`post-match-event-type-${i}`}
+              >
+                <option value="goal">{da.postMatch.goal}</option>
+                <option value="assist">{da.postMatch.assist}</option>
+                <option value="yellow_card">{da.postMatch.yellowCard}</option>
+                <option value="red_card">{da.postMatch.redCard}</option>
+                <option value="clean_sheet">{da.postMatch.cleanSheet}</option>
+              </select>
+              <Input
+                type="number"
+                min={0}
+                max={120}
+                placeholder={da.postMatch.minute}
+                value={event.minute ?? ""}
+                onChange={(e) => updateEvent(i, "minute", e.target.value ? parseInt(e.target.value) : undefined)}
+                className="w-16 text-xs"
+                data-testid={`post-match-event-minute-${i}`}
+              />
+              <button onClick={() => removeEvent(i)} className="text-zinc-500 hover:text-red-400">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Button
+        onClick={handleSubmit}
+        disabled={submitting}
+        className="w-full"
+        data-testid="post-match-submit"
+      >
+        {submitting ? da.common.loading : da.postMatch.complete}
+      </Button>
+    </div>
+  );
+}
+
 export default function TrainingHistoryPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [stats, setStats] = useState<PlayerStat[]>([]);
@@ -59,7 +237,9 @@ export default function TrainingHistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "10" | "20">("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
+  const [activePostMatch, setActivePostMatch] = useState<string | null>(null);
   const { toast } = useToast();
+  const { role } = useAuth();
 
   const loadData = () => {
     setLoading(true);
@@ -165,27 +345,50 @@ export default function TrainingHistoryPage() {
               {pendingMatches.map((m) => {
                 const team1 = m.players.filter((p) => p.team === 1);
                 const team2 = m.players.filter((p) => p.team === 2);
+
+                if (activePostMatch === m.id) {
+                  return (
+                    <PostMatchCard
+                      key={m.id}
+                      match={m}
+                      onComplete={() => { setActivePostMatch(null); loadData(); }}
+                      onCancel={() => setActivePostMatch(null)}
+                    />
+                  );
+                }
+
                 return (
                   <div key={m.id} className="border border-zinc-800 rounded-lg p-4 bg-zinc-900/50 transition-all duration-200 hover:border-zinc-700" data-testid={`pending-match-${m.id}`}>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
                       <span className="text-sm text-zinc-400">{m.date}</span>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => registerResult(m.id, 1)}
-                          data-testid={`result-team1-${m.id}`}
-                        >
-                          Hold 1 Vandt
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => registerResult(m.id, 2)}
-                          data-testid={`result-team2-${m.id}`}
-                        >
-                          Hold 2 Vandt
-                        </Button>
-                      </div>
+                      {role === "admin" && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => setActivePostMatch(m.id)}
+                            data-testid={`complete-match-${m.id}`}
+                          >
+                            <ClipboardList className="w-3.5 h-3.5 mr-1" />
+                            {da.postMatch.title}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => registerResult(m.id, 1)}
+                            data-testid={`result-team1-${m.id}`}
+                          >
+                            Hold 1 Vandt
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => registerResult(m.id, 2)}
+                            data-testid={`result-team2-${m.id}`}
+                          >
+                            Hold 2 Vandt
+                          </Button>
+                        </div>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
@@ -300,9 +503,16 @@ export default function TrainingHistoryPage() {
                 <div key={m.id} className="border border-zinc-800 rounded-lg p-3 text-sm bg-zinc-900/30 transition-all duration-200 hover:border-zinc-700" data-testid={`completed-match-${m.id}`}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-zinc-500">{m.date}</span>
-                    <Badge variant={m.winning_team === 1 ? "success" : "info"}>
-                      Hold {m.winning_team} vandt
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {m.score_team1 != null && m.score_team2 != null && (
+                        <span className="text-xs font-bold text-zinc-300 tabular-nums">
+                          {m.score_team1} - {m.score_team2}
+                        </span>
+                      )}
+                      <Badge variant={m.winning_team === 1 ? "success" : "info"}>
+                        Hold {m.winning_team} vandt
+                      </Badge>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
                     <div>

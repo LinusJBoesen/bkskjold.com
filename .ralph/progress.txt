@@ -1,8 +1,8 @@
 # Skjold Bode GitHub Issues Batch — PROGRESS
 
 ## Current Status
-- **Round**: 2 (NOT STARTED)
-- **Task**: Post Match Card (#7)
+- **Round**: 3 (NOT STARTED)
+- **Task**: Kampanalyse Upgrade (#6)
 - **Last updated**: 2026-03-27
 
 ## Checklist
@@ -14,11 +14,11 @@
 - [x] Commit
 
 ### Round 2: Post Match Card (#7)
-- [ ] Match completion flow
-- [ ] Match events table + API
-- [ ] Post-match card UI
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Match completion flow
+- [x] Match events table + API
+- [x] Post-match card UI
+- [x] Run E2E tests
+- [x] Commit
 
 ### Round 3: Kampanalyse Upgrade (#6)
 - [ ] Remove træningshistorik from analysis
@@ -59,4 +59,5 @@
 
 | Date | Hash | Description |
 |------|------|-------------|
-| 2026-03-27 | TBD | fix(skjold): generic login placeholder email, MobilePay payment link in fines overview |
+| 2026-03-27 | 6e6ab8e | fix(skjold): generic login placeholder email, MobilePay payment link in fines overview |
+| 2026-03-27 | TBD | feat(skjold): post match card with goals, assists, cards tracking |

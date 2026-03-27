@@ -23,5 +23,13 @@ export async function migrate(): Promise<void> {
     }
   }
 
+  // Add score columns to matches if they don't exist
+  try {
+    await sql`ALTER TABLE matches ADD COLUMN score_team1 INTEGER`;
+  } catch { /* column already exists */ }
+  try {
+    await sql`ALTER TABLE matches ADD COLUMN score_team2 INTEGER`;
+  } catch { /* column already exists */ }
+
   console.log("Database migrated");
 }
