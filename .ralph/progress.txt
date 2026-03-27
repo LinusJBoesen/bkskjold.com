@@ -1,8 +1,8 @@
 # Skjold Bode GitHub Issues Batch — PROGRESS
 
 ## Current Status
-- **Round**: 6 (NOT STARTED)
-- **Task**: Turnering Upgrade (#12)
+- **Round**: 7 (NOT STARTED)
+- **Task**: Fan Sign-up (#11)
 - **Last updated**: 2026-03-27
 
 ## Checklist
@@ -39,10 +39,10 @@
 - [x] Commit
 
 ### Round 6: Turnering Upgrade (#12)
-- [ ] Upcoming matches section
-- [ ] Previous match results section
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Upcoming matches section
+- [x] Previous match results section
+- [x] Run E2E tests
+- [x] Commit
 
 ### Round 7: Fan Sign-up (#11)
 - [ ] Fan signup form + backend
@@ -64,4 +64,5 @@
 | 2026-03-27 | c935d4c | feat(skjold): post match card with goals, assists, cards tracking |
 | 2026-03-27 | 7e7a335 | feat(skjold): kampanalyse with clean sheets, yellow/red cards, no training history |
 | 2026-03-27 | 1bdd263 | feat(skjold): delete training matches, player view of team lineups |
-| 2026-03-27 | TBD | fix(skjold): player positions admin - fix player fetching for position assignment |
+| 2026-03-27 | 76c50df | fix(skjold): player positions admin - fix player fetching for position assignment |
+| 2026-03-27 | TBD | feat(skjold): turnering with upcoming matches and previous results |
