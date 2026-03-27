@@ -81,6 +81,14 @@ export const da = {
     points: "Point",
     refresh: "Opdatér",
     refreshing: "Opdaterer...",
+    upcoming: "Kommende kampe",
+    previous: "Tidligere kampe",
+    noUpcoming: "Ingen kommende kampe",
+    noPrevious: "Ingen tidligere kampe",
+    home: "Hjemme",
+    away: "Ude",
+    date: "Dato",
+    vs: "vs",
   },
 
   // Admin

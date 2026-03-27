@@ -3,8 +3,9 @@ import { da } from "@/i18n/da";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw, Trophy } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { RefreshCw, Trophy, Calendar, Clock } from "lucide-react";
 
 interface Standing {
   position: number;
@@ -17,8 +18,18 @@ interface Standing {
   points: number;
 }
 
+interface DbuMatch {
+  date: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number | null;
+  awayScore: number | null;
+}
+
 export default function TournamentStandingsPage() {
   const [standings, setStandings] = useState<Standing[]>([]);
+  const [upcoming, setUpcoming] = useState<DbuMatch[]>([]);
+  const [previous, setPrevious] = useState<DbuMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -28,8 +39,13 @@ export default function TournamentStandingsPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.get<{ standings: Standing[] }>("/tournament/standings");
-      setStandings(data.standings);
+      const [standingsData, matchesData] = await Promise.all([
+        api.get<{ standings: Standing[] }>("/tournament/standings"),
+        api.get<{ upcoming: DbuMatch[]; previous: DbuMatch[] }>("/tournament/matches"),
+      ]);
+      setStandings(standingsData.standings);
+      setUpcoming(matchesData.upcoming);
+      setPrevious(matchesData.previous);
     } catch {
       setError("Kunne ikke indlæse turneringsdata");
     } finally {
@@ -142,6 +158,94 @@ export default function TournamentStandingsPage() {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Upcoming Matches */}
+      {!loading && !error && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="w-5 h-5 text-amber-400" />
+              {da.tournament.upcoming}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {upcoming.length === 0 ? (
+              <p className="text-zinc-500 text-sm" data-testid="tournament-no-upcoming">{da.tournament.noUpcoming}</p>
+            ) : (
+              <div className="space-y-3" data-testid="tournament-upcoming-matches">
+                {upcoming.map((m, i) => {
+                  const isSkjoldHome = m.homeTeam === "BK Skjold";
+                  const isSkjoldAway = m.awayTeam === "BK Skjold";
+                  return (
+                    <div key={`${m.date}-${m.homeTeam}-${i}`} className="flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-zinc-500 tabular-nums w-20">{m.date}</span>
+                        <span className={isSkjoldHome ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
+                          {m.homeTeam}
+                        </span>
+                        <span className="text-zinc-600 text-xs">{da.tournament.vs}</span>
+                        <span className={isSkjoldAway ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
+                          {m.awayTeam}
+                        </span>
+                      </div>
+                      <Badge variant="default">
+                        {isSkjoldHome ? da.tournament.home : da.tournament.away}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Previous Matches */}
+      {!loading && !error && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-zinc-400" />
+              {da.tournament.previous}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {previous.length === 0 ? (
+              <p className="text-zinc-500 text-sm" data-testid="tournament-no-previous">{da.tournament.noPrevious}</p>
+            ) : (
+              <div className="space-y-3" data-testid="tournament-previous-matches">
+                {previous.map((m, i) => {
+                  const isSkjoldHome = m.homeTeam === "BK Skjold";
+                  const isSkjoldAway = m.awayTeam === "BK Skjold";
+                  const skjoldWon = (isSkjoldHome && (m.homeScore ?? 0) > (m.awayScore ?? 0)) ||
+                                    (isSkjoldAway && (m.awayScore ?? 0) > (m.homeScore ?? 0));
+                  const skjoldLost = (isSkjoldHome && (m.homeScore ?? 0) < (m.awayScore ?? 0)) ||
+                                     (isSkjoldAway && (m.awayScore ?? 0) < (m.homeScore ?? 0));
+                  return (
+                    <div key={`${m.date}-${m.homeTeam}-${i}`} className="flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-zinc-500 tabular-nums w-20">{m.date}</span>
+                        <span className={isSkjoldHome ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
+                          {m.homeTeam}
+                        </span>
+                        <span className="text-sm font-bold tabular-nums text-zinc-100">
+                          {m.homeScore} - {m.awayScore}
+                        </span>
+                        <span className={isSkjoldAway ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
+                          {m.awayTeam}
+                        </span>
+                      </div>
+                      <Badge variant={skjoldWon ? "success" : skjoldLost ? "error" : "info"}>
+                        {skjoldWon ? "Sejr" : skjoldLost ? "Nederlag" : "Uafgjort"}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );
