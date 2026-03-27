@@ -14,9 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Settings, FileText, Database, Download, Upload, Plus, Pencil, Trash2, Check, UserCog, Users as UsersIcon } from "lucide-react";
+import { Settings, FileText, Database, Download, Upload, Plus, Pencil, Trash2, Check, UserCog, Users as UsersIcon, Heart } from "lucide-react";
 
-type Tab = "config" | "fineTypes" | "positions" | "data" | "users";
+type Tab = "config" | "fineTypes" | "positions" | "data" | "users" | "fanSignups";
 
 interface ConfigItem {
   key: string;
@@ -44,6 +44,7 @@ const TAB_ICONS: Record<Tab, React.ReactNode> = {
   positions: <UserCog className="w-4 h-4" />,
   data: <Database className="w-4 h-4" />,
   users: <UsersIcon className="w-4 h-4" />,
+  fanSignups: <Heart className="w-4 h-4" />,
 };
 
 export default function AdminSettingsPage() {
@@ -55,6 +56,7 @@ export default function AdminSettingsPage() {
     { id: "positions", label: "Spillerpositioner" },
     { id: "data", label: da.admin.tabs.data },
     { id: "users", label: da.admin.tabs.users },
+    { id: "fanSignups", label: "Fan-tilmeldinger" },
   ];
 
   return (
@@ -86,6 +88,7 @@ export default function AdminSettingsPage() {
       {activeTab === "positions" && <PlayerPositionsTab />}
       {activeTab === "data" && <DataTab />}
       {activeTab === "users" && <UsersTab />}
+      {activeTab === "fanSignups" && <FanSignupsTab />}
     </div>
   );
 }
@@ -798,5 +801,118 @@ function UsersTab() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+interface FanSignup {
+  id: string;
+  name: string;
+  email: string | null;
+  position: string | null;
+  comment: string | null;
+  love_level: number;
+  created_at: string;
+}
+
+const POSITION_LABELS: Record<string, string> = {
+  keeper: "Målmand",
+  defender: "Forsvar",
+  wing: "Kant",
+  midfield: "Central",
+  attacker: "Angriber",
+};
+
+function FanSignupsTab() {
+  const [signups, setSignups] = useState<FanSignup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const loadSignups = useCallback(() => {
+    setLoading(true);
+    api.get<FanSignup[]>("/fan-signup")
+      .then(setSignups)
+      .catch(() => toast("Kunne ikke hente tilmeldinger", "error"))
+      .finally(() => setLoading(false));
+  }, [toast]);
+
+  useEffect(() => {
+    loadSignups();
+  }, [loadSignups]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Er du sikker på, at du vil slette denne tilmelding?")) return;
+    try {
+      await api.delete(`/fan-signup/${id}`);
+      toast("Tilmelding slettet", "success");
+      loadSignups();
+    } catch {
+      toast("Kunne ikke slette tilmelding", "error");
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card data-testid="admin-fan-signups-section">
+        <CardContent className="py-8">
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 bg-zinc-800 rounded animate-pulse" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card data-testid="admin-fan-signups-section">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Heart className="w-5 h-5 text-red-400" />
+          Fan-tilmeldinger
+          {signups.length > 0 && (
+            <Badge variant="info">{signups.length}</Badge>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {signups.length === 0 ? (
+          <p className="text-zinc-500 text-sm" data-testid="admin-fan-signups-empty">Ingen tilmeldinger endnu</p>
+        ) : (
+          <div className="space-y-3">
+            {signups.map((s) => (
+              <div
+                key={s.id}
+                className="p-4 rounded-lg border border-zinc-800 bg-zinc-900/30"
+                data-testid={`admin-fan-signup-${s.id}`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-medium text-zinc-200">{s.name}</p>
+                      {s.position && (
+                        <Badge variant="default">{POSITION_LABELS[s.position] || s.position}</Badge>
+                      )}
+                    </div>
+                    {s.email && <p className="text-xs text-zinc-500">{s.email}</p>}
+                    {s.comment && <p className="text-sm text-zinc-400 mt-1">{s.comment}</p>}
+                    <p className="text-xs text-zinc-600 mt-2">
+                      Kærlighed: {s.love_level}/10 · {new Date(s.created_at).toLocaleDateString("da-DK", { year: "numeric", month: "long", day: "numeric" })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(s.id)}
+                    className="text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+                    data-testid={`admin-fan-signup-delete-${s.id}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

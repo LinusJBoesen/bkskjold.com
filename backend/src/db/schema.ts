@@ -122,6 +122,16 @@ export const tables = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
 
+  `CREATE TABLE IF NOT EXISTS fan_signups (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT,
+    position TEXT,
+    comment TEXT,
+    love_level INTEGER DEFAULT 5,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+
   `CREATE TABLE IF NOT EXISTS lineup_formations (
     id TEXT PRIMARY KEY,
     match_id TEXT,
