@@ -1,8 +1,8 @@
 # Skjold Bode GitHub Issues Batch — PROGRESS
 
 ## Current Status
-- **Round**: 7 (NOT STARTED)
-- **Task**: Fan Sign-up (#11)
+- **Round**: COMPLETE
+- **Task**: All rounds done
 - **Last updated**: 2026-03-27
 
 ## Checklist
@@ -45,16 +45,17 @@
 - [x] Commit
 
 ### Round 7: Fan Sign-up (#11)
-- [ ] Fan signup form + backend
-- [ ] Admin view of signups
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Fan signup form + backend
+- [x] Admin view of signups
+- [x] Run E2E tests
+- [x] Commit
 
 ## Blockers
 (none)
 
 ## Notes
-- 7 pre-existing E2E test failures remain (admin/fine-types, admin/settings, tournament/standings x5)
+- 7 pre-existing E2E test failures remain (admin/fine-types, admin/settings, tournament/standings x5) — unrelated to this work
+- Fixed 1 pre-existing failure (formations/position-admin) in Round 5
 
 ## Commit Log
 
@@ -65,4 +66,5 @@
 | 2026-03-27 | 7e7a335 | feat(skjold): kampanalyse with clean sheets, yellow/red cards, no training history |
 | 2026-03-27 | 1bdd263 | feat(skjold): delete training matches, player view of team lineups |
 | 2026-03-27 | 76c50df | fix(skjold): player positions admin - fix player fetching for position assignment |
-| 2026-03-27 | TBD | feat(skjold): turnering with upcoming matches and previous results |
+| 2026-03-27 | 72423f5 | feat(skjold): turnering with upcoming matches and previous results |
+| 2026-03-27 | TBD | feat(skjold): fan signup form with position, comment, and team love |

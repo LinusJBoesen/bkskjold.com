@@ -227,4 +227,21 @@ export const da = {
     available: "ledige",
     positionMismatch: "Positionsmismatch",
   },
+
+  // Fan Signup
+  fanSignup: {
+    title: "Bliv en del af holdet",
+    subtitle: "Har du lyst til at spille med? Udfyld formularen herunder.",
+    name: "Navn",
+    email: "E-mail (valgfrit)",
+    position: "Position",
+    comment: "Kommentar",
+    loveLevel: "Kærlighed til BK Skjold",
+    submit: "Send tilmelding",
+    success: "Tak for din tilmelding!",
+    error: "Kunne ikke sende tilmelding",
+    selectPosition: "Vælg position",
+    adminTitle: "Fan-tilmeldinger",
+    noSignups: "Ingen tilmeldinger endnu",
+  },
 } as const;
