@@ -1,8 +1,8 @@
 # Skjold Bode GitHub Issues Batch — PROGRESS
 
 ## Current Status
-- **Round**: 5 (NOT STARTED)
-- **Task**: Fix Spillerpositioner (#5)
+- **Round**: 6 (NOT STARTED)
+- **Task**: Turnering Upgrade (#12)
 - **Last updated**: 2026-03-27
 
 ## Checklist
@@ -33,9 +33,10 @@
 - [x] Commit
 
 ### Round 5: Fix Spillerpositioner (#5)
-- [ ] Diagnose and fix player fetching
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Diagnose: route conflict — GET /:matchId/:teamNumber caught /players/positions
+- [x] Fix: reorder routes so /players/positions comes before parameterized routes
+- [x] Run E2E tests (position admin test now passes, 7 pre-existing failures remain)
+- [x] Commit
 
 ### Round 6: Turnering Upgrade (#12)
 - [ ] Upcoming matches section
@@ -53,7 +54,7 @@
 (none)
 
 ## Notes
-- 8 pre-existing E2E test failures (admin/fine-types, admin/settings, formations/position-admin, tournament/standings) — not caused by this work
+- 7 pre-existing E2E test failures remain (admin/fine-types, admin/settings, tournament/standings x5)
 
 ## Commit Log
 
@@ -62,4 +63,5 @@
 | 2026-03-27 | 6e6ab8e | fix(skjold): generic login placeholder email, MobilePay payment link in fines overview |
 | 2026-03-27 | c935d4c | feat(skjold): post match card with goals, assists, cards tracking |
 | 2026-03-27 | 7e7a335 | feat(skjold): kampanalyse with clean sheets, yellow/red cards, no training history |
-| 2026-03-27 | TBD | feat(skjold): delete training matches, player view of team lineups |
+| 2026-03-27 | 1bdd263 | feat(skjold): delete training matches, player view of team lineups |
+| 2026-03-27 | TBD | fix(skjold): player positions admin - fix player fetching for position assignment |
