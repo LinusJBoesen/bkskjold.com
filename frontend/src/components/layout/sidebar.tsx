@@ -7,6 +7,7 @@ import {
   Trophy,
   BarChart3,
   Settings,
+  CreditCard,
 } from "lucide-react";
 import { da } from "@/i18n/da";
 
@@ -17,6 +18,7 @@ const navItems = [
   { to: "/history", label: da.nav.history, testId: "nav-history", icon: History, roles: ["admin", "spiller"] },
   { to: "/tournament", label: da.nav.tournament, testId: "nav-tournament", icon: Trophy, roles: ["admin", "spiller", "fan"] },
   { to: "/analysis", label: da.nav.analysis, testId: "nav-analysis", icon: BarChart3, roles: ["admin", "spiller", "fan"] },
+  { to: "/seasoncard", label: da.nav.seasoncard, testId: "nav-seasoncard", icon: CreditCard, roles: ["fan"] },
   { to: "/admin", label: da.nav.admin, testId: "nav-admin", icon: Settings, roles: ["admin"] },
 ];
 
