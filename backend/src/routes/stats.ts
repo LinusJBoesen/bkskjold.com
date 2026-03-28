@@ -55,6 +55,9 @@ stats.get("/dashboard", async (c) => {
   const totalFines = fineStats.reduce((s: number, f: any) => s + Number(f.total_fines), 0);
   const totalPaid = fineStats.reduce((s: number, f: any) => s + Number(f.paid), 0);
 
+  const fanRows = await sql`SELECT COUNT(*) as count FROM users WHERE role = 'fan' AND approved = 1` as any[];
+  const totalFans = Number(fanRows[0]?.count ?? 0);
+
   return c.json({
     top3: {
       mostWins: sortedByWins.slice(0, 3).map((p) => ({
@@ -91,6 +94,7 @@ stats.get("/dashboard", async (c) => {
       players: totalPlayers,
       totalFines,
       paidFines: totalPaid,
+      fans: totalFans,
     },
   });
 });
