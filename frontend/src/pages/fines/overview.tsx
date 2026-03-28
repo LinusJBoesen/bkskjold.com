@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
-import { Banknote, CheckCircle, AlertTriangle, Users, ChevronRight } from "lucide-react";
+import { Banknote, CheckCircle, AlertTriangle, Users, ChevronRight, ExternalLink } from "lucide-react";
 
 interface PlayerSummary {
   id: string;
@@ -85,6 +85,17 @@ export default function FinesOverviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      <a
+        href="https://qr.mobilepay.dk/box/ed7689f5-3718-4168-ad64-bdf9081d0fda/pay-in"
+        target="_blank"
+        rel="noopener noreferrer"
+        data-testid="fines-mobilepay-link"
+        className="mb-6 flex items-center justify-center gap-2 rounded-lg bg-[#5A78FF] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#5A78FF]/20 transition-colors hover:bg-[#4A68EF]"
+      >
+        <ExternalLink className="h-4 w-4" />
+        {da.fines.payWithMobilePay}
+      </a>
 
       {loading ? (
         <Card>

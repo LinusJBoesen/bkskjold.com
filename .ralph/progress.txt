@@ -1,73 +1,70 @@
-# Skjold Bode Brugerregistrering & Rollesystem — PROGRESS
+# Skjold Bode GitHub Issues Batch — PROGRESS
 
 ## Current Status
-- **Round**: 5 (COMPLETE)
-- **Task**: Polish, Edge Cases & E2E Tests
-- **Last updated**: 2026-03-26
+- **Round**: COMPLETE
+- **Task**: All rounds done
+- **Last updated**: 2026-03-27
 
 ## Checklist
 
-### Round 1: Database + Registrerings-API
-- [x] Add users table to schema.ts
-- [x] Admin bootstrap in migrate.ts
-- [x] Extend session type in auth middleware
-- [x] Update createSession() with role and userId
-- [x] Create requireRole() middleware
-- [x] POST /api/auth/register endpoint
-- [x] Refactor POST /api/auth/login for DB users
-- [x] Update GET /api/auth/me with role info
-- [x] Run E2E tests — all pass (8 pre-existing failures, 0 new)
+### Round 1: Quick Fixes (#9, #10)
+- [x] Change login placeholder email to generic
+- [x] Add MobilePay payment link in Bødeoversigt
+- [x] Run E2E tests
 - [x] Commit
 
-### Round 2: Admin Bruger-API + Rute-beskyttelse
-- [x] GET /api/admin/users
-- [x] GET /api/admin/users/pending
-- [x] PATCH /api/admin/users/:id/approve
-- [x] DELETE /api/admin/users/:id
-- [x] Role-based route protection
-- [x] Run E2E tests — all pass (8 pre-existing failures, 0 new)
+### Round 2: Post Match Card (#7)
+- [x] Match completion flow
+- [x] Match events table + API
+- [x] Post-match card UI
+- [x] Run E2E tests
 - [x] Commit
 
-### Round 3: Frontend — Registrering, Auth-hook, UI-tweaks
-- [x] i18n strings for registration
-- [x] Registration page (register.tsx)
-- [x] Update useAuth hook with role/name
-- [x] Add /register route
-- [x] Tilmeld dig links on login + landing
-- [x] Compress dashboard heading
-- [x] Run E2E tests — all pass (8 pre-existing failures, 0 new)
+### Round 3: Kampanalyse Upgrade (#6)
+- [x] Remove træningshistorik from analysis
+- [x] Add clean sheets, yellow/red cards to analysis
+- [x] Run E2E tests
 - [x] Commit
 
-### Round 4: Frontend — Rolle-baseret UI + Admin Godkendelsespanel
-- [x] Role-based sidebar filtering
-- [x] Route guards for fan
-- [x] Hide action buttons for non-admins
-- [x] Admin users tab with approve/reject
-- [x] Role badge in header
-- [x] i18n strings for roles and admin users
-- [x] Run E2E tests — all pass (8 pre-existing failures, 0 new)
+### Round 4: Training Matches (#3, #4)
+- [x] Admin delete training matches
+- [x] Player view of team lineups (already read-only for spillere)
+- [x] Run E2E tests
 - [x] Commit
 
-### Round 5: Polish, Edge Cases & E2E Tests
-- [x] E2E: register.spec.ts (4 tests — fan flow, spiller pending, duplicate email, login link)
-- [x] E2E: roles.spec.ts (2 tests — fan redirect, admin full access)
-- [x] E2E: users.spec.ts (2 tests — approve pending user, user list)
-- [x] Password validation (backend min 6 chars + frontend minLength=6)
-- [x] Session invalidation on user delete (destroySessionsByUserId already in place)
-- [x] Responsive design (register page matches login, admin users tab responsive)
-- [x] Backward compat confirmed (env-based admin login still works in E2E)
-- [x] Run ALL E2E tests — 59 passed, 8 pre-existing failures, 0 new
+### Round 5: Fix Spillerpositioner (#5)
+- [x] Diagnose: route conflict — GET /:matchId/:teamNumber caught /players/positions
+- [x] Fix: reorder routes so /players/positions comes before parameterized routes
+- [x] Run E2E tests (position admin test now passes, 7 pre-existing failures remain)
+- [x] Commit
+
+### Round 6: Turnering Upgrade (#12)
+- [x] Upcoming matches section
+- [x] Previous match results section
+- [x] Run E2E tests
+- [x] Commit
+
+### Round 7: Fan Sign-up (#11)
+- [x] Fan signup form + backend
+- [x] Admin view of signups
+- [x] Run E2E tests
 - [x] Commit
 
 ## Blockers
 (none)
 
+## Notes
+- 7 pre-existing E2E test failures remain (admin/fine-types, admin/settings, tournament/standings x5) — unrelated to this work
+- Fixed 1 pre-existing failure (formations/position-admin) in Round 5
+
 ## Commit Log
 
 | Date | Hash | Description |
 |------|------|-------------|
-| 2026-03-26 | TBD | feat(skjold): user registration backend with roles, password hashing, admin bootstrap |
-| 2026-03-26 | TBD | feat(skjold): admin user management API and role-based route protection |
-| 2026-03-26 | TBD | feat(skjold): registration page, auth role support, signup buttons on landing/login |
-| 2026-03-26 | TBD | feat(skjold): role-based sidebar, action gating, admin user approval panel |
-| 2026-03-26 | TBD | feat(skjold): registration & roles polish, E2E tests, edge cases |
+| 2026-03-27 | 6e6ab8e | fix(skjold): generic login placeholder email, MobilePay payment link in fines overview |
+| 2026-03-27 | c935d4c | feat(skjold): post match card with goals, assists, cards tracking |
+| 2026-03-27 | 7e7a335 | feat(skjold): kampanalyse with clean sheets, yellow/red cards, no training history |
+| 2026-03-27 | 1bdd263 | feat(skjold): delete training matches, player view of team lineups |
+| 2026-03-27 | 76c50df | fix(skjold): player positions admin - fix player fetching for position assignment |
+| 2026-03-27 | 72423f5 | feat(skjold): turnering with upcoming matches and previous results |
+| 2026-03-27 | TBD | feat(skjold): fan signup form with position, comment, and team love |
