@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Send, Heart } from "lucide-react";
+import { ArrowRight, Send, Heart, Shield } from "lucide-react";
+
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -57,10 +58,10 @@ function FanSignupSection() {
     <section className="relative z-10 px-6 md:px-12 pb-20">
       <div className="max-w-lg mx-auto">
         <div className="flex items-center gap-3 mb-6">
-          <Heart className="h-5 w-5 text-red-400" />
-          <h2 className="text-lg font-semibold text-zinc-200">Bliv en del af holdet</h2>
+          <Shield className="h-5 w-5 text-red-400" />
+          <h2 className="text-lg font-semibold text-zinc-200">Vil du være en del af klubben?</h2>
         </div>
-        <p className="text-sm text-zinc-400 mb-6">Har du lyst til at spille med? Udfyld formularen herunder.</p>
+        <p className="text-sm text-zinc-400 mb-6">Udfyld formularen herunder, for at komme i betragtning.</p>
         <form onSubmit={handleSubmit} className="space-y-4 p-6 rounded-xl border border-white/10 bg-white/[0.02]" data-testid="fan-signup-form">
           <div>
             <label className="text-sm font-medium text-zinc-300 block mb-1">Navn *</label>
@@ -145,18 +146,50 @@ function FanSignupSection() {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
+    <div className="min-h-screen bg-zinc-950 relative overflow-x-hidden">
       {/* Background gradient effects */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-red-600/3 rounded-full blur-[100px] pointer-events-none" />
 
-      {/* Nav */}
-      <nav className="relative z-10 flex items-center justify-between px-6 md:px-12 py-6">
+      {/* Nav - fixed */}
+      <nav className="fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-6 md:px-12 py-6" style={{ background: "linear-gradient(to bottom, rgba(9,9,11,0.9), rgba(9,9,11,0))" }}>
         <div className="flex items-center gap-3">
           <img src="/logo.webp" alt="BK Skjold" className="h-9 w-9" />
           <span className="text-lg font-bold text-zinc-50 tracking-tight">BK Skjold</span>
         </div>
+        <a
+          href="https://www.instagram.com/bkskjold13/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-all duration-200"
+        >
+          <InstagramIcon className="h-4 w-4" />
+          <span className="hidden sm:inline">Følg os på Instagram</span>
+        </a>
       </nav>
+
+      {/* Floating Jerseys - fixed position */}
+      {/* Left jersey - black/blue with subtle blue glow */}
+      <div className="hidden lg:block absolute left-[-40px] xl:left-0 top-[80px] z-[5] w-[220px] xl:w-[280px] 2xl:w-[340px] pointer-events-none">
+        <div className="absolute inset-0 bg-blue-500/8 rounded-full blur-[80px] scale-125" />
+        <img
+          src="/jersey-away.png"
+          alt="BK Skjold udebanetrøje"
+          className="relative w-full object-contain drop-shadow-[0_0_25px_rgba(59,130,246,0.15)]"
+          style={{ animation: "floatLeft 6s ease-in-out infinite", transform: "rotate(-5deg)" }}
+        />
+      </div>
+
+      {/* Right jersey - red/white with subtle red glow */}
+      <div className="hidden lg:block absolute right-[-40px] xl:right-0 top-[80px] z-[5] w-[220px] xl:w-[280px] 2xl:w-[340px] pointer-events-none">
+        <div className="absolute inset-0 bg-red-500/8 rounded-full blur-[80px] scale-125" />
+        <img
+          src="/jersey-home.png"
+          alt="BK Skjold hjemmebanetrøje"
+          className="relative w-full object-contain drop-shadow-[0_0_25px_rgba(239,68,68,0.15)]"
+          style={{ animation: "floatRight 6s ease-in-out infinite", transform: "rotate(5deg)" }}
+        />
+      </div>
 
       {/* Hero */}
       <main className="relative z-10 flex flex-col items-center justify-center text-center px-6 pt-12 md:pt-24 pb-20">
@@ -174,7 +207,7 @@ export default function LandingPage() {
             B.K. Skjolds
           </span>
           <br />
-          bedste hold
+          hold 10
         </h1>
 
         {/* Subtitle */}
@@ -198,24 +231,13 @@ export default function LandingPage() {
           >
             Tilmeld dig
           </Link>
-          <a
-            href="https://www.instagram.com/bkskjold13/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-white/5 border border-white/10 text-sm font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-all duration-200"
-          >
-            <InstagramIcon className="h-4 w-4" />
-            Følg os på Instagram
-          </a>
         </div>
       </main>
 
-      {/* Fan Signup */}
-      <FanSignupSection />
 
       {/* Instagram Embed */}
       <section className="relative z-10 px-6 md:px-12 pb-20">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-lg mx-auto">
           <div className="flex items-center gap-3 mb-6">
             <InstagramIcon className="h-5 w-5 text-zinc-400" />
             <h2 className="text-lg font-semibold text-zinc-200">@bkskjold13</h2>
@@ -232,6 +254,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Fan Signup */}
+      <FanSignupSection />
 
       {/* Footer line */}
       <footer className="relative z-10 border-t border-white/5 px-6 md:px-12 py-6 flex items-center justify-between">
