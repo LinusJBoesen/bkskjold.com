@@ -258,34 +258,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg text-zinc-50">Bøder efter type</CardTitle>
-            </CardHeader>
-            <CardContent data-testid="dashboard-fine-type-chart">
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={data.fineByType}
-                    dataKey="total"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    stroke="#18181B"
-                    strokeWidth={2}
-                    label={({ name, value }) => `${name}: ${value} kr`}
-                    labelLine={{ stroke: "#3F3F46" }}
-                  >
-                    {data.fineByType.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={darkTooltipStyle} />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
         </div>
       )}
     </div>

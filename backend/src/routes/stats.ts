@@ -35,13 +35,13 @@ stats.get("/dashboard", async (c) => {
   ` as any[];
 
   // Fine breakdown by type
-  const fineByType = await sql`
+  const fineByType = (await sql`
     SELECT ft.name, SUM(f.amount) as total
     FROM fines f
     JOIN fine_types ft ON f.fine_type_id = ft.id
     GROUP BY ft.id, ft.name
     ORDER BY total DESC
-  ` as any[];
+  ` as any[]).map((r: any) => ({ ...r, total: Number(r.total) }));
 
   // Top 3 calculations
   const sortedByWins = [...playerStats].sort((a, b) => b.wins - a.wins);
