@@ -3,8 +3,8 @@ import { da } from "@/i18n/da";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw, Trophy } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RefreshCw, Trophy, Calendar, Clock } from "lucide-react";
 
 interface Standing {
   position: number;
@@ -17,8 +17,24 @@ interface Standing {
   points: number;
 }
 
+interface DbuMatch {
+  date: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number | null;
+  awayScore: number | null;
+}
+
+const SKJOLD = "BK Skjold";
+const SKJOLD_ALT = "Skjold 10";
+
+function isSkjoldTeam(name: string) {
+  return name === SKJOLD || name === SKJOLD_ALT;
+}
+
 export default function TournamentStandingsPage() {
   const [standings, setStandings] = useState<Standing[]>([]);
+  const [matches, setMatches] = useState<DbuMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -28,8 +44,12 @@ export default function TournamentStandingsPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.get<{ standings: Standing[] }>("/tournament/standings");
-      setStandings(data.standings);
+      const [standingsData, matchesData] = await Promise.all([
+        api.get<{ standings: Standing[] }>("/tournament/standings"),
+        api.get<{ matches: DbuMatch[] }>("/tournament/matches"),
+      ]);
+      setStandings(standingsData.standings);
+      setMatches(matchesData.matches);
     } catch {
       setError("Kunne ikke indlæse turneringsdata");
     } finally {
@@ -60,7 +80,13 @@ export default function TournamentStandingsPage() {
     return "border-l-2 border-l-transparent";
   };
 
-  const isSkjold = (name: string) => name === "BK Skjold";
+  const isSkjold = (name: string) => name === SKJOLD;
+
+  const today = new Date().toISOString().split("T")[0]!;
+  const upcoming = matches.filter((m) => m.homeScore === null && m.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const results = matches.filter((m) => m.homeScore !== null)
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div data-testid="page-tournament" className="animate-fade-in-up">
@@ -125,7 +151,7 @@ export default function TournamentStandingsPage() {
                     <td className="px-4 py-3 text-sm tabular-nums text-zinc-300">{s.position}</td>
                     <td className="px-4 py-3 text-sm">
                       {isSkjold(s.teamName) ? (
-                        <span className="text-red-400 font-bold">{s.teamName}</span>
+                        <span className="text-red-500 font-bold drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]">{s.teamName}</span>
                       ) : (
                         <span className="text-zinc-200">{s.teamName}</span>
                       )}
@@ -143,6 +169,79 @@ export default function TournamentStandingsPage() {
           </div>
         </div>
       )}
+
+      {/* Upcoming Matches */}
+      <Card className="mt-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-amber-400" />
+            {da.tournament.upcomingMatches}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => <div key={i} className="h-10 bg-zinc-800 rounded animate-pulse" />)}
+            </div>
+          ) : upcoming.length === 0 ? (
+            <p className="text-zinc-500 text-sm">{da.tournament.noMatches}</p>
+          ) : (
+            <div className="space-y-2">
+              {upcoming.map((m, i) => (
+                <div key={i} className="grid grid-cols-3 items-center px-4 py-3 rounded-lg border border-zinc-800 bg-zinc-900/30">
+                  <span className={`text-sm font-medium ${isSkjoldTeam(m.homeTeam) ? "text-red-500 font-bold drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "text-zinc-200"}`}>{m.homeTeam}</span>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className="text-sm font-medium text-zinc-300 flex items-center gap-1"><Clock className="w-3 h-3" />{m.date}</span>
+                    <span className="text-xs font-bold text-zinc-400">vs</span>
+                  </div>
+                  <span className={`text-sm font-medium text-right ${isSkjoldTeam(m.awayTeam) ? "text-red-500 font-bold drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "text-zinc-200"}`}>{m.awayTeam}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Previous Results */}
+      <Card className="mt-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-zinc-400" />
+            {da.tournament.previousResults}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => <div key={i} className="h-10 bg-zinc-800 rounded animate-pulse" />)}
+            </div>
+          ) : results.length === 0 ? (
+            <p className="text-zinc-500 text-sm">{da.tournament.noMatches}</p>
+          ) : (
+            <div className="space-y-2">
+              {results.map((m, i) => {
+                const skjoldHome = isSkjoldTeam(m.homeTeam);
+                const skjoldAway = isSkjoldTeam(m.awayTeam);
+                const skjoldWon = (skjoldHome && (m.homeScore ?? 0) > (m.awayScore ?? 0)) ||
+                                  (skjoldAway && (m.awayScore ?? 0) > (m.homeScore ?? 0));
+                const draw = m.homeScore === m.awayScore;
+                return (
+                  <div key={i} className={`grid grid-cols-3 items-center px-4 py-3 rounded-lg border ${(skjoldHome || skjoldAway) && !skjoldWon && !draw ? "border-red-500/30 bg-red-500/5" : "border-zinc-800 bg-zinc-900/30"}`}>
+                    <span className={`text-sm font-medium ${skjoldHome ? "text-red-500 font-bold drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "text-zinc-200"}`}>{m.homeTeam}</span>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className={`text-base font-bold tabular-nums ${(skjoldHome || skjoldAway) ? (draw ? "text-zinc-400" : skjoldWon ? "text-emerald-400" : "text-red-400") : "text-zinc-200"}`}>
+                        {m.homeScore} - {m.awayScore}
+                      </span>
+                      <span className="text-sm font-medium text-zinc-300">{m.date}</span>
+                    </div>
+                    <span className={`text-sm font-medium text-right ${skjoldAway ? "text-red-500 font-bold drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "text-zinc-200"}`}>{m.awayTeam}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
