@@ -14,9 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Settings, FileText, Database, Download, Upload, Plus, Pencil, Trash2, Check, UserCog, Users as UsersIcon, Heart } from "lucide-react";
+import { Settings, FileText, Database, Download, Upload, Plus, Pencil, Trash2, Check, UserCog, Users as UsersIcon, Heart, Wallet } from "lucide-react";
 
-type Tab = "config" | "fineTypes" | "positions" | "data" | "users" | "fanSignups";
+type Tab = "config" | "fineTypes" | "positions" | "data" | "users" | "fanSignups" | "bodekasse";
 
 interface ConfigItem {
   key: string;
@@ -45,6 +45,7 @@ const TAB_ICONS: Record<Tab, React.ReactNode> = {
   data: <Database className="w-4 h-4" />,
   users: <UsersIcon className="w-4 h-4" />,
   fanSignups: <Heart className="w-4 h-4" />,
+  bodekasse: <Wallet className="w-4 h-4" />,
 };
 
 export default function AdminSettingsPage() {
@@ -57,6 +58,7 @@ export default function AdminSettingsPage() {
     { id: "data", label: da.admin.tabs.data },
     { id: "users", label: da.admin.tabs.users },
     { id: "fanSignups", label: "Fan-tilmeldinger" },
+    { id: "bodekasse", label: "Bødekasse" },
   ];
 
   return (
@@ -89,6 +91,7 @@ export default function AdminSettingsPage() {
       {activeTab === "data" && <DataTab />}
       {activeTab === "users" && <UsersTab />}
       {activeTab === "fanSignups" && <FanSignupsTab />}
+      {activeTab === "bodekasse" && <BodekasseTab />}
     </div>
   );
 }
@@ -821,6 +824,192 @@ const POSITION_LABELS: Record<string, string> = {
   midfield: "Central",
   attacker: "Angriber",
 };
+
+interface BodekasseExpense {
+  id: string;
+  description: string;
+  amount: number;
+  created_at: string;
+}
+
+interface BodekasseData {
+  totalPaid: number;
+  totalUsed: number;
+  remaining: number;
+  expenses: BodekasseExpense[];
+}
+
+function BodekasseTab() {
+  const [data, setData] = useState<BodekasseData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [desc, setDesc] = useState("");
+  const [amount, setAmount] = useState("");
+  const { toast } = useToast();
+
+  const load = useCallback(() => {
+    setLoading(true);
+    api.get<BodekasseData>("/bodekasse")
+      .then(setData)
+      .catch(() => toast("Kunne ikke hente bødekasse data", "error"))
+      .finally(() => setLoading(false));
+  }, [toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!desc || !amount) return;
+    try {
+      await api.post("/bodekasse", { description: desc, amount: parseInt(amount) });
+      toast("Udgift tilføjet", "success");
+      setDesc("");
+      setAmount("");
+      load();
+    } catch {
+      toast("Kunne ikke tilføje udgift", "error");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Er du sikker på, at du vil slette denne udgift?")) return;
+    try {
+      await api.delete(`/bodekasse/${id}`);
+      toast("Udgift slettet", "success");
+      load();
+    } catch {
+      toast("Kunne ikke slette udgift", "error");
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 bg-zinc-800 rounded animate-pulse" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Balance summary */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Indsamlet (betalt)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold tabular-nums text-emerald-400">{data?.totalPaid ?? 0} kr</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Brugt</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold tabular-nums text-amber-400">{data?.totalUsed ?? 0} kr</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Tilbage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={`text-2xl font-bold tabular-nums ${(data?.remaining ?? 0) >= 0 ? "text-zinc-50" : "text-red-400"}`}>
+              {data?.remaining ?? 0} kr
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Add expense */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-amber-400" />
+            Registrér udgift
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAdd} className="flex gap-3 items-end flex-wrap">
+            <div>
+              <label className="text-sm font-medium text-zinc-300 mb-1.5 block">Beskrivelse</label>
+              <Input
+                value={desc}
+                onChange={(e) => setDesc(e.target.value)}
+                className="w-56"
+                placeholder="F.eks. Øl til træning"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-zinc-300 mb-1.5 block">Beløb (kr)</label>
+              <Input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-28"
+                placeholder="0"
+                required
+              />
+            </div>
+            <Button type="submit">
+              <Plus className="w-4 h-4 mr-1.5" />
+              Tilføj
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Expenses list */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Udgifter</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {!data?.expenses.length ? (
+            <p className="text-zinc-500 text-sm px-6 py-4">Ingen udgifter registreret endnu</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Dato</TableHead>
+                  <TableHead>Beskrivelse</TableHead>
+                  <TableHead className="text-right">Beløb</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.expenses.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell className="tabular-nums text-zinc-400 text-sm">
+                      {new Date(e.created_at).toLocaleDateString("da-DK")}
+                    </TableCell>
+                    <TableCell className="text-zinc-200">{e.description}</TableCell>
+                    <TableCell className="text-right tabular-nums text-amber-400 font-medium">{e.amount} kr</TableCell>
+                    <TableCell>
+                      <button
+                        onClick={() => handleDelete(e.id)}
+                        className="text-zinc-600 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 function FanSignupsTab() {
   const [signups, setSignups] = useState<FanSignup[]>([]);

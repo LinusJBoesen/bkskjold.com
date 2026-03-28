@@ -26,6 +26,9 @@ interface DbuMatch {
   awayScore: number | null;
 }
 
+const SKJOLD = "BK Skjold";
+const SKJOLD_MATCH = "Skjold 10";
+
 export default function TournamentStandingsPage() {
   const [standings, setStandings] = useState<Standing[]>([]);
   const [upcoming, setUpcoming] = useState<DbuMatch[]>([]);
@@ -77,12 +80,6 @@ export default function TournamentStandingsPage() {
   };
 
   const isSkjold = (name: string) => name === SKJOLD;
-
-  const today = new Date().toISOString().split("T")[0]!;
-  const upcoming = matches.filter((m) => m.homeScore === null && m.date >= today)
-    .sort((a, b) => a.date.localeCompare(b.date));
-  const results = matches.filter((m) => m.homeScore !== null)
-    .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div data-testid="page-tournament" className="animate-fade-in-up">
@@ -181,8 +178,8 @@ export default function TournamentStandingsPage() {
             ) : (
               <div className="space-y-3" data-testid="tournament-upcoming-matches">
                 {upcoming.map((m, i) => {
-                  const isSkjoldHome = m.homeTeam === "BK Skjold";
-                  const isSkjoldAway = m.awayTeam === "BK Skjold";
+                  const isSkjoldHome = m.homeTeam === SKJOLD_MATCH;
+                  const isSkjoldAway = m.awayTeam === SKJOLD_MATCH;
                   return (
                     <div key={`${m.date}-${m.homeTeam}-${i}`} className="flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30">
                       <div className="flex items-center gap-3">
@@ -222,8 +219,8 @@ export default function TournamentStandingsPage() {
             ) : (
               <div className="space-y-3" data-testid="tournament-previous-matches">
                 {previous.map((m, i) => {
-                  const isSkjoldHome = m.homeTeam === "BK Skjold";
-                  const isSkjoldAway = m.awayTeam === "BK Skjold";
+                  const isSkjoldHome = m.homeTeam === SKJOLD_MATCH;
+                  const isSkjoldAway = m.awayTeam === SKJOLD_MATCH;
                   const skjoldWon = (isSkjoldHome && (m.homeScore ?? 0) > (m.awayScore ?? 0)) ||
                                     (isSkjoldAway && (m.awayScore ?? 0) > (m.homeScore ?? 0));
                   const skjoldLost = (isSkjoldHome && (m.homeScore ?? 0) < (m.awayScore ?? 0)) ||

@@ -132,6 +132,13 @@ export const tables = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
 
+  `CREATE TABLE IF NOT EXISTS bodekasse_expenses (
+    id TEXT PRIMARY KEY,
+    description TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+
   `CREATE TABLE IF NOT EXISTS lineup_formations (
     id TEXT PRIMARY KEY,
     match_id TEXT,

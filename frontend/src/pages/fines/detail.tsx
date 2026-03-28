@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
-import { ArrowLeft, Plus, Banknote, CheckCircle, AlertTriangle, X } from "lucide-react";
+import { ArrowLeft, Plus, Banknote, CheckCircle, AlertTriangle, X, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 interface Fine {
@@ -75,6 +75,17 @@ export default function FineDetailPage() {
   const total = fines.reduce((sum, f) => sum + f.amount, 0);
   const paid = fines.reduce((sum, f) => sum + (f.paid ? f.amount : 0), 0);
   const unpaid = total - paid;
+
+  const handleDelete = async (fineId: string) => {
+    if (!confirm("Er du sikker på, at du vil slette denne bøde?")) return;
+    try {
+      await api.delete(`/fines/${fineId}`);
+      toast("Bøde slettet", "success");
+      loadFines();
+    } catch {
+      toast("Kunne ikke slette bøde", "error");
+    }
+  };
 
   const handlePay = async (fineId: string) => {
     try {
@@ -291,17 +302,27 @@ export default function FineDetailPage() {
                       </TableCell>
                       {isAdmin && (
                         <TableCell>
-                          {!f.paid && (
+                          <div className="flex items-center gap-1">
+                            {!f.paid && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePay(f.id)}
+                                data-testid={`fine-pay-${f.id}`}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1.5 text-emerald-400" />
+                                Markér betalt
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handlePay(f.id)}
-                              data-testid={`fine-pay-${f.id}`}
+                              onClick={() => handleDelete(f.id)}
+                              data-testid={`fine-delete-${f.id}`}
                             >
-                              <CheckCircle className="h-4 w-4 mr-1.5 text-emerald-400" />
-                              Markér betalt
+                              <Trash2 className="h-4 w-4 text-red-400" />
                             </Button>
-                          )}
+                          </div>
                         </TableCell>
                       )}
                     </TableRow>

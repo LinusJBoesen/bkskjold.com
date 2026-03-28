@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
-import { Banknote, CheckCircle, AlertTriangle, Users, ChevronRight, ExternalLink } from "lucide-react";
+import { Banknote, CheckCircle, AlertTriangle, Users, ChevronRight, ExternalLink, Wallet } from "lucide-react";
 
 interface PlayerSummary {
   id: string;
@@ -24,15 +24,28 @@ interface PlayerSummary {
   fine_count: number;
 }
 
+interface BodekasseData {
+  totalPaid: number;
+  totalUsed: number;
+  remaining: number;
+}
+
 export default function FinesOverviewPage() {
   const [summaries, setSummaries] = useState<PlayerSummary[]>([]);
+  const [bodekasse, setBodekasse] = useState<BodekasseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get<PlayerSummary[]>("/fines/summary")
-      .then(setSummaries)
+    Promise.all([
+      api.get<PlayerSummary[]>("/fines/summary"),
+      api.get<BodekasseData>("/bodekasse"),
+    ])
+      .then(([summariesData, bodekasseData]) => {
+        setSummaries(summariesData);
+        setBodekasse(bodekasseData);
+      })
       .catch(() => setError("Kunne ikke indlæse bødedata"))
       .finally(() => setLoading(false));
   }, []);
@@ -96,6 +109,36 @@ export default function FinesOverviewPage() {
         <ExternalLink className="h-4 w-4" />
         {da.fines.payWithMobilePay}
       </a>
+
+      {/* Bødekasse balance */}
+      {bodekasse !== null && (
+        <Card className="mb-6 border-amber-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-amber-400" />
+              Bødekasse
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between gap-6 flex-wrap">
+              <div>
+                <p className="text-xs text-zinc-500 mb-0.5">Indsamlet</p>
+                <p className="text-xl font-bold tabular-nums text-emerald-400">{bodekasse.totalPaid} kr</p>
+              </div>
+              <div>
+                <p className="text-xs text-zinc-500 mb-0.5">Brugt</p>
+                <p className="text-xl font-bold tabular-nums text-amber-400">{bodekasse.totalUsed} kr</p>
+              </div>
+              <div>
+                <p className="text-xs text-zinc-500 mb-0.5">Tilbage i kassen</p>
+                <p className={`text-2xl font-bold tabular-nums ${bodekasse.remaining >= 0 ? "text-zinc-50" : "text-red-400"}`}>
+                  {bodekasse.remaining} kr
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? (
         <Card>
