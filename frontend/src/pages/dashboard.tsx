@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
-import { RefreshCw, Users, Banknote, CheckCircle, Trophy, TrendingUp, AlertTriangle } from "lucide-react";
+import { RefreshCw, Users, Banknote, CheckCircle, Trophy, TrendingUp, AlertTriangle, Heart } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  PieChart, Pie, Cell, ResponsiveContainer,
+  ResponsiveContainer,
 } from "recharts";
 
 interface Top3Item {
@@ -30,6 +30,7 @@ interface DashboardData {
     players: number;
     totalFines: number;
     paidFines: number;
+    fans: number;
   };
 }
 
@@ -40,7 +41,6 @@ interface SyncResult {
   events: number;
 }
 
-const COLORS = ["#D42428", "#A1A1AA", "#3B82F6", "#16A34A", "#D97706"];
 
 const darkTooltipStyle = {
   backgroundColor: "#27272A",
@@ -202,8 +202,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Totals */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 animate-stagger">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 animate-stagger">
         <StatCard icon={Users} label="Spillere" value={String(data?.totals.players ?? 0)} testId="player-count" />
+        <StatCard icon={Heart} label="Fans" value={String(data?.totals.fans ?? 0)} color="text-zinc-50" testId="dashboard-fan-count" />
         <StatCard icon={Banknote} label="Total bøder" value={`${data?.totals.totalFines ?? 0} kr`} color="text-red-400" testId="dashboard-total-fines" />
         <StatCard icon={CheckCircle} label="Betalt" value={`${data?.totals.paidFines ?? 0} kr`} color="text-emerald-400" testId="dashboard-paid-fines" />
       </div>
@@ -258,34 +259,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg text-zinc-50">Bøder efter type</CardTitle>
-            </CardHeader>
-            <CardContent data-testid="dashboard-fine-type-chart">
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={data.fineByType}
-                    dataKey="total"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    stroke="#18181B"
-                    strokeWidth={2}
-                    label={({ name, value }) => `${name}: ${value} kr`}
-                    labelLine={{ stroke: "#3F3F46" }}
-                  >
-                    {data.fineByType.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={darkTooltipStyle} />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
         </div>
       )}
     </div>

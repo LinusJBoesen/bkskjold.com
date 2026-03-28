@@ -13,7 +13,8 @@ import {
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
-import { Download, Trophy, Clock, Users, Swords } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { Download, Trophy, Users, Swords, Trash2 } from "lucide-react";
 
 function PlayerAvatar({ name, src }: { name: string; src?: string | null }) {
   if (src) {
@@ -40,6 +41,8 @@ interface Match {
   date: string;
   status: string;
   winning_team: number | null;
+  score_team1: number | null;
+  score_team2: number | null;
   players: MatchPlayer[];
 }
 
@@ -60,6 +63,7 @@ export default function TrainingHistoryPage() {
   const [filter, setFilter] = useState<"all" | "10" | "20">("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const { toast } = useToast();
+  const { role } = useAuth();
 
   const loadData = () => {
     setLoading(true);
@@ -79,7 +83,6 @@ export default function TrainingHistoryPage() {
     loadData();
   }, []);
 
-  const pendingMatches = matches.filter((m) => m.status === "pending");
   const completedMatches = matches.filter((m) => m.status === "completed");
 
   const sortedCompleted = [...completedMatches].sort((a, b) =>
@@ -92,18 +95,19 @@ export default function TrainingHistoryPage() {
     ? sortedCompleted
     : sortedCompleted.slice(0, parseInt(filter));
 
-  const registerResult = async (matchId: string, winningTeam: number) => {
-    try {
-      await api.patch(`/matches/${matchId}/result`, { winning_team: winningTeam });
-      toast("Resultat registreret", "success");
-      loadData();
-    } catch {
-      toast("Kunne ikke registrere resultat", "error");
-    }
-  };
-
   const exportCsv = () => {
     window.open("/api/matches/export/csv", "_blank");
+  };
+
+  const deleteMatch = async (matchId: string) => {
+    if (!confirm("Er du sikker på, at du vil slette denne kamp?")) return;
+    try {
+      await api.delete(`/matches/${matchId}`);
+      toast("Kamp slettet", "success");
+      loadData();
+    } catch {
+      toast("Kunne ikke slette kamp", "error");
+    }
   };
 
   const winRateColor = (stat: PlayerStat) => {
@@ -150,68 +154,6 @@ export default function TrainingHistoryPage() {
           Eksportér CSV
         </Button>
       </div>
-
-      {/* Pending Matches */}
-      {pendingMatches.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="w-5 h-5 text-amber-400" />
-              Afventende kampe
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4" data-testid="history-pending-matches">
-              {pendingMatches.map((m) => {
-                const team1 = m.players.filter((p) => p.team === 1);
-                const team2 = m.players.filter((p) => p.team === 2);
-                return (
-                  <div key={m.id} className="border border-zinc-800 rounded-lg p-4 bg-zinc-900/50 transition-all duration-200 hover:border-zinc-700" data-testid={`pending-match-${m.id}`}>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
-                      <span className="text-sm text-zinc-400">{m.date}</span>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => registerResult(m.id, 1)}
-                          data-testid={`result-team1-${m.id}`}
-                        >
-                          Hold 1 Vandt
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => registerResult(m.id, 2)}
-                          data-testid={`result-team2-${m.id}`}
-                        >
-                          Hold 2 Vandt
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="font-medium text-zinc-200 mb-1 flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-zinc-500" /> Hold 1
-                        </p>
-                        {team1.map((p) => (
-                          <p key={p.player_id} className="text-zinc-400 pl-5">{p.display_name}</p>
-                        ))}
-                      </div>
-                      <div>
-                        <p className="font-medium text-zinc-200 mb-1 flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-zinc-500" /> Hold 2
-                        </p>
-                        {team2.map((p) => (
-                          <p key={p.player_id} className="text-zinc-400 pl-5">{p.display_name}</p>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Player Statistics */}
       <Card className="mb-6">
@@ -300,9 +242,25 @@ export default function TrainingHistoryPage() {
                 <div key={m.id} className="border border-zinc-800 rounded-lg p-3 text-sm bg-zinc-900/30 transition-all duration-200 hover:border-zinc-700" data-testid={`completed-match-${m.id}`}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-zinc-500">{m.date}</span>
-                    <Badge variant={m.winning_team === 1 ? "success" : "info"}>
-                      Hold {m.winning_team} vandt
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {m.score_team1 != null && m.score_team2 != null && (
+                        <span className="text-xs font-bold text-zinc-300 tabular-nums">
+                          {m.score_team1} - {m.score_team2}
+                        </span>
+                      )}
+                      <Badge variant={m.winning_team === 1 ? "success" : "info"}>
+                        Hold {m.winning_team} vandt
+                      </Badge>
+                      {role === "admin" && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteMatch(m.id); }}
+                          className="text-zinc-600 hover:text-red-400 transition-colors"
+                          data-testid={`delete-completed-match-${m.id}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
                     <div>
