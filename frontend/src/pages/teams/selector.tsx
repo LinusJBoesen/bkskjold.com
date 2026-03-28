@@ -92,9 +92,12 @@ export default function TeamSelectorPage() {
   const [result, setResult] = useState<TeamResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savingLineup, setSavingLineup] = useState(false);
+  const [savedLineup, setSavedLineup] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [publishedLineup, setPublishedLineup] = useState<{ id: string; label: string; team1: { id: string; displayName: string; profilePicture?: string | null }[]; team2: { id: string; displayName: string; profilePicture?: string | null }[]; createdAt: string } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [formationTeam, setFormationTeam] = useState<1 | 2>(1);
   const [playerPositions, setPlayerPositions] = useState<Record<string, Position[]>>({});
@@ -118,6 +121,11 @@ export default function TeamSelectorPage() {
       })
       .catch(() => setError("Kunne ikke indlæse spillere"))
       .finally(() => setLoading(false));
+
+    // Load the latest published training lineup
+    api.get<{ lineup: typeof publishedLineup }>("/teams/lineup")
+      .then((res) => setPublishedLineup(res.lineup))
+      .catch(() => {/* optional */});
 
     // Load player positions for formation auto-assignment
     api.get<{ id: string; displayName: string; profilePicture: string | null; positions: string[] }[]>("/formations/players/positions")
@@ -215,6 +223,25 @@ export default function TeamSelectorPage() {
       toast("Kunne ikke gemme kamp", "error");
     }
     setSaving(false);
+  };
+
+  const saveTrainingLineup = async () => {
+    if (!result || !currentEvent) return;
+    setSavingLineup(true);
+    try {
+      await api.post("/teams/lineup", {
+        eventDate: currentEvent.date,
+        team1: result.team1.map((p) => ({ id: p.id, displayName: p.displayName, profilePicture: getPlayerPicture(p.id) })),
+        team2: result.team2.map((p) => ({ id: p.id, displayName: p.displayName, profilePicture: getPlayerPicture(p.id) })),
+      });
+      setSavedLineup(true);
+      const res = await api.get<{ lineup: typeof publishedLineup }>("/teams/lineup");
+      setPublishedLineup(res.lineup);
+      toast("Holdopstilling gemt — spillere kan nu se holdene", "success");
+    } catch {
+      toast("Kunne ikke gemme holdopstilling", "error");
+    }
+    setSavingLineup(false);
   };
 
   const copyTeams = async () => {
@@ -357,8 +384,85 @@ export default function TeamSelectorPage() {
         </div>
       )}
 
-      {/* View mode toggle (only shown after teams generated) */}
-      {result && (
+      {/* Player view: show latest published lineup */}
+      {!isAdmin && (
+        <div className="mt-2">
+          {publishedLineup ? (
+            <>
+              <div className="mb-4 flex items-center gap-2 text-sm text-zinc-400">
+                <Users className="h-4 w-4" />
+                <span>Holdopstilling til <span className="text-zinc-200 font-medium">{publishedLineup.label}</span></span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Card className="border-white/20">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-xs font-bold text-zinc-900">1</div>
+                      Hold 1
+                      <span className="text-sm font-medium text-zinc-300 ml-1">— Hvide trøjer</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1">
+                      {publishedLineup.team1.map((p) => (
+                        <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                          <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                          <span className="text-zinc-200">{p.displayName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-zinc-600 bg-zinc-950">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-xs font-bold text-zinc-100">2</div>
+                      Hold 2
+                      <span className="text-sm font-medium text-zinc-300 ml-1">— Sorte trøjer</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1">
+                      {publishedLineup.team2.map((p) => (
+                        <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                          <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                          <span className="text-zinc-200">{p.displayName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="py-6">
+                <p className="text-zinc-400 text-sm font-medium mb-4">Ingen holdopstilling er delt endnu</p>
+                {data?.training && data.training.players.length > 0 ? (
+                  <>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-3">
+                      Tilmeldt til {data.training.heading} · {formatDate(data.training.date)}
+                    </p>
+                    <div className="space-y-1">
+                      {data.training.players.map((p) => (
+                        <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                          <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                          <span className="text-zinc-200">{p.displayName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-zinc-600 text-xs mt-1">Træneren gemmer holdene her inden træning</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* View mode toggle (only shown after teams generated, admin only) */}
+      {isAdmin && result && (
         <div className="flex items-center gap-2 mb-4" data-testid="view-mode-toggle">
           <div className="flex rounded-lg border border-zinc-700 bg-zinc-900/50 overflow-hidden">
             <button
@@ -417,7 +521,7 @@ export default function TeamSelectorPage() {
       )}
 
       {/* Formation View */}
-      {result && viewMode === "formation" && (
+      {isAdmin && result && viewMode === "formation" && (
         <FormationView
           key={formationTeam}
           players={getFormationPlayers(formationTeam === 1 ? result.team1 : result.team2)}
@@ -429,8 +533,8 @@ export default function TeamSelectorPage() {
         />
       )}
 
-      {/* List View (original) */}
-      {(viewMode === "list" || !result) && (
+      {/* List View (admin only) */}
+      {isAdmin && (viewMode === "list" || !result) && (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Player Selection */}
@@ -570,11 +674,12 @@ export default function TeamSelectorPage() {
             {/* Generated Teams */}
             {result && (
               <>
-                <Card>
+                <Card className="border-white/20">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <div className="h-6 w-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400">1</div>
+                      <div className="h-6 w-6 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-xs font-bold text-zinc-900">1</div>
                       Hold 1
+                      <span className="text-sm font-medium text-zinc-300 ml-1">— Hvide trøjer</span>
                     </CardTitle>
                     <p className="text-xs text-zinc-500">
                       Styrke: <span className="text-zinc-300 font-medium">{result.balance.team1Strength}</span>
@@ -608,11 +713,12 @@ export default function TeamSelectorPage() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="border-zinc-600 bg-zinc-950">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <div className="h-6 w-6 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xs font-bold text-amber-400">2</div>
+                      <div className="h-6 w-6 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-xs font-bold text-zinc-100">2</div>
                       Hold 2
+                      <span className="text-sm font-medium text-zinc-300 ml-1">— Sorte trøjer</span>
                     </CardTitle>
                     <p className="text-xs text-zinc-500">
                       Styrke: <span className="text-zinc-300 font-medium">{result.balance.team2Strength}</span>
@@ -666,14 +772,25 @@ export default function TeamSelectorPage() {
                   {copied ? <Check className="h-4 w-4 mr-1.5" /> : <ClipboardCopy className="h-4 w-4 mr-1.5" />}
                   {copied ? "Kopieret!" : "Kopiér hold"}
                 </Button>
-                <Button
-                  onClick={saveMatch}
-                  disabled={saving || saved}
-                  data-testid="team-save-button"
-                >
-                  <Save className="h-4 w-4 mr-1.5" />
-                  {saved ? "Gemt!" : saving ? "Gemmer..." : "Gem kamp"}
-                </Button>
+                {activeTab === "training" ? (
+                  <Button
+                    onClick={saveTrainingLineup}
+                    disabled={savingLineup || savedLineup}
+                    data-testid="team-save-lineup-button"
+                  >
+                    <Save className="h-4 w-4 mr-1.5" />
+                    {savedLineup ? "Gemt!" : savingLineup ? "Gemmer..." : "Gem træningshold"}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={saveMatch}
+                    disabled={saving || saved}
+                    data-testid="team-save-button"
+                  >
+                    <Save className="h-4 w-4 mr-1.5" />
+                    {saved ? "Gemt!" : saving ? "Gemmer..." : "Gem kamp"}
+                  </Button>
+                )}
               </div>
             </div>
           )}

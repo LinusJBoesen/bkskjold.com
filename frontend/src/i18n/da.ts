@@ -76,6 +76,9 @@ export const da = {
     points: "Point",
     refresh: "Opdatér",
     refreshing: "Opdaterer...",
+    upcomingMatches: "Kommende kampe",
+    previousResults: "Tidligere resultater",
+    noMatches: "Ingen kampe fundet",
   },
 
   // Admin
