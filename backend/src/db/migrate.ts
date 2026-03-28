@@ -6,6 +6,9 @@ export async function migrate(): Promise<void> {
     await sql.unsafe(stmt);
   }
 
+  // Add event_date column to training_lineups if it doesn't exist (migration)
+  await sql.unsafe(`ALTER TABLE training_lineups ADD COLUMN IF NOT EXISTS event_date TIMESTAMPTZ`).catch(() => {});
+
   // Bootstrap admin user from env vars if no admin exists in DB
   const adminEmail = process.env.ADMIN_EMAIL;
   const adminPassword = process.env.ADMIN_PASSWORD;
