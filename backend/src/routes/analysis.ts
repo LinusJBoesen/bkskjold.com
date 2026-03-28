@@ -50,38 +50,42 @@ analysis.get("/player-rates", requireRole("admin", "spiller"), async (c) => {
     attendanceMap.get(row.event_id)!.set(row.player_id, row.response);
   }
 
-  // Calculate per-player stats from internal training matches
-  const statsRows = await sql`
+  // Calculate per-player stats from match events
+  const eventStatsRows = await sql`
     SELECT
       p.id,
       p.display_name,
       p.profile_picture,
-      COUNT(mp.match_id) as matches,
-      COALESCE(SUM(CASE WHEN m.winning_team = mp.team THEN 1 ELSE 0 END), 0) as wins,
-      COALESCE(SUM(CASE WHEN m.winning_team IS NOT NULL AND m.winning_team != mp.team THEN 1 ELSE 0 END), 0) as losses
+      COALESCE(SUM(CASE WHEN me.event_type = 'goal' THEN 1 ELSE 0 END), 0) as goals,
+      COALESCE(SUM(CASE WHEN me.event_type = 'assist' THEN 1 ELSE 0 END), 0) as assists,
+      COALESCE(SUM(CASE WHEN me.event_type = 'clean_sheet' THEN 1 ELSE 0 END), 0) as clean_sheets,
+      COALESCE(SUM(CASE WHEN me.event_type = 'yellow_card' THEN 1 ELSE 0 END), 0) as yellow_cards,
+      COALESCE(SUM(CASE WHEN me.event_type = 'red_card' THEN 1 ELSE 0 END), 0) as red_cards
     FROM players p
-    LEFT JOIN match_players mp ON mp.player_id = p.id
-    LEFT JOIN matches m ON m.id = mp.match_id AND m.status = 'completed'
+    LEFT JOIN match_events me ON me.player_id = p.id
     WHERE p.active = 1
     GROUP BY p.id, p.display_name, p.profile_picture
-    ORDER BY p.display_name
+    ORDER BY goals DESC, assists DESC, p.display_name
   ` as {
     id: string;
     display_name: string;
     profile_picture: string | null;
-    matches: number;
-    wins: number;
-    losses: number;
+    goals: number;
+    assists: number;
+    clean_sheets: number;
+    yellow_cards: number;
+    red_cards: number;
   }[];
 
-  const playerRates = statsRows.map((s) => ({
+  const playerStats = eventStatsRows.map((s) => ({
     id: s.id,
     displayName: s.display_name,
     profilePicture: s.profile_picture || null,
-    trainingMatches: Number(s.matches),
-    trainingWins: Number(s.wins),
-    trainingLosses: Number(s.losses),
-    trainingWinRate: Number(s.matches) > 0 ? Math.round((Number(s.wins) / Number(s.matches)) * 100) : 0,
+    goals: Number(s.goals),
+    assists: Number(s.assists),
+    cleanSheets: Number(s.clean_sheets),
+    yellowCards: Number(s.yellow_cards),
+    redCards: Number(s.red_cards),
   }));
 
   return c.json({
@@ -92,7 +96,7 @@ analysis.get("/player-rates", requireRole("admin", "spiller"), async (c) => {
       draws: matchResults.filter((m) => m.result === "draw").length,
       losses: matchResults.filter((m) => m.result === "loss").length,
     },
-    playerRates,
+    playerStats,
   });
 });
 

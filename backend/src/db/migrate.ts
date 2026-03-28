@@ -26,5 +26,21 @@ export async function migrate(): Promise<void> {
     }
   }
 
+  // Create bodekasse_expenses table if it doesn't exist (migration for existing DBs)
+  await sql.unsafe(`CREATE TABLE IF NOT EXISTS bodekasse_expenses (
+    id TEXT PRIMARY KEY,
+    description TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`).catch(() => {});
+
+  // Add score columns to matches if they don't exist
+  try {
+    await sql`ALTER TABLE matches ADD COLUMN score_team1 INTEGER`;
+  } catch { /* column already exists */ }
+  try {
+    await sql`ALTER TABLE matches ADD COLUMN score_team2 INTEGER`;
+  } catch { /* column already exists */ }
+
   console.log("Database migrated");
 }

@@ -14,6 +14,8 @@ import tournamentRoutes from "./routes/tournament";
 import analysisRoutes from "./routes/analysis";
 import adminRoutes from "./routes/admin";
 import formationRoutes from "./routes/formations";
+import fanSignupRoutes from "./routes/fan-signup";
+import bodekasseRoutes from "./routes/bodekasse";
 import { authMiddleware } from "./middleware/auth";
 import { sql } from "./lib/db";
 
@@ -119,7 +121,7 @@ app.post("/api/test/seed", async (c) => {
 // Protected API routes
 app.use("/api/*", async (c, next) => {
   const path = c.req.path;
-  if (path === "/api/health" || path.startsWith("/api/auth") || path.startsWith("/api/test")) {
+  if (path === "/api/health" || path.startsWith("/api/auth") || path.startsWith("/api/test") || (path === "/api/fan-signup" && c.req.method === "POST")) {
     return next();
   }
   return authMiddleware(c, next);
@@ -135,6 +137,8 @@ app.route("/api/tournament", tournamentRoutes);
 app.route("/api/analysis", analysisRoutes);
 app.route("/api/admin", adminRoutes);
 app.route("/api/formations", formationRoutes);
+app.route("/api/fan-signup", fanSignupRoutes);
+app.route("/api/bodekasse", bodekasseRoutes);
 
 // Serve frontend static files in production (built into backend/static by Dockerfile)
 app.use("/*", serveStatic({ root: "./static" }));

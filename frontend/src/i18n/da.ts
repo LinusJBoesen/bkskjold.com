@@ -36,12 +36,18 @@ export const da = {
     tournament: "Turnering",
     analysis: "Kampanalyse",
     admin: "Admin",
+    seasoncard: "Sæsonkort",
   },
 
   // Layout
   layout: {
     logout: "Log ud",
     appName: "BK Skjold",
+  },
+
+  // Fines
+  fines: {
+    payWithMobilePay: "Betal med MobilePay",
   },
 
   // Common
@@ -76,6 +82,14 @@ export const da = {
     points: "Point",
     refresh: "Opdatér",
     refreshing: "Opdaterer...",
+    upcoming: "Kommende kampe",
+    previous: "Tidligere kampe",
+    noUpcoming: "Ingen kommende kampe",
+    noPrevious: "Ingen tidligere kampe",
+    home: "Hjemme",
+    away: "Ude",
+    date: "Dato",
+    vs: "vs",
   },
 
   // Admin
@@ -142,6 +156,7 @@ export const da = {
   analysis: {
     title: "Kampanalyse",
     dbuMatches: "DBU Kampe",
+    playerStats: "Spillerstatistik",
     playerRates: "Spillerstatistik",
     date: "Dato",
     opponent: "Modstander",
@@ -153,11 +168,39 @@ export const da = {
     draw: "Uafgjort",
     loss: "Nederlag",
     matches: "Kampe",
+    goals: "Mål",
+    assists: "Assists",
+    cleanSheets: "Clean sheets",
+    yellowCards: "Gule kort",
+    redCards: "Røde kort",
     trainingWins: "Sejre",
     trainingLosses: "Nederlag",
     winRate: "Sejrsrate",
     summary: "Oversigt",
   },
+  // Post Match
+  postMatch: {
+    title: "Afslut kamp",
+    score: "Resultat",
+    team1: "Hold 1",
+    team2: "Hold 2",
+    events: "Kamphændelser",
+    addEvent: "Tilføj hændelse",
+    goal: "Mål",
+    assist: "Assist",
+    yellowCard: "Gult kort",
+    redCard: "Rødt kort",
+    cleanSheet: "Clean sheet",
+    player: "Spiller",
+    eventType: "Type",
+    minute: "Minut",
+    complete: "Afslut kamp",
+    completed: "Kamp afsluttet",
+    error: "Kunne ikke afslutte kampen",
+    noEvents: "Ingen hændelser tilføjet",
+    selectPlayer: "Vælg spiller",
+  },
+
   // Formation / Pitch
   formation: {
     title: "Opstilling",
@@ -184,5 +227,22 @@ export const da = {
     addPlayer: "Tilføj spiller",
     available: "ledige",
     positionMismatch: "Positionsmismatch",
+  },
+
+  // Fan Signup
+  fanSignup: {
+    title: "Bliv en del af holdet",
+    subtitle: "Har du lyst til at spille med? Udfyld formularen herunder.",
+    name: "Navn",
+    email: "E-mail (valgfrit)",
+    position: "Position",
+    comment: "Kommentar",
+    loveLevel: "Kærlighed til BK Skjold",
+    submit: "Send tilmelding",
+    success: "Tak for din tilmelding!",
+    error: "Kunne ikke sende tilmelding",
+    selectPosition: "Vælg position",
+    adminTitle: "Fan-tilmeldinger",
+    noSignups: "Ingen tilmeldinger endnu",
   },
 } as const;

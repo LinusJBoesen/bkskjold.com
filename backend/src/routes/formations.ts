@@ -41,6 +41,63 @@ formations.get("/slots", requireRole("admin", "spiller"), (c) => {
   return c.json(FORMATION_SLOTS);
 });
 
+// --- Player position routes (must come BEFORE parameterized /:matchId/:teamNumber) ---
+
+// GET /api/formations/players/positions — get all players with their positions (admin + spiller)
+formations.get("/players/positions", requireRole("admin", "spiller"), async (c) => {
+  const players = await sql`SELECT * FROM players WHERE active = 1 ORDER BY display_name` as any[];
+  const positions = await sql`SELECT * FROM player_positions` as any[];
+
+  const positionMap: Record<string, string[]> = {};
+  for (const p of positions) {
+    if (!positionMap[p.player_id]) positionMap[p.player_id] = [];
+    positionMap[p.player_id]!.push(p.position);
+  }
+
+  const result = players.map((p: any) => ({
+    id: p.id,
+    displayName: p.display_name,
+    profilePicture: p.profile_picture || null,
+    positions: positionMap[p.id] || [],
+  }));
+
+  return c.json(result);
+});
+
+// GET /api/formations/players/:id/positions — get player's positions (admin + spiller)
+formations.get("/players/:id/positions", requireRole("admin", "spiller"), async (c) => {
+  const { id } = c.req.param();
+  const rows = await sql`SELECT position FROM player_positions WHERE player_id = ${id}` as any[];
+  return c.json({ playerId: id, positions: rows.map((r: any) => r.position) });
+});
+
+// PUT /api/formations/players/:id/positions — set player's positions (admin only)
+formations.put("/players/:id/positions", requireRole("admin"), async (c) => {
+  const { id } = c.req.param();
+  const body = await c.req.json();
+  const { positions } = body;
+
+  if (!Array.isArray(positions)) {
+    return c.json({ error: "Positioner skal være en liste" }, 400);
+  }
+
+  const validPositions = ["keeper", "defender", "wing", "midfield", "attacker"];
+  for (const pos of positions) {
+    if (!validPositions.includes(pos)) {
+      return c.json({ error: `Ugyldig position: ${pos}` }, 400);
+    }
+  }
+
+  await sql`DELETE FROM player_positions WHERE player_id = ${id}`;
+  for (const pos of positions) {
+    await sql`INSERT INTO player_positions (player_id, position) VALUES (${id}, ${pos})`;
+  }
+
+  return c.json({ playerId: id, positions });
+});
+
+// --- Formation CRUD routes ---
+
 // POST /api/formations — create/save a formation (admin only)
 formations.post("/", requireRole("admin"), async (c) => {
   const body = await c.req.json();
@@ -133,59 +190,6 @@ formations.delete("/:id", requireRole("admin"), async (c) => {
 
   await sql`DELETE FROM lineup_formations WHERE id = ${id}`;
   return c.json({ success: true });
-});
-
-// GET /api/formations/players/positions — get all players with their positions (admin + spiller)
-formations.get("/players/positions", requireRole("admin", "spiller"), async (c) => {
-  const players = await sql`SELECT * FROM players WHERE active = 1 ORDER BY display_name` as any[];
-  const positions = await sql`SELECT * FROM player_positions` as any[];
-
-  const positionMap: Record<string, string[]> = {};
-  for (const p of positions) {
-    if (!positionMap[p.player_id]) positionMap[p.player_id] = [];
-    positionMap[p.player_id]!.push(p.position);
-  }
-
-  const result = players.map((p: any) => ({
-    id: p.id,
-    displayName: p.display_name,
-    profilePicture: p.profile_picture || null,
-    positions: positionMap[p.id] || [],
-  }));
-
-  return c.json(result);
-});
-
-// GET /api/formations/players/:id/positions — get player's positions (admin + spiller)
-formations.get("/players/:id/positions", requireRole("admin", "spiller"), async (c) => {
-  const { id } = c.req.param();
-  const rows = await sql`SELECT position FROM player_positions WHERE player_id = ${id}` as any[];
-  return c.json({ playerId: id, positions: rows.map((r: any) => r.position) });
-});
-
-// PUT /api/formations/players/:id/positions — set player's positions (admin only)
-formations.put("/players/:id/positions", requireRole("admin"), async (c) => {
-  const { id } = c.req.param();
-  const body = await c.req.json();
-  const { positions } = body;
-
-  if (!Array.isArray(positions)) {
-    return c.json({ error: "Positioner skal være en liste" }, 400);
-  }
-
-  const validPositions = ["keeper", "defender", "wing", "midfield", "attacker"];
-  for (const pos of positions) {
-    if (!validPositions.includes(pos)) {
-      return c.json({ error: `Ugyldig position: ${pos}` }, 400);
-    }
-  }
-
-  await sql`DELETE FROM player_positions WHERE player_id = ${id}`;
-  for (const pos of positions) {
-    await sql`INSERT INTO player_positions (player_id, position) VALUES (${id}, ${pos})`;
-  }
-
-  return c.json({ playerId: id, positions });
 });
 
 export default formations;

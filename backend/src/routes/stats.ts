@@ -35,13 +35,13 @@ stats.get("/dashboard", async (c) => {
   ` as any[];
 
   // Fine breakdown by type
-  const fineByType = await sql`
+  const fineByType = (await sql`
     SELECT ft.name, SUM(f.amount) as total
     FROM fines f
     JOIN fine_types ft ON f.fine_type_id = ft.id
     GROUP BY ft.id, ft.name
     ORDER BY total DESC
-  ` as any[];
+  ` as any[]).map((r: any) => ({ ...r, total: Number(r.total) }));
 
   // Top 3 calculations
   const sortedByWins = [...playerStats].sort((a, b) => b.wins - a.wins);
@@ -54,6 +54,9 @@ stats.get("/dashboard", async (c) => {
   const totalPlayers = playerStats.length;
   const totalFines = fineStats.reduce((s: number, f: any) => s + Number(f.total_fines), 0);
   const totalPaid = fineStats.reduce((s: number, f: any) => s + Number(f.paid), 0);
+
+  const fanRows = await sql`SELECT COUNT(*) as count FROM users WHERE role = 'fan' AND approved = 1` as any[];
+  const totalFans = Number(fanRows[0]?.count ?? 0);
 
   return c.json({
     top3: {
@@ -91,6 +94,7 @@ stats.get("/dashboard", async (c) => {
       players: totalPlayers,
       totalFines,
       paidFines: totalPaid,
+      fans: totalFans,
     },
   });
 });
