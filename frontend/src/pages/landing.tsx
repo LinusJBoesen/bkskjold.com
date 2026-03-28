@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Send, Heart } from "lucide-react";
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -8,6 +9,137 @@ function InstagramIcon({ className }: { className?: string }) {
       <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
       <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
     </svg>
+  );
+}
+
+function FanSignupSection() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [position, setPosition] = useState("");
+  const [comment, setComment] = useState("");
+  const [loveLevel, setLoveLevel] = useState(5);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/fan-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, position, comment, love_level: loveLevel }),
+      });
+      if (!res.ok) throw new Error();
+      setSubmitted(true);
+    } catch {
+      setError("Kunne ikke sende tilmelding");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <section className="relative z-10 px-6 md:px-12 pb-20">
+        <div className="max-w-lg mx-auto text-center p-8 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+          <Heart className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <p className="text-lg font-semibold text-zinc-50" data-testid="fan-signup-success">Tak for din tilmelding!</p>
+          <p className="text-sm text-zinc-400 mt-2">Vi vender tilbage hurtigst muligt.</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="relative z-10 px-6 md:px-12 pb-20">
+      <div className="max-w-lg mx-auto">
+        <div className="flex items-center gap-3 mb-6">
+          <Heart className="h-5 w-5 text-red-400" />
+          <h2 className="text-lg font-semibold text-zinc-200">Bliv en del af holdet</h2>
+        </div>
+        <p className="text-sm text-zinc-400 mb-6">Har du lyst til at spille med? Udfyld formularen herunder.</p>
+        <form onSubmit={handleSubmit} className="space-y-4 p-6 rounded-xl border border-white/10 bg-white/[0.02]" data-testid="fan-signup-form">
+          <div>
+            <label className="text-sm font-medium text-zinc-300 block mb-1">Navn *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-200 focus:ring-2 focus:ring-red-500/30 focus:border-red-500/50 transition-all"
+              data-testid="fan-signup-name"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-zinc-300 block mb-1">E-mail (valgfrit)</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-200 focus:ring-2 focus:ring-red-500/30 focus:border-red-500/50 transition-all"
+              data-testid="fan-signup-email"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-zinc-300 block mb-1">Position</label>
+            <select
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-200 focus:ring-2 focus:ring-red-500/30 focus:border-red-500/50 transition-all"
+              data-testid="fan-signup-position"
+            >
+              <option value="">Vælg position</option>
+              <option value="keeper">Målmand</option>
+              <option value="defender">Forsvar</option>
+              <option value="wing">Kant</option>
+              <option value="midfield">Central</option>
+              <option value="attacker">Angriber</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-zinc-300 block mb-1">Kommentar</label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-200 focus:ring-2 focus:ring-red-500/30 focus:border-red-500/50 transition-all resize-none"
+              data-testid="fan-signup-comment"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-zinc-300 block mb-1">
+              Kærlighed til BK Skjold: {loveLevel}/10
+            </label>
+            <input
+              type="range"
+              min={1}
+              max={10}
+              value={loveLevel}
+              onChange={(e) => setLoveLevel(parseInt(e.target.value))}
+              className="w-full accent-red-500"
+              data-testid="fan-signup-love"
+            />
+            <div className="flex justify-between text-xs text-zinc-600">
+              <span>1</span>
+              <span>10</span>
+            </div>
+          </div>
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <button
+            type="submit"
+            disabled={submitting || !name.trim()}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 shadow-lg shadow-red-600/20 transition-all"
+            data-testid="fan-signup-submit"
+          >
+            <Send className="w-4 h-4" />
+            {submitting ? "Sender..." : "Send tilmelding"}
+          </button>
+        </form>
+      </div>
+    </section>
   );
 }
 
@@ -77,6 +209,9 @@ export default function LandingPage() {
           </a>
         </div>
       </main>
+
+      {/* Fan Signup */}
+      <FanSignupSection />
 
       {/* Instagram Embed */}
       <section className="relative z-10 px-6 md:px-12 pb-20">

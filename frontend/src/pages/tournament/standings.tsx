@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Trophy, Calendar, Clock } from "lucide-react";
 
 interface Standing {
@@ -25,16 +26,10 @@ interface DbuMatch {
   awayScore: number | null;
 }
 
-const SKJOLD = "BK Skjold";
-const SKJOLD_ALT = "Skjold 10";
-
-function isSkjoldTeam(name: string) {
-  return name === SKJOLD || name === SKJOLD_ALT;
-}
-
 export default function TournamentStandingsPage() {
   const [standings, setStandings] = useState<Standing[]>([]);
-  const [matches, setMatches] = useState<DbuMatch[]>([]);
+  const [upcoming, setUpcoming] = useState<DbuMatch[]>([]);
+  const [previous, setPrevious] = useState<DbuMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,10 +41,11 @@ export default function TournamentStandingsPage() {
     try {
       const [standingsData, matchesData] = await Promise.all([
         api.get<{ standings: Standing[] }>("/tournament/standings"),
-        api.get<{ matches: DbuMatch[] }>("/tournament/matches"),
+        api.get<{ upcoming: DbuMatch[]; previous: DbuMatch[] }>("/tournament/matches"),
       ]);
       setStandings(standingsData.standings);
-      setMatches(matchesData.matches);
+      setUpcoming(matchesData.upcoming);
+      setPrevious(matchesData.previous);
     } catch {
       setError("Kunne ikke indlæse turneringsdata");
     } finally {
@@ -171,77 +167,92 @@ export default function TournamentStandingsPage() {
       )}
 
       {/* Upcoming Matches */}
-      <Card className="mt-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-amber-400" />
-            {da.tournament.upcomingMatches}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => <div key={i} className="h-10 bg-zinc-800 rounded animate-pulse" />)}
-            </div>
-          ) : upcoming.length === 0 ? (
-            <p className="text-zinc-500 text-sm">{da.tournament.noMatches}</p>
-          ) : (
-            <div className="space-y-2">
-              {upcoming.map((m, i) => (
-                <div key={i} className="grid grid-cols-3 items-center px-4 py-3 rounded-lg border border-zinc-800 bg-zinc-900/30">
-                  <span className={`text-sm font-medium ${isSkjoldTeam(m.homeTeam) ? "text-red-500 font-bold drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "text-zinc-200"}`}>{m.homeTeam}</span>
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-sm font-medium text-zinc-300 flex items-center gap-1"><Clock className="w-3 h-3" />{m.date}</span>
-                    <span className="text-xs font-bold text-zinc-400">vs</span>
-                  </div>
-                  <span className={`text-sm font-medium text-right ${isSkjoldTeam(m.awayTeam) ? "text-red-500 font-bold drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "text-zinc-200"}`}>{m.awayTeam}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Previous Results */}
-      <Card className="mt-4">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-zinc-400" />
-            {da.tournament.previousResults}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => <div key={i} className="h-10 bg-zinc-800 rounded animate-pulse" />)}
-            </div>
-          ) : results.length === 0 ? (
-            <p className="text-zinc-500 text-sm">{da.tournament.noMatches}</p>
-          ) : (
-            <div className="space-y-2">
-              {results.map((m, i) => {
-                const skjoldHome = isSkjoldTeam(m.homeTeam);
-                const skjoldAway = isSkjoldTeam(m.awayTeam);
-                const skjoldWon = (skjoldHome && (m.homeScore ?? 0) > (m.awayScore ?? 0)) ||
-                                  (skjoldAway && (m.awayScore ?? 0) > (m.homeScore ?? 0));
-                const draw = m.homeScore === m.awayScore;
-                return (
-                  <div key={i} className={`grid grid-cols-3 items-center px-4 py-3 rounded-lg border ${(skjoldHome || skjoldAway) && !skjoldWon && !draw ? "border-red-500/30 bg-red-500/5" : "border-zinc-800 bg-zinc-900/30"}`}>
-                    <span className={`text-sm font-medium ${skjoldHome ? "text-red-500 font-bold drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "text-zinc-200"}`}>{m.homeTeam}</span>
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span className={`text-base font-bold tabular-nums ${(skjoldHome || skjoldAway) ? (draw ? "text-zinc-400" : skjoldWon ? "text-emerald-400" : "text-red-400") : "text-zinc-200"}`}>
-                        {m.homeScore} - {m.awayScore}
-                      </span>
-                      <span className="text-sm font-medium text-zinc-300">{m.date}</span>
+      {!loading && !error && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="w-5 h-5 text-amber-400" />
+              {da.tournament.upcoming}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {upcoming.length === 0 ? (
+              <p className="text-zinc-500 text-sm" data-testid="tournament-no-upcoming">{da.tournament.noUpcoming}</p>
+            ) : (
+              <div className="space-y-3" data-testid="tournament-upcoming-matches">
+                {upcoming.map((m, i) => {
+                  const isSkjoldHome = m.homeTeam === "BK Skjold";
+                  const isSkjoldAway = m.awayTeam === "BK Skjold";
+                  return (
+                    <div key={`${m.date}-${m.homeTeam}-${i}`} className="flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-zinc-500 tabular-nums w-20">{m.date}</span>
+                        <span className={isSkjoldHome ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
+                          {m.homeTeam}
+                        </span>
+                        <span className="text-zinc-600 text-xs">{da.tournament.vs}</span>
+                        <span className={isSkjoldAway ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
+                          {m.awayTeam}
+                        </span>
+                      </div>
+                      <Badge variant="default">
+                        {isSkjoldHome ? da.tournament.home : da.tournament.away}
+                      </Badge>
                     </div>
-                    <span className={`text-sm font-medium text-right ${skjoldAway ? "text-red-500 font-bold drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "text-zinc-200"}`}>{m.awayTeam}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Previous Matches */}
+      {!loading && !error && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-zinc-400" />
+              {da.tournament.previous}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {previous.length === 0 ? (
+              <p className="text-zinc-500 text-sm" data-testid="tournament-no-previous">{da.tournament.noPrevious}</p>
+            ) : (
+              <div className="space-y-3" data-testid="tournament-previous-matches">
+                {previous.map((m, i) => {
+                  const isSkjoldHome = m.homeTeam === "BK Skjold";
+                  const isSkjoldAway = m.awayTeam === "BK Skjold";
+                  const skjoldWon = (isSkjoldHome && (m.homeScore ?? 0) > (m.awayScore ?? 0)) ||
+                                    (isSkjoldAway && (m.awayScore ?? 0) > (m.homeScore ?? 0));
+                  const skjoldLost = (isSkjoldHome && (m.homeScore ?? 0) < (m.awayScore ?? 0)) ||
+                                     (isSkjoldAway && (m.awayScore ?? 0) < (m.homeScore ?? 0));
+                  return (
+                    <div key={`${m.date}-${m.homeTeam}-${i}`} className="flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-zinc-500 tabular-nums w-20">{m.date}</span>
+                        <span className={isSkjoldHome ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
+                          {m.homeTeam}
+                        </span>
+                        <span className="text-sm font-bold tabular-nums text-zinc-100">
+                          {m.homeScore} - {m.awayScore}
+                        </span>
+                        <span className={isSkjoldAway ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
+                          {m.awayTeam}
+                        </span>
+                      </div>
+                      <Badge variant={skjoldWon ? "success" : skjoldLost ? "error" : "info"}>
+                        {skjoldWon ? "Sejr" : skjoldLost ? "Nederlag" : "Uafgjort"}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

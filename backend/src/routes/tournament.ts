@@ -9,8 +9,17 @@ tournament.get("/standings", async (c) => {
 });
 
 tournament.get("/matches", async (c) => {
-  const matches = await fetchMatchResults();
-  return c.json({ matches });
+  const allMatches = await fetchMatchResults();
+
+  const upcoming = allMatches
+    .filter((m) => m.homeScore === null || m.awayScore === null)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const previous = allMatches
+    .filter((m) => m.homeScore !== null && m.awayScore !== null)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  return c.json({ upcoming, previous });
 });
 
 export default tournament;
