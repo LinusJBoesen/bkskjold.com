@@ -1,7 +1,7 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 6
+- **Round**: 7
 - **Task**: Starting
 - **Last updated**: 2026-04-02
 
@@ -49,7 +49,15 @@
 - [x] Run E2E tests
 - [x] Commit
 
-### Round 6+: Continuous Improvement
+### Round 6: Top Contributors on Dashboard
+- [x] Added match_events query to stats endpoint (goals, assists, cards, clean sheets)
+- [x] Added top contributors section with stacked bar chart + ranked cards
+- [x] Added aggregate goal/assist totals to stat data
+- [x] i18n strings for new section
+- [x] Run E2E tests (55 pass, 12 pre-existing failures)
+- [x] Commit
+
+### Round 7+: Continuous Improvement
 (Infinite — each iteration picks the most impactful improvement)
 
 ## Blockers
@@ -68,3 +76,4 @@
 | 2026-04-02 | 79ce29e | Round 3: Træningshistorik charts, sortable stats, form streaks |
 | 2026-04-02 | b17bb50 | Round 4: Kampanalyse visual stats, charts, season overview |
 | 2026-04-02 | TBD | Round 5: Cross-page polish, mobile UX, visual consistency |
+| 2026-04-02 | TBD | Round 6: Top contributors on dashboard from match_events |

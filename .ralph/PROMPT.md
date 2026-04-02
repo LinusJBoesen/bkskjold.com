@@ -29,7 +29,7 @@ Follow the existing dark theme (zinc-950 backgrounds, zinc-900/50 cards, red acc
 - **Keep all existing functionality.** Nothing should regress.
 - **All UI text in Danish** — use `frontend/src/i18n/da.ts` for new strings.
 - **Fresh context**: You will be restarted after each round. All state is in files — read progress.txt to know where you are.
-- **After Round 5**: Enter continuous improvement mode. Each iteration: review all pages, pick the single most impactful improvement, implement it, commit, exit. Focus on: unused data, better chart types, mobile UX, smarter statistical insights, modern UI patterns.
+- **After Round 5**: Enter continuous improvement mode. Each iteration: first **read `.ralph/CHANGELOG.md`** to see all previous decisions and improvements (this is your memory across context resets — do not repeat or undo previous work). Then review all pages, pick the single most impactful NEW improvement, implement it, commit, exit. Focus on: unused data, better chart types, mobile UX, smarter statistical insights, modern UI patterns.
 
 ## Changelog Rules
 
@@ -51,6 +51,10 @@ The changelog (`.ralph/CHANGELOG.md`) is how the user tracks your work in real t
 ### Data Usage
 - [What data sources you used and how]
 - [Any unused data you noticed for future iterations]
+
+### Failed Attempts & Dead Ends
+- [Anything you tried that didn't work, and why — so future iterations don't repeat it]
+- [E.g. "Tried radar chart for player comparison but Recharts radar doesn't support dark theme tooltips well"]
 
 ### Next Iteration Ideas
 - [What you'd improve next if you continue]

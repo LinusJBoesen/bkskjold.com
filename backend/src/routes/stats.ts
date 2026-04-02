@@ -177,6 +177,45 @@ stats.get("/dashboard", async (c) => {
   const matchCountRows = await sql`SELECT COUNT(*) as count FROM matches WHERE status = 'completed'` as any[];
   const totalMatches = Number(matchCountRows[0]?.count ?? 0);
 
+  // Top contributors from match_events (goals + assists)
+  const topContributors = (await sql`
+    SELECT
+      p.id,
+      p.display_name,
+      p.profile_picture,
+      COALESCE(SUM(CASE WHEN me.event_type = 'goal' THEN 1 ELSE 0 END), 0) as goals,
+      COALESCE(SUM(CASE WHEN me.event_type = 'assist' THEN 1 ELSE 0 END), 0) as assists,
+      COALESCE(SUM(CASE WHEN me.event_type = 'yellow_card' THEN 1 ELSE 0 END), 0) as yellow_cards,
+      COALESCE(SUM(CASE WHEN me.event_type = 'red_card' THEN 1 ELSE 0 END), 0) as red_cards,
+      COALESCE(SUM(CASE WHEN me.event_type = 'clean_sheet' THEN 1 ELSE 0 END), 0) as clean_sheets
+    FROM players p
+    JOIN match_events me ON me.player_id = p.id
+    WHERE p.active = 1
+    GROUP BY p.id, p.display_name, p.profile_picture
+    HAVING (goals + assists) > 0
+    ORDER BY (goals + assists) DESC, goals DESC
+    LIMIT 10
+  ` as any[]).map((r: any) => ({
+    id: r.id,
+    displayName: r.display_name,
+    profilePicture: r.profile_picture,
+    goals: Number(r.goals),
+    assists: Number(r.assists),
+    yellowCards: Number(r.yellow_cards),
+    redCards: Number(r.red_cards),
+    cleanSheets: Number(r.clean_sheets),
+  }));
+
+  // Aggregate totals for match events
+  const eventTotals = (await sql`
+    SELECT
+      COALESCE(SUM(CASE WHEN event_type = 'goal' THEN 1 ELSE 0 END), 0) as total_goals,
+      COALESCE(SUM(CASE WHEN event_type = 'assist' THEN 1 ELSE 0 END), 0) as total_assists
+    FROM match_events
+  ` as any[]);
+  const totalGoals = Number(eventTotals[0]?.total_goals ?? 0);
+  const totalAssists = Number(eventTotals[0]?.total_assists ?? 0);
+
   return c.json({
     top3: {
       mostWins: sortedByWins.slice(0, 3).map((p) => ({
@@ -212,12 +251,15 @@ stats.get("/dashboard", async (c) => {
     playerForm,
     attendanceTrend,
     recentActivity,
+    topContributors,
     totals: {
       players: totalPlayers,
       totalFines,
       paidFines: totalPaid,
       fans: totalFans,
       matches: totalMatches,
+      goals: totalGoals,
+      assists: totalAssists,
     },
   });
 });

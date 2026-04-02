@@ -179,6 +179,12 @@ export const da = {
     matches: "Kampe",
     fine: "Bøde",
     match: "Kamp",
+    topContributors: "Topscorere & bidragydere",
+    goals: "Mål",
+    assists: "Assists",
+    yellowCards: "Gule kort",
+    totalGoals: "Mål i alt",
+    totalAssists: "Assists i alt",
   },
 
   // History

@@ -193,3 +193,36 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 - Goal difference trend chart for DBU matches
 - Player comparison feature (select 2 players, compare side by side)
 - Sparkline charts in table cells for per-player trends
+| 1 | 6 | 2026-04-02 19:41 | iteration 1 |
+
+---
+
+## Iteration 6 — Round 6: Top Scorers & Contributors on Dashboard
+**Date**: 2026-04-02
+
+### Changes
+- **backend/src/routes/stats.ts**: Added `topContributors` query joining `players` and `match_events` tables — aggregates goals, assists, yellow cards, red cards, and clean sheets per player, filtered to those with at least 1 goal or assist, ordered by total contributions, limited to top 10. Added `eventTotals` query for aggregate goal/assist counts. Added `topContributors` array and `totals.goals`/`totals.assists` to the dashboard JSON response.
+- **frontend/src/pages/dashboard.tsx**: Added `topContributors` and extended `totals` in the `DashboardData` interface. Added new "Topscorere & bidragydere" section between Recent Form and Charts, featuring: (1) a stacked horizontal bar chart (green=goals, blue=assists) showing top 10 contributors, (2) a ranked card list of top 5 with emoji-prefixed stats (⚽ goals, 🅰️ assists, 🧤 clean sheets, 🟨 cards), (3) aggregate totals footer. Added `Target` and `Star` icons from lucide-react. All new data fields use safe optional chaining for backward compatibility.
+- **frontend/src/i18n/da.ts**: Added 6 new dashboard keys: `topContributors`, `goals`, `assists`, `yellowCards`, `totalGoals`, `totalAssists`.
+
+### Decisions & Reasoning
+- **Decision**: Surfaced `match_events` data on the dashboard (not just Kampanalyse)
+  **Why**: The `match_events` table (goals, assists, cards, clean sheets) was only accessible on the Kampanalyse page. The dashboard is the most-visited page and had zero goal/assist data. For a football team app, seeing who's scoring is arguably the most engaging information — yet it required navigating to a separate page. Bringing it to the dashboard makes key sports data immediately visible.
+- **Decision**: Used stacked bar chart + ranked card list (dual layout)
+  **Why**: The bar chart gives a quick visual comparison of contributions across players. The ranked card list gives detailed per-player stats with emoji icons for quick scanning. Together they serve both glancers and detail-seekers. The 2-column grid layout on desktop mirrors the existing chart pairs on the dashboard.
+- **Decision**: Aggregated on the backend, not frontend
+  **Why**: The dashboard frontend doesn't fetch match_events data. Adding a new query to the existing `/api/stats/dashboard` endpoint keeps the frontend thin (single API call) and avoids an extra round-trip to `/api/analysis/player-rates`.
+- **Decision**: Used emoji prefixes (⚽🅰️🧤🟨) for stat indicators in the card list
+  **Why**: Emojis are universally understood in sports contexts and take less space than text labels. They provide instant visual recognition of stat types without needing to read labels, especially on mobile where horizontal space is tight.
+
+### Data Usage
+- **New**: `match_events` table now queried by dashboard endpoint — previously only used by `/api/analysis/player-rates`. Goals, assists, yellow cards, red cards, clean sheets aggregated per player.
+- **New**: `totals.goals` and `totals.assists` — aggregate match event counts, displayed in the section footer.
+- **Unused data noticed**: `bodekasse_expenses` table could power a "bødekasse balance" widget (total fines collected minus expenses). `player_positions` could enable position-based filtering or grouping of contributors.
+
+### Next Iteration Ideas
+- Bødekasse balance widget (fines collected vs expenses spent)
+- Head-to-head training vs DBU performance comparison
+- Goal difference trend chart for DBU matches
+- Player comparison feature (select 2 players, compare side by side)
+- Position-based grouping of stats using player_positions table
