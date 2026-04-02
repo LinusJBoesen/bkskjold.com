@@ -1,0 +1,25 @@
+# [PROJECT NAME] — PROGRESS
+
+## Current Status
+- **Round**: 1
+- **Task**: Starting
+- **Last updated**: [DATE]
+
+## Checklist
+
+### Round 1: [Title]
+- [ ] Task 1
+- [ ] Task 2
+- [ ] Run E2E tests
+- [ ] Commit
+
+## Blockers
+(none)
+
+## Notes
+(none)
+
+## Commit Log
+
+| Date | Hash | Description |
+|------|------|-------------|
