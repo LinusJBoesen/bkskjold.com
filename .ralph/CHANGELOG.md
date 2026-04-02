@@ -258,3 +258,37 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 - Player comparison feature (select 2 players, compare side by side)
 - Position-based grouping of stats using player_positions table
 - Spond attendance acceptance rate visualization
+| 3 | 8 | 2026-04-02 20:21 | iteration 3 |
+
+---
+
+## Iteration 8 — Round 8: Goal Difference Trend Chart on Kampanalyse
+**Date**: 2026-04-02
+
+### Changes
+- **frontend/src/pages/analysis/match.tsx**: Added `AreaChart`, `Area`, `CartesianGrid` imports from Recharts. Added `goalDiffTrend` useMemo computing cumulative goal difference from `dbuMatches` — reverses match order (chronological), parses home/away scores, accumulates the running goal difference per match. Added area chart section between Season Overview and Goals+Assists chart, featuring: gradient fill (green when positive, red when negative), color-coded dots per data point based on cumulative value, custom tooltip showing full opponent name, score, and cumulative difference, angled X-axis labels showing short opponent names, footer showing description and current total.
+- **frontend/src/i18n/da.ts**: Added 3 new analysis keys: `goalDiffTrend` ("Målforskel over sæsonen"), `goalDiffCumulative` ("Kumulativ målforskel"), `goalDiffDesc` ("Kumulativ målforskel fra kamp til kamp").
+
+### Decisions & Reasoning
+- **Decision**: Used area chart (not line or bar) for goal difference trend
+  **Why**: The gradient fill below/above the line gives a visceral sense of whether the team is trending positively or negatively. A line chart would feel too bare; bar charts would look disconnected. The area fill creates a "rising tide" or "sinking" visual that maps well to momentum.
+- **Decision**: Placed chart between Season Overview and Goals+Assists sections
+  **Why**: The season overview gives the summary numbers; the goal diff trend shows the story behind those numbers. Placing it right after creates a natural narrative flow: "here are your totals → here's how you got there → here's who contributed."
+- **Decision**: Used cumulative goal difference (not per-match difference)
+  **Why**: Per-match difference (+1, -2, +3) as bars would show individual match variance but not momentum. Cumulative goal difference shows the overall trajectory — whether the team is improving or declining over the season. This is the standard metric used in professional sports analytics (e.g., Premier League GD columns).
+- **Decision**: Color-coded dots based on whether cumulative GD is positive or negative
+  **Why**: Consistent with the rest of the app's color language (green=good, red=bad). Dots crossing from green to red (or vice versa) immediately show inflection points in the season.
+- **Decision**: Gradient fill color matches the final cumulative value
+  **Why**: Simplifies the visual — if the team is net positive overall, the fill is green; if net negative, red. Using a split gradient that changes mid-chart (above/below zero line) was considered but Recharts doesn't natively support this well and the added complexity wasn't worth it.
+
+### Data Usage
+- **Used**: `dbuMatches.score` and `dbuMatches.isHome` — already available and used for season overview. Now also parsed chronologically to compute running goal difference. No new API calls needed.
+- **Unused data noticed**: `spond_attendance` response data could power attendance acceptance rates. `player_positions` table still unused. Training match results from `/matches` could be overlaid on the DBU trend for training-vs-competitive comparison.
+
+### Failed Attempts & Dead Ends
+- None — straightforward implementation. Considered using a ReferenceLine at y=0 from Recharts but decided the colored dots already communicate the zero-crossing well enough without adding visual clutter.
+
+### Next Iteration Ideas
+- Training vs competitive performance overlay (compare training win rate trend with DBU results)
+- Per-player goal contribution sparklines in the stats table
+- Spond attendance acceptance rate chart using spond_attendance response data

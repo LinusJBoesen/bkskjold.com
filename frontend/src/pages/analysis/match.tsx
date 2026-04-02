@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { BarChart3, Swords, Users, Trophy, XCircle, Clock, Plus, X, ClipboardList, Trash2, Target, Shield, TrendingUp } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  AreaChart, Area, CartesianGrid,
 } from "recharts";
 
 interface DbuMatch {
@@ -427,6 +428,28 @@ export default function MatchAnalysisPage() {
       .sort((a, b) => (b.goals + b.assists) - (a.goals + a.assists));
   }, [data]);
 
+  // Cumulative goal difference trend across DBU matches
+  const goalDiffTrend = useMemo(() => {
+    if (!data || data.dbuMatches.length === 0) return [];
+    let cumDiff = 0;
+    return [...data.dbuMatches].reverse().map((m) => {
+      const [home, away] = m.score.split("-").map((s) => parseInt(s));
+      if (isNaN(home) || isNaN(away)) return null;
+      const scored = m.isHome ? home : away;
+      const conceded = m.isHome ? away : home;
+      cumDiff += scored - conceded;
+      return {
+        opponent: m.opponent.split(" ").pop() || m.opponent,
+        fullOpponent: m.opponent,
+        date: m.date,
+        goalDiff: cumDiff,
+        matchDiff: scored - conceded,
+        score: m.score,
+        result: m.result,
+      };
+    }).filter(Boolean);
+  }, [data]);
+
   const registerResult = async (matchId: string, winningTeam: number) => {
     try {
       await api.patch(`/matches/${matchId}/result`, { winning_team: winningTeam });
@@ -628,6 +651,87 @@ export default function MatchAnalysisPage() {
                 <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.playerAssists}</p>
                 <p className="text-xl font-bold text-zinc-100 tabular-nums">{seasonOverview.totalPlayerAssists}</p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Goal Difference Trend */}
+      {goalDiffTrend.length > 1 && (
+        <Card className="mb-6" data-testid="analysis-goal-diff-trend">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-emerald-400" />
+              {da.analysis.goalDiffTrend}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={goalDiffTrend} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="goalDiffGradientPos" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="goalDiffGradientNeg" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
+                <XAxis
+                  dataKey="opponent"
+                  tick={{ fontSize: 10, fill: "#A1A1AA" }}
+                  stroke="#3F3F46"
+                  interval={0}
+                  angle={-30}
+                  textAnchor="end"
+                  height={50}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: "#A1A1AA" }}
+                  stroke="#3F3F46"
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#27272A",
+                    border: "1px solid #3F3F46",
+                    borderRadius: "8px",
+                    color: "#FAFAFA",
+                    fontSize: "12px",
+                  }}
+                  formatter={(value: number) => [
+                    `${value >= 0 ? "+" : ""}${value}`,
+                    da.analysis.goalDiffCumulative,
+                  ]}
+                  labelFormatter={(label: string, payload: any[]) => {
+                    const d = payload?.[0]?.payload;
+                    if (!d) return label;
+                    return `${d.fullOpponent} (${d.score})`;
+                  }}
+                />
+                {/* Reference line at 0 */}
+                <Area
+                  type="monotone"
+                  dataKey="goalDiff"
+                  stroke={goalDiffTrend[goalDiffTrend.length - 1]?.goalDiff >= 0 ? "#10b981" : "#ef4444"}
+                  strokeWidth={2}
+                  fill={goalDiffTrend[goalDiffTrend.length - 1]?.goalDiff >= 0 ? "url(#goalDiffGradientPos)" : "url(#goalDiffGradientNeg)"}
+                  dot={(props: any) => {
+                    const { cx, cy, payload } = props;
+                    const color = payload.goalDiff >= 0 ? "#10b981" : "#ef4444";
+                    return <circle key={`dot-${props.index}`} cx={cx} cy={cy} r={4} fill={color} stroke="#18181b" strokeWidth={2} />;
+                  }}
+                  activeDot={{ strokeWidth: 2, stroke: "#fff", r: 5 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+            <div className="flex items-center justify-between mt-2 text-xs text-zinc-500">
+              <span>{da.analysis.goalDiffDesc}</span>
+              <span className={`font-medium tabular-nums ${goalDiffTrend[goalDiffTrend.length - 1]?.goalDiff >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {goalDiffTrend[goalDiffTrend.length - 1]?.goalDiff >= 0 ? "+" : ""}{goalDiffTrend[goalDiffTrend.length - 1]?.goalDiff ?? 0}
+              </span>
             </div>
           </CardContent>
         </Card>

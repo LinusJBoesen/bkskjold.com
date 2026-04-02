@@ -1,7 +1,7 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 8
+- **Round**: 9
 - **Task**: Starting
 - **Last updated**: 2026-04-02
 
@@ -64,7 +64,15 @@
 - [x] Run E2E tests (55 pass, 12 pre-existing failures)
 - [x] Commit
 
-### Round 8+: Continuous Improvement
+### Round 8: Goal Difference Trend Chart on Kampanalyse
+- [x] Added cumulative goal difference area chart to Kampanalyse page
+- [x] Color-coded dots (green positive, red negative) with gradient fill
+- [x] Custom tooltips showing opponent, score, and cumulative diff
+- [x] i18n strings for new section
+- [x] Run E2E tests (54 pass, 13 pre-existing failures)
+- [x] Commit
+
+### Round 9+: Continuous Improvement
 (Infinite — each iteration picks the most impactful improvement)
 
 ## Blockers
@@ -85,3 +93,4 @@
 | 2026-04-02 | TBD | Round 5: Cross-page polish, mobile UX, visual consistency |
 | 2026-04-02 | TBD | Round 6: Top contributors on dashboard from match_events |
 | 2026-04-02 | TBD | Round 7: Bødekasse balance widget on dashboard |
+| 2026-04-02 | TBD | Round 8: Goal difference trend chart on Kampanalyse |

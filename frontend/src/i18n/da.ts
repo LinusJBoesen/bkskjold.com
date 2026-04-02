@@ -241,6 +241,9 @@ export const da = {
     playerGoals: "Spillermål",
     playerAssists: "Spillerassists",
     noContributions: "Ingen hændelser endnu",
+    goalDiffTrend: "Målforskel over sæsonen",
+    goalDiffCumulative: "Kumulativ målforskel",
+    goalDiffDesc: "Kumulativ målforskel fra kamp til kamp",
   },
   // Post Match
   postMatch: {
