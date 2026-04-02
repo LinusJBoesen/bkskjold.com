@@ -119,6 +119,64 @@ stats.get("/dashboard", async (c) => {
   const fanRows = await sql`SELECT COUNT(*) as count FROM users WHERE role = 'fan' AND approved = 1` as any[];
   const totalFans = Number(fanRows[0]?.count ?? 0);
 
+  // Attendance trend: number of players per match over time
+  const attendanceTrend = (await sql`
+    SELECT
+      m.date,
+      COUNT(DISTINCT mp.player_id) as players
+    FROM matches m
+    JOIN match_players mp ON m.id = mp.match_id
+    WHERE m.status = 'completed'
+    GROUP BY m.id, m.date
+    ORDER BY m.date ASC
+  ` as any[]).map((r: any) => ({
+    date: r.date,
+    players: Number(r.players),
+  }));
+
+  // Recent activity: last 10 events across fines, matches, players
+  const recentFines = (await sql`
+    SELECT
+      f.id, f.amount, f.created_at,
+      p.display_name as player_name,
+      ft.name as fine_name
+    FROM fines f
+    JOIN players p ON f.player_id = p.id
+    JOIN fine_types ft ON f.fine_type_id = ft.id
+    ORDER BY f.created_at DESC
+    LIMIT 5
+  ` as any[]).map((r: any) => ({
+    type: "fine" as const,
+    id: r.id,
+    description: `${r.player_name}: ${r.fine_name} (${r.amount} kr)`,
+    date: r.created_at,
+  }));
+
+  const recentMatches = (await sql`
+    SELECT
+      m.id, m.date, m.completed_at,
+      COUNT(mp.player_id) as player_count
+    FROM matches m
+    JOIN match_players mp ON m.id = mp.match_id
+    WHERE m.status = 'completed'
+    GROUP BY m.id, m.date, m.completed_at
+    ORDER BY m.completed_at DESC
+    LIMIT 5
+  ` as any[]).map((r: any) => ({
+    type: "match" as const,
+    id: r.id,
+    description: `Kamp med ${r.player_count} spillere`,
+    date: r.completed_at || r.date,
+  }));
+
+  const recentActivity = [...recentFines, ...recentMatches]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10);
+
+  // Total matches count
+  const matchCountRows = await sql`SELECT COUNT(*) as count FROM matches WHERE status = 'completed'` as any[];
+  const totalMatches = Number(matchCountRows[0]?.count ?? 0);
+
   return c.json({
     top3: {
       mostWins: sortedByWins.slice(0, 3).map((p) => ({
@@ -152,11 +210,14 @@ stats.get("/dashboard", async (c) => {
     })),
     fineByType,
     playerForm,
+    attendanceTrend,
+    recentActivity,
     totals: {
       players: totalPlayers,
       totalFines,
       paidFines: totalPaid,
       fans: totalFans,
+      matches: totalMatches,
     },
   });
 });

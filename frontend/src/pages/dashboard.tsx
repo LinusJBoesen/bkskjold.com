@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
-import { RefreshCw, Users, Banknote, CheckCircle, Trophy, TrendingUp, AlertTriangle, Heart } from "lucide-react";
+import { RefreshCw, Users, Banknote, CheckCircle, Trophy, TrendingUp, AlertTriangle, Heart, Activity, Clock, Swords } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, PieChart, Pie, Cell,
+  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart,
 } from "recharts";
 
 interface Top3Item {
@@ -33,11 +33,19 @@ interface DashboardData {
     results: string[];
     streak: string;
   }>;
+  attendanceTrend: Array<{ date: string; players: number }>;
+  recentActivity: Array<{
+    type: "fine" | "match";
+    id: string;
+    description: string;
+    date: string;
+  }>;
   totals: {
     players: number;
     totalFines: number;
     paidFines: number;
     fans: number;
+    matches: number;
   };
 }
 
@@ -228,13 +236,15 @@ export default function DashboardPage() {
 
   return (
     <div data-testid="page-dashboard" className="animate-fade-in-up">
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-zinc-50 tracking-tight">{da.nav.dashboard}</h1>
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-50 tracking-tight">{da.nav.dashboard}</h1>
         <Button
           onClick={handleSync}
           disabled={syncing}
           variant="secondary"
+          size="sm"
           data-testid="sync-button"
+          className="shrink-0"
         >
           <RefreshCw className={`h-4 w-4 mr-1.5 ${syncing ? "animate-spin" : ""}`} />
           {syncing ? "Synkroniserer..." : "Synkronisér Data"}
@@ -242,8 +252,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Totals */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 animate-stagger">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 animate-stagger">
         <StatCard icon={Users} label="Spillere" value={String(data?.totals.players ?? 0)} testId="player-count" />
+        <StatCard icon={Swords} label="Kampe" value={String(data?.totals.matches ?? 0)} color="text-zinc-50" testId="dashboard-match-count" />
         <StatCard icon={Heart} label="Fans" value={String(data?.totals.fans ?? 0)} color="text-zinc-50" testId="dashboard-fan-count" />
         <StatCard icon={Banknote} label="Total bøder" value={`${data?.totals.totalFines ?? 0} kr`} color="text-red-400" testId="dashboard-total-fines" />
         <StatCard icon={CheckCircle} label="Betalt" value={`${data?.totals.paidFines ?? 0} kr`} color="text-emerald-400" testId="dashboard-paid-fines" />
@@ -289,7 +300,7 @@ export default function DashboardPage() {
 
       {/* Charts */}
       {data && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg text-zinc-50">{da.dashboard.trainingResults}</CardTitle>
@@ -332,7 +343,7 @@ export default function DashboardPage() {
 
       {/* Fine Breakdown Donut + Win Rate Chart */}
       {data && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
           {/* Fine breakdown by type - donut chart */}
           {data.fineByType.length > 0 && (
             <Card data-testid="dashboard-fine-by-type">
@@ -340,14 +351,14 @@ export default function DashboardPage() {
                 <CardTitle className="text-lg text-zinc-50">{da.dashboard.fineBreakdown}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={280}>
                   <PieChart>
                     <Pie
                       data={data.fineByType}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
+                      innerRadius={55}
+                      outerRadius={90}
                       paddingAngle={3}
                       dataKey="total"
                       nameKey="name"
@@ -378,7 +389,7 @@ export default function DashboardPage() {
                 <CardTitle className="text-lg text-zinc-50">{da.dashboard.winRateDistribution}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={280}>
                   <BarChart
                     data={data.trainingChart
                       .filter(p => p.wins + p.losses > 0)
@@ -397,6 +408,107 @@ export default function DashboardPage() {
                     <Bar dataKey="winRate" fill="#D42428" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Attendance Trend + Recent Activity */}
+      {data && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* Attendance trend - area chart */}
+          {(data.attendanceTrend?.length ?? 0) > 1 && (
+            <Card data-testid="dashboard-attendance-trend">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-zinc-500" />
+                  <CardTitle className="text-lg text-zinc-50">{da.dashboard.attendanceTrend}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={260}>
+                  <AreaChart data={data.attendanceTrend}>
+                    <defs>
+                      <linearGradient id="attendanceGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#D42428" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#D42428" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 11, fill: "#A1A1AA" }}
+                      stroke="#3F3F46"
+                      tickFormatter={(v) => {
+                        const d = new Date(v);
+                        return `${d.getDate()}/${d.getMonth() + 1}`;
+                      }}
+                    />
+                    <YAxis tick={{ fontSize: 11, fill: "#A1A1AA" }} stroke="#3F3F46" allowDecimals={false} />
+                    <Tooltip
+                      contentStyle={darkTooltipStyle}
+                      labelFormatter={(v) => {
+                        const d = new Date(v);
+                        return d.toLocaleDateString("da-DK", { day: "numeric", month: "long", year: "numeric" });
+                      }}
+                      formatter={(value: number) => [`${value}`, da.dashboard.players]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="players"
+                      stroke="#D42428"
+                      strokeWidth={2}
+                      fill="url(#attendanceGradient)"
+                      dot={{ fill: "#D42428", strokeWidth: 0, r: 3 }}
+                      activeDot={{ fill: "#D42428", strokeWidth: 2, stroke: "#fff", r: 5 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recent activity feed */}
+          {(data.recentActivity?.length ?? 0) > 0 && (
+            <Card data-testid="dashboard-recent-activity">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-zinc-500" />
+                  <CardTitle className="text-lg text-zinc-50">{da.dashboard.recentActivity}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1">
+                  {data.recentActivity.map((event) => (
+                    <div
+                      key={`${event.type}-${event.id}`}
+                      className="flex items-start gap-3 py-2.5 border-b border-zinc-800/50 last:border-0"
+                    >
+                      <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5 ${
+                        event.type === "fine"
+                          ? "bg-red-500/10 border border-red-500/20"
+                          : "bg-emerald-500/10 border border-emerald-500/20"
+                      }`}>
+                        {event.type === "fine" ? (
+                          <Banknote className="h-3.5 w-3.5 text-red-400" />
+                        ) : (
+                          <Swords className="h-3.5 w-3.5 text-emerald-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-zinc-200 leading-snug">{event.description}</p>
+                        <p className="text-xs text-zinc-500 mt-0.5">
+                          {new Date(event.date).toLocaleDateString("da-DK", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}

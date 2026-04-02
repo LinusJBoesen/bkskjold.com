@@ -1,0 +1,22 @@
+# Safety limits — no limit, runs forever
+MAX_ITERATIONS=9999
+CLAUDE_TIMEOUT_MINUTES=25
+
+# No completion promise — loop runs until manually killed
+COMPLETION_PROMISE=__NEVER_MATCH_THIS__
+
+# Git workflow
+AUTO_COMMIT=true
+COMMIT_PREFIX="feat(skjold):"
+
+# Permissions — runs headless with full access
+DANGEROUSLY_SKIP_PERMISSIONS=true
+
+# Test requirements
+MIN_COVERAGE=0
+RUN_INTEGRATION_TESTS=true
+
+# Resume behavior
+PERSIST_PROGRESS=true
+PROGRESS_FILE=.ralph/progress.txt
+CHANGELOG_FILE=.ralph/CHANGELOG.md

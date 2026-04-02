@@ -173,6 +173,12 @@ export const da = {
     winRate: "Sejrsrate",
     winsInARow: "sejre i træk",
     lossesInARow: "nederlag i træk",
+    attendanceTrend: "Deltagelse over tid",
+    recentActivity: "Seneste aktivitet",
+    players: "Spillere",
+    matches: "Kampe",
+    fine: "Bøde",
+    match: "Kamp",
   },
 
   // Analysis

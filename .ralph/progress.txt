@@ -1,7 +1,7 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 2
+- **Round**: 3
 - **Task**: Starting
 - **Last updated**: 2026-04-02
 
@@ -17,12 +17,12 @@
 - [ ] Commit
 
 ### Round 2: Dashboard — Activity Feed & Responsive
-- [ ] Attendance/participation trend chart
-- [ ] Recent activity section
-- [ ] Responsive grid improvements
-- [ ] Dark theme chart polish
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Attendance/participation trend chart
+- [x] Recent activity section
+- [x] Responsive grid improvements
+- [x] Dark theme chart polish
+- [x] Run E2E tests
+- [x] Commit
 
 ### Round 3: Træningshistorik — Charts & Smart Stats
 - [ ] Win rate bar chart per player
@@ -56,11 +56,12 @@
 (none)
 
 ## Notes
-- 12 pre-existing E2E failures in tournament/admin/teams/history — not related to dashboard changes
+- 13 pre-existing E2E failures in tournament/admin/teams/history/integration — not related to dashboard changes
 - All 4 dashboard E2E tests pass
 
 ## Commit Log
 
 | Date | Hash | Description |
 |------|------|-------------|
-| 2026-04-02 | TBD | Round 1: Dashboard charts upgrade |
+| 2026-04-02 | d1de549 | Round 1: Dashboard charts upgrade |
+| 2026-04-02 | TBD | Round 2: Dashboard activity feed, attendance trends, responsive polish |
