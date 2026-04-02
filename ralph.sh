@@ -8,6 +8,14 @@ PROGRESS_FILE="$RALPH_DIR/progress.txt"
 CHANGELOG_FILE="$RALPH_DIR/CHANGELOG.md"
 OLDLOOPS_DIR="$RALPH_DIR/oldloops"
 
+# Block running on main
+CURRENT_BRANCH=$(git branch --show-current)
+if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" ]]; then
+  echo "Ralph loops must not run on main. Create a branch first:"
+  echo "  git checkout -b ralph/<name>"
+  exit 1
+fi
+
 # Load config
 if [[ ! -f "$RALPHRC" ]]; then
   echo "No .ralphrc found. Run /ralph to set up a loop first."

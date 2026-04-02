@@ -19,7 +19,17 @@ If the user provided a task description as an argument, use that as a starting p
 
 Keep the discussion brief and focused. Once you have enough info, move to Step 2.
 
-## Step 2: Check for Existing Loop
+## Step 2: Create a Branch
+
+**MANDATORY**: Ralph loops must NEVER run on `main`. Create a new branch before doing anything else:
+
+```bash
+git checkout -b ralph/<short-kebab-name>
+```
+
+Use a short descriptive name based on the task (e.g. `ralph/auth-fixes`, `ralph/tournament-upgrade`). If the user is already on a non-main branch, ask if they want to use the current branch or create a new one.
+
+## Step 3: Check for Existing Loop
 
 Before scaffolding, check if there's an active loop in `.ralph/`:
 
@@ -31,7 +41,7 @@ If there's an active (non-complete) loop, ask the user if they want to:
 - **Resume** it (just start the ralph loop)
 - **Archive** it (move to oldloops, then scaffold new)
 
-## Step 3: Archive Previous Loop (if needed)
+## Step 4: Archive Previous Loop (if needed)
 
 If there are existing `.ralph/PRD.md`, `.ralph/PROMPT.md`, `.ralph/progress.txt` files from a completed or abandoned loop:
 
@@ -46,7 +56,7 @@ mv .ralph/.ralphrc "$ARCHIVE_DIR/" 2>/dev/null || true
 mv .ralph/CHANGELOG.md "$ARCHIVE_DIR/" 2>/dev/null || true
 ```
 
-## Step 4: Scaffold the Loop
+## Step 5: Scaffold the Loop
 
 Read the templates from `.ralph/templates/` for structure reference, then create customized versions:
 
@@ -58,7 +68,7 @@ Read the templates from `.ralph/templates/` for structure reference, then create
 
 Use the templates as a base but customize them for the specific task.
 
-## Step 5: Confirm and Start
+## Step 6: Confirm and Start
 
 Show the user a summary of:
 - Number of rounds
