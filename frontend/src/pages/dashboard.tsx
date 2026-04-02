@@ -7,7 +7,7 @@ import { useToast } from "@/components/toast";
 import { RefreshCw, Users, Banknote, CheckCircle, Trophy, TrendingUp, AlertTriangle, Heart } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer,
+  ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
 
 interface Top3Item {
@@ -26,6 +26,13 @@ interface DashboardData {
   trainingChart: Array<{ name: string; wins: number; losses: number; winRate: number }>;
   fineChart: Array<{ name: string; paid: number; unpaid: number }>;
   fineByType: Array<{ name: string; total: number }>;
+  playerForm: Array<{
+    playerId: string;
+    displayName: string;
+    profilePicture?: string;
+    results: string[];
+    streak: string;
+  }>;
   totals: {
     players: number;
     totalFines: number;
@@ -132,6 +139,39 @@ function Top3Card({ title, items, icon: Icon, valueColor }: {
   );
 }
 
+const DONUT_COLORS = ["#D42428", "#16A34A", "#3B82F6", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6", "#F97316"];
+
+function FormBadge({ result }: { result: string }) {
+  const colorMap: Record<string, string> = {
+    W: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    L: "bg-red-500/20 text-red-400 border-red-500/30",
+    D: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
+  };
+  const labelMap: Record<string, string> = { W: "S", L: "T", D: "U" };
+  return (
+    <span className={`inline-flex items-center justify-center h-6 w-6 rounded text-xs font-bold border ${colorMap[result] || colorMap.D}`}>
+      {labelMap[result] || result}
+    </span>
+  );
+}
+
+function StreakBadge({ streak }: { streak: string }) {
+  if (!streak) return null;
+  const count = parseInt(streak);
+  const type = streak.slice(-1);
+  const labels: Record<string, string> = { W: "sejre", L: "nederlag", D: "uafgjorte" };
+  const colors: Record<string, string> = {
+    W: "text-emerald-400",
+    L: "text-red-400",
+    D: "text-zinc-400",
+  };
+  return (
+    <span className={`text-xs font-medium ${colors[type] || colors.D}`}>
+      {count} {labels[type] || ""} i træk
+    </span>
+  );
+}
+
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -218,12 +258,41 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Recent Form */}
+      {data && data.playerForm.length > 0 && (
+        <Card className="mb-6" data-testid="dashboard-form">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg text-zinc-50">{da.dashboard.recentForm}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {data.playerForm.slice(0, 9).map((p) => (
+                <div key={p.playerId} className="flex items-center gap-3 p-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/30">
+                  <PlayerAvatar name={p.displayName} src={p.profilePicture} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-zinc-200 truncate">{p.displayName}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <div className="flex gap-1">
+                        {p.results.map((r, i) => (
+                          <FormBadge key={i} result={r} />
+                        ))}
+                      </div>
+                    </div>
+                    <StreakBadge streak={p.streak} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Charts */}
       {data && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg text-zinc-50">Træningsresultater</CardTitle>
+              <CardTitle className="text-lg text-zinc-50">{da.dashboard.trainingResults}</CardTitle>
             </CardHeader>
             <CardContent data-testid="dashboard-training-chart">
               <ResponsiveContainer width="100%" height={300}>
@@ -242,7 +311,7 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg text-zinc-50">Bøder per spiller</CardTitle>
+              <CardTitle className="text-lg text-zinc-50">{da.dashboard.finesPerPlayer}</CardTitle>
             </CardHeader>
             <CardContent data-testid="dashboard-fine-chart">
               <ResponsiveContainer width="100%" height={300}>
@@ -258,7 +327,79 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        </div>
+      )}
 
+      {/* Fine Breakdown Donut + Win Rate Chart */}
+      {data && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Fine breakdown by type - donut chart */}
+          {data.fineByType.length > 0 && (
+            <Card data-testid="dashboard-fine-by-type">
+              <CardHeader>
+                <CardTitle className="text-lg text-zinc-50">{da.dashboard.fineBreakdown}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={data.fineByType}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={3}
+                      dataKey="total"
+                      nameKey="name"
+                      stroke="none"
+                    >
+                      {data.fineByType.map((_, i) => (
+                        <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={darkTooltipStyle}
+                      formatter={(value: number) => [`${value} kr`, ""]}
+                    />
+                    <Legend
+                      wrapperStyle={{ color: "#A1A1AA", fontSize: "12px" }}
+                      formatter={(value: string) => <span className="text-zinc-300 text-xs">{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Win rate distribution - horizontal bar chart */}
+          {data.trainingChart.filter(p => p.wins + p.losses > 0).length > 0 && (
+            <Card data-testid="dashboard-win-rate">
+              <CardHeader>
+                <CardTitle className="text-lg text-zinc-50">{da.dashboard.winRateDistribution}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={data.trainingChart
+                      .filter(p => p.wins + p.losses > 0)
+                      .sort((a, b) => b.winRate - a.winRate)
+                      .slice(0, 10)}
+                    layout="vertical"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272A" horizontal={false} />
+                    <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: "#A1A1AA" }} stroke="#3F3F46" tickFormatter={(v) => `${v}%`} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#A1A1AA" }} stroke="#3F3F46" width={80} />
+                    <Tooltip
+                      contentStyle={darkTooltipStyle}
+                      cursor={{ fill: "rgba(255,255,255,0.02)" }}
+                      formatter={(value: number) => [`${value}%`, da.dashboard.winRate]}
+                    />
+                    <Bar dataKey="winRate" fill="#D42428" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>

@@ -3,6 +3,17 @@ import { sql } from "../lib/db";
 
 const stats = new Hono();
 
+function getStreak(results: string[]): string {
+  if (results.length === 0) return "";
+  const first = results[0];
+  let count = 0;
+  for (const r of results) {
+    if (r === first) count++;
+    else break;
+  }
+  return `${count}${first}`;
+}
+
 stats.get("/dashboard", async (c) => {
   // Player stats for charts
   const playerStats = await sql`
@@ -42,6 +53,56 @@ stats.get("/dashboard", async (c) => {
     GROUP BY ft.id, ft.name
     ORDER BY total DESC
   ` as any[]).map((r: any) => ({ ...r, total: Number(r.total) }));
+
+  // Recent form: last 5 matches per player (W/L)
+  const recentForm = (await sql`
+    SELECT
+      mp.player_id,
+      p.display_name,
+      p.profile_picture,
+      m.id as match_id,
+      m.date,
+      CASE
+        WHEN m.winning_team = mp.team THEN 'W'
+        WHEN m.winning_team IS NULL THEN 'D'
+        ELSE 'L'
+      END as result
+    FROM match_players mp
+    JOIN matches m ON mp.match_id = m.id
+    JOIN players p ON mp.player_id = p.id
+    WHERE m.status = 'completed' AND p.active = 1
+    ORDER BY m.date DESC
+  ` as any[]);
+
+  // Group by player, take last 5
+  const formByPlayer: Record<string, { displayName: string; profilePicture?: string; results: string[] }> = {};
+  for (const row of recentForm) {
+    if (!formByPlayer[row.player_id]) {
+      formByPlayer[row.player_id] = {
+        displayName: row.display_name,
+        profilePicture: row.profile_picture,
+        results: [],
+      };
+    }
+    if (formByPlayer[row.player_id].results.length < 5) {
+      formByPlayer[row.player_id].results.push(row.result);
+    }
+  }
+
+  const playerForm = Object.entries(formByPlayer)
+    .filter(([_, v]) => v.results.length > 0)
+    .map(([id, v]) => ({
+      playerId: id,
+      displayName: v.displayName,
+      profilePicture: v.profilePicture,
+      results: v.results,
+      streak: getStreak(v.results),
+    }))
+    .sort((a, b) => {
+      const aWins = a.results.filter(r => r === 'W').length;
+      const bWins = b.results.filter(r => r === 'W').length;
+      return bWins - aWins;
+    });
 
   // Top 3 calculations
   const sortedByWins = [...playerStats].sort((a, b) => b.wins - a.wins);
@@ -90,6 +151,7 @@ stats.get("/dashboard", async (c) => {
       unpaid: Number(p.unpaid),
     })),
     fineByType,
+    playerForm,
     totals: {
       players: totalPlayers,
       totalFines,

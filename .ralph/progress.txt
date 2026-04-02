@@ -1,0 +1,66 @@
+# Dashboard & Stats Upgrade — PROGRESS
+
+## Current Status
+- **Round**: 2
+- **Task**: Starting
+- **Last updated**: 2026-04-02
+
+## Checklist
+
+### Round 1: Dashboard — More Charts & Polish
+- [x] Fine breakdown donut/pie chart (fineByType data)
+- [x] Win rate distribution chart
+- [x] Recent form/streak indicators
+- [x] Polish stat cards and layout
+- [x] i18n strings
+- [x] Run E2E tests
+- [ ] Commit
+
+### Round 2: Dashboard — Activity Feed & Responsive
+- [ ] Attendance/participation trend chart
+- [ ] Recent activity section
+- [ ] Responsive grid improvements
+- [ ] Dark theme chart polish
+- [ ] Run E2E tests
+- [ ] Commit
+
+### Round 3: Træningshistorik — Charts & Smart Stats
+- [ ] Win rate bar chart per player
+- [ ] Form streaks (W/L indicators)
+- [ ] Sortable stats table
+- [ ] Visual highlights
+- [ ] Improved match history cards
+- [ ] Run E2E tests
+- [ ] Commit
+
+### Round 4: Kampanalyse — Visual Stats & Charts
+- [ ] Goals + assists bar chart
+- [ ] Form timeline
+- [ ] Visual player stat cards
+- [ ] Season overview section
+- [ ] Run E2E tests
+- [ ] Commit
+
+### Round 5: Cross-Page Polish & Consistency
+- [ ] Visual consistency across pages
+- [ ] Mobile-friendly at all breakpoints
+- [ ] data-testid verification
+- [ ] Animations and transitions
+- [ ] Run E2E tests
+- [ ] Commit
+
+### Round 6+: Continuous Improvement
+(Infinite — each iteration picks the most impactful improvement)
+
+## Blockers
+(none)
+
+## Notes
+- 12 pre-existing E2E failures in tournament/admin/teams/history — not related to dashboard changes
+- All 4 dashboard E2E tests pass
+
+## Commit Log
+
+| Date | Hash | Description |
+|------|------|-------------|
+| 2026-04-02 | TBD | Round 1: Dashboard charts upgrade |

@@ -163,6 +163,18 @@ export const da = {
     },
   },
 
+  // Dashboard
+  dashboard: {
+    recentForm: "Seneste form",
+    trainingResults: "Træningsresultater",
+    finesPerPlayer: "Bøder per spiller",
+    fineBreakdown: "Bøder fordelt på type",
+    winRateDistribution: "Sejrsrate per spiller",
+    winRate: "Sejrsrate",
+    winsInARow: "sejre i træk",
+    lossesInARow: "nederlag i træk",
+  },
+
   // Analysis
   analysis: {
     title: "Kampanalyse",
