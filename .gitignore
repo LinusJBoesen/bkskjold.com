@@ -7,6 +7,5 @@ e2e/playwright-report/
 *.db
 .DS_Store
 tmp/
-.claude/
 Trøjer.png
 .ralph/oldloops/
