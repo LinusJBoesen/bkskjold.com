@@ -161,3 +161,35 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 - Could add head-to-head comparison between training performance and DBU match performance
 - Could add goal difference trend chart for DBU matches
 - Could add player comparison feature (select 2 players, compare stats side by side)
+| 4 | ? | 2026-04-02 19:16 | iteration 4 |
+
+---
+
+## Iteration 5 — Round 5: Cross-Page Polish & Visual Consistency
+**Date**: 2026-04-02
+
+### Changes
+- **frontend/src/pages/analysis/match.tsx**: Converted all 7 raw `<div className="bg-zinc-900/50 rounded-xl border border-zinc-800">` sections to use `<Card>/<CardHeader>/<CardContent>` shadcn/ui components, matching the pattern used in dashboard.tsx and training.tsx. Sections converted: summary cards, season overview, goals+assists chart, form timeline, DBU matches table, player highlights, and player stats table. Fixed duplicate `sm:text-xl sm:text-2xl` class in loading and error states (→ `sm:text-2xl`). Added `flex-wrap` to pending match action buttons for mobile overflow. Added `animate-stagger` to season overview stat tiles. Added `tabular-nums` to all numeric values in season overview tiles and goal/assist tooltip. Reduced summary card gap on mobile (`gap-3 sm:gap-4`).
+- **frontend/src/pages/history/training.tsx**: Added `tabular-nums` to win rate tooltip numeric values for consistent number rendering.
+
+### Decisions & Reasoning
+- **Decision**: Converted all analysis page sections from raw divs to Card components
+  **Why**: Dashboard and Training History pages consistently use `<Card>/<CardHeader>/<CardContent>` from shadcn/ui. The analysis page was using raw `<div>` elements with manual border/background classes, creating visual inconsistency (slightly different border radius, padding, and background opacity). Card components inherit the theme's `--card` CSS variable ensuring pixel-perfect consistency across all three pages.
+- **Decision**: Added `tabular-nums` to all numeric displays across all pages
+  **Why**: Without `tabular-nums`, numbers use proportional figures where "1" takes less horizontal space than "8". This causes values to visually shift when data updates (e.g., scores changing). Tabular figures ensure all digits are the same width, preventing layout jank — especially important in tables, stat cards, and tooltips.
+- **Decision**: Added `flex-wrap` to pending match buttons instead of reducing button count
+  **Why**: On mobile (375px), 4 action buttons ("Afslut kamp", "Hold 1 Vandt", "Hold 2 Vandt", delete) overflow the container. `flex-wrap` lets them flow to a second row naturally. Removing buttons would reduce functionality; `flex-wrap` preserves all options while fixing the overflow.
+- **Decision**: Added `animate-stagger` to season overview grid
+  **Why**: Dashboard stat cards and summary cards already have stagger animation. The season overview's 6 tiles were appearing instantly with no entrance animation, creating a jarring contrast with the rest of the page.
+- **Decision**: Did not extract a shared PlayerAvatar component file
+  **Why**: While PlayerAvatar is duplicated in all 3 pages, each version is a simple ~15-line function. Creating a shared component file adds import complexity and file navigation overhead for minimal benefit. Per project conventions, prefer simple solutions — extracting shared components can happen in a future round if the component grows more complex.
+
+### Data Usage
+- No new data sources used — this round was purely UI consistency and polish.
+- All existing `data-testid` attributes verified: all 55 passing tests continue to pass.
+
+### Next Iteration Ideas
+- Head-to-head training vs DBU performance comparison
+- Goal difference trend chart for DBU matches
+- Player comparison feature (select 2 players, compare side by side)
+- Sparkline charts in table cells for per-player trends

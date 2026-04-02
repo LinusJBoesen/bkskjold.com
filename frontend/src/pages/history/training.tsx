@@ -111,8 +111,8 @@ const WinRateBarTooltip = ({ active, payload }: any) => {
   return (
     <div className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-xs shadow-xl">
       <p className="font-medium text-zinc-200">{d.name}</p>
-      <p className="text-zinc-400">{da.history.winRate}: <span className="text-zinc-100 font-bold">{d.winRate}%</span></p>
-      <p className="text-zinc-400">{d.wins}S / {d.losses}T af {d.matches} {da.history.matchesPlayed}</p>
+      <p className="text-zinc-400">{da.history.winRate}: <span className="text-zinc-100 font-bold tabular-nums">{d.winRate}%</span></p>
+      <p className="text-zinc-400 tabular-nums">{d.wins}S / {d.losses}T af {d.matches} {da.history.matchesPlayed}</p>
     </div>
   );
 };

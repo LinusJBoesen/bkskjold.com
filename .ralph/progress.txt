@@ -1,7 +1,7 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 5
+- **Round**: 6
 - **Task**: Starting
 - **Last updated**: 2026-04-02
 
@@ -42,12 +42,12 @@
 - [x] Commit
 
 ### Round 5: Cross-Page Polish & Consistency
-- [ ] Visual consistency across pages
-- [ ] Mobile-friendly at all breakpoints
-- [ ] data-testid verification
-- [ ] Animations and transitions
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Visual consistency across pages
+- [x] Mobile-friendly at all breakpoints
+- [x] data-testid verification
+- [x] Animations and transitions
+- [x] Run E2E tests
+- [x] Commit
 
 ### Round 6+: Continuous Improvement
 (Infinite — each iteration picks the most impactful improvement)
@@ -66,4 +66,5 @@
 | 2026-04-02 | d1de549 | Round 1: Dashboard charts upgrade |
 | 2026-04-02 | e5dbb6c | Round 2: Dashboard activity feed, attendance trends, responsive polish |
 | 2026-04-02 | 79ce29e | Round 3: Træningshistorik charts, sortable stats, form streaks |
-| 2026-04-02 | TBD | Round 4: Kampanalyse visual stats, charts, season overview |
+| 2026-04-02 | b17bb50 | Round 4: Kampanalyse visual stats, charts, season overview |
+| 2026-04-02 | TBD | Round 5: Cross-page polish, mobile UX, visual consistency |

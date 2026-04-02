@@ -274,10 +274,10 @@ function GoalAssistTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs shadow-lg">
+    <div className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-xs shadow-xl">
       <p className="font-semibold text-zinc-100 mb-1">{d.name}</p>
-      <p className="text-emerald-400">{da.analysis.goals}: {d.goals}</p>
-      <p className="text-blue-400">{da.analysis.assists}: {d.assists}</p>
+      <p className="text-emerald-400 tabular-nums">{da.analysis.goals}: {d.goals}</p>
+      <p className="text-blue-400 tabular-nums">{da.analysis.assists}: {d.assists}</p>
     </div>
   );
 }
@@ -451,12 +451,12 @@ export default function MatchAnalysisPage() {
   if (loading) {
     return (
       <div data-testid="page-analysis">
-        <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4">
+            <Card key={i}><CardContent className="py-4">
               <div className="h-8 bg-zinc-800 rounded animate-pulse" />
-            </div>
+            </CardContent></Card>
           ))}
         </div>
       </div>
@@ -466,7 +466,7 @@ export default function MatchAnalysisPage() {
   if (error) {
     return (
       <div data-testid="page-analysis">
-        <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
         <Card><CardContent className="py-8 text-center">
           <p className="text-red-400 mb-4">{error}</p>
           <Button onClick={() => window.location.reload()}>Prøv igen</Button>
@@ -486,7 +486,7 @@ export default function MatchAnalysisPage() {
 
   return (
     <div data-testid="page-analysis" className="animate-fade-in-up">
-      <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
 
       {/* Pending Matches - Post Match Card */}
       {pendingMatches.length > 0 && role === "admin" && (
@@ -518,7 +518,7 @@ export default function MatchAnalysisPage() {
                   <div key={m.id} className="border border-zinc-800 rounded-lg p-4 bg-zinc-900/50 transition-all duration-200 hover:border-zinc-700" data-testid={`pending-match-${m.id}`}>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
                       <span className="text-sm text-zinc-400">{m.date}</span>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
                           onClick={() => setActivePostMatch(m.id)}
@@ -581,105 +581,119 @@ export default function MatchAnalysisPage() {
       )}
 
       {/* DBU Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 animate-stagger" data-testid="analysis-summary">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 animate-stagger" data-testid="analysis-summary">
         {summaryCards.map((card) => (
-          <div key={card.label} className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 text-center">
-            <card.icon className={`w-5 h-5 ${card.color} mx-auto mb-2 opacity-60`} />
-            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{card.label}</p>
-            <p className={`text-2xl font-bold tabular-nums mt-1 ${card.color}`}>{card.value}</p>
-          </div>
+          <Card key={card.label}>
+            <CardContent className="pt-4 pb-4 text-center">
+              <card.icon className={`w-5 h-5 ${card.color} mx-auto mb-2 opacity-60`} />
+              <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{card.label}</p>
+              <p className={`text-2xl font-bold tabular-nums mt-1 ${card.color}`}>{card.value}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
       {/* Season Overview */}
       {seasonOverview && data.dbuSummary.total > 0 && (
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 sm:p-6 mb-6" data-testid="analysis-season-overview">
-          <h2 className="text-lg font-semibold text-zinc-50 mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-red-400" />
-            {da.analysis.seasonOverview}
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.winRatePct}</p>
-              <p className="text-xl font-bold text-emerald-400">{seasonOverview.winPct}%</p>
+        <Card className="mb-6" data-testid="analysis-season-overview">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-red-400" />
+              {da.analysis.seasonOverview}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 animate-stagger">
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.winRatePct}</p>
+                <p className="text-xl font-bold text-emerald-400 tabular-nums">{seasonOverview.winPct}%</p>
+              </div>
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.goalsScored}</p>
+                <p className="text-xl font-bold text-emerald-400 tabular-nums">{seasonOverview.goalsScored}</p>
+              </div>
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.goalsConceded}</p>
+                <p className="text-xl font-bold text-red-400 tabular-nums">{seasonOverview.goalsConceded}</p>
+              </div>
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.cleanSheetsTotal}</p>
+                <p className="text-xl font-bold text-sky-400 tabular-nums">{seasonOverview.cleanSheets}</p>
+              </div>
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.playerGoals}</p>
+                <p className="text-xl font-bold text-zinc-100 tabular-nums">{seasonOverview.totalPlayerGoals}</p>
+              </div>
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.playerAssists}</p>
+                <p className="text-xl font-bold text-zinc-100 tabular-nums">{seasonOverview.totalPlayerAssists}</p>
+              </div>
             </div>
-            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.goalsScored}</p>
-              <p className="text-xl font-bold text-emerald-400">{seasonOverview.goalsScored}</p>
-            </div>
-            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.goalsConceded}</p>
-              <p className="text-xl font-bold text-red-400">{seasonOverview.goalsConceded}</p>
-            </div>
-            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.cleanSheetsTotal}</p>
-              <p className="text-xl font-bold text-sky-400">{seasonOverview.cleanSheets}</p>
-            </div>
-            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.playerGoals}</p>
-              <p className="text-xl font-bold text-zinc-100">{seasonOverview.totalPlayerGoals}</p>
-            </div>
-            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.playerAssists}</p>
-              <p className="text-xl font-bold text-zinc-100">{seasonOverview.totalPlayerAssists}</p>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Goals + Assists Bar Chart */}
       {goalAssistChart.length > 0 && (
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 sm:p-6 mb-6" data-testid="analysis-goals-assists-chart">
-          <h2 className="text-lg font-semibold text-zinc-50 mb-4 flex items-center gap-2">
-            <Target className="w-5 h-5 text-emerald-400" />
-            {da.analysis.topScorers}
-          </h2>
-          <ResponsiveContainer width="100%" height={Math.max(200, goalAssistChart.length * 36)}>
-            <BarChart data={goalAssistChart} layout="vertical" margin={{ left: 0, right: 16, top: 0, bottom: 0 }}>
-              <XAxis type="number" tick={{ fill: "#a1a1aa", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis
-                type="category"
-                dataKey="name"
-                width={80}
-                tick={{ fill: "#d4d4d8", fontSize: 12 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip content={<GoalAssistTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-              <Bar dataKey="goals" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} name={da.analysis.goals} />
-              <Bar dataKey="assists" stackId="a" fill="#3b82f6" radius={[0, 4, 4, 0]} name={da.analysis.assists} />
-            </BarChart>
-          </ResponsiveContainer>
-          <div className="flex items-center gap-4 mt-3 text-xs text-zinc-400">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" /> {da.analysis.goals}</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-500 inline-block" /> {da.analysis.assists}</span>
-          </div>
-        </div>
+        <Card className="mb-6" data-testid="analysis-goals-assists-chart">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Target className="w-5 h-5 text-emerald-400" />
+              {da.analysis.topScorers}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={Math.max(200, goalAssistChart.length * 36)}>
+              <BarChart data={goalAssistChart} layout="vertical" margin={{ left: 0, right: 16, top: 0, bottom: 0 }}>
+                <XAxis type="number" tick={{ fill: "#a1a1aa", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={80}
+                  tick={{ fill: "#d4d4d8", fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip content={<GoalAssistTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                <Bar dataKey="goals" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} name={da.analysis.goals} />
+                <Bar dataKey="assists" stackId="a" fill="#3b82f6" radius={[0, 4, 4, 0]} name={da.analysis.assists} />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="flex items-center gap-4 mt-3 text-xs text-zinc-400">
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" /> {da.analysis.goals}</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-500 inline-block" /> {da.analysis.assists}</span>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Form Timeline */}
       {data.dbuMatches.length > 0 && (
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 sm:p-6 mb-6" data-testid="analysis-form-timeline">
-          <h2 className="text-lg font-semibold text-zinc-50 mb-4 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-zinc-400" />
-            {da.analysis.formTimeline}
-          </h2>
-          <div className="flex flex-wrap gap-2 items-center">
-            {[...data.dbuMatches].reverse().map((m, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <FormDot result={m.result} />
-                <span className="text-[10px] text-zinc-600 truncate max-w-[48px]" title={m.opponent}>
-                  {m.opponent.split(" ").pop()}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="flex items-center gap-3 mt-3 text-xs text-zinc-500">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" /> {da.analysis.win}</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-zinc-500 inline-block" /> {da.analysis.draw}</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block" /> {da.analysis.loss}</span>
-          </div>
-        </div>
+        <Card className="mb-6" data-testid="analysis-form-timeline">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-zinc-400" />
+              {da.analysis.formTimeline}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2 items-center">
+              {[...data.dbuMatches].reverse().map((m, i) => (
+                <div key={i} className="flex flex-col items-center gap-1">
+                  <FormDot result={m.result} />
+                  <span className="text-[10px] text-zinc-600 truncate max-w-[48px]" title={m.opponent}>
+                    {m.opponent.split(" ").pop()}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 mt-3 text-xs text-zinc-500">
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" /> {da.analysis.win}</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-zinc-500 inline-block" /> {da.analysis.draw}</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block" /> {da.analysis.loss}</span>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* DBU Matches */}
@@ -688,10 +702,14 @@ export default function MatchAnalysisPage() {
           <p className="text-zinc-500">Ingen DBU-kampe endnu</p>
         </CardContent></Card>
       ) : (
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden mb-6">
-          <div className="px-4 py-3 border-b border-zinc-800">
-            <h2 className="text-lg font-semibold text-zinc-50">{da.analysis.dbuMatches}</h2>
-          </div>
+        <Card className="mb-6 overflow-hidden">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Swords className="w-5 h-5 text-zinc-400" />
+              {da.analysis.dbuMatches}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full" data-testid="analysis-dbu-matches-table">
               <thead>
@@ -719,22 +737,27 @@ export default function MatchAnalysisPage() {
               </tbody>
             </table>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Visual Player Stat Cards */}
       {activePlayers.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-zinc-50 mb-4 flex items-center gap-2">
-            <Shield className="w-5 h-5 text-sky-400" />
-            {da.analysis.playerHighlights}
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" data-testid="analysis-player-cards">
-            {activePlayers.slice(0, 8).map((p) => (
-              <PlayerStatCard key={p.id} player={p} />
-            ))}
-          </div>
-        </div>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Shield className="w-5 h-5 text-sky-400" />
+              {da.analysis.playerHighlights}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" data-testid="analysis-player-cards">
+              {activePlayers.slice(0, 8).map((p) => (
+                <PlayerStatCard key={p.id} player={p} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Player Match Stats Table */}
@@ -743,11 +766,14 @@ export default function MatchAnalysisPage() {
           <p className="text-zinc-500" data-testid="analysis-no-stats">Ingen spillerstatistik endnu</p>
         </CardContent></Card>
       ) : (
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden">
-          <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
-            <Users className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-semibold text-zinc-50">{da.analysis.playerStats}</h2>
-          </div>
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="w-5 h-5 text-zinc-400" />
+              {da.analysis.playerStats}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full" data-testid="analysis-player-rates-table">
               <thead>
@@ -786,7 +812,8 @@ export default function MatchAnalysisPage() {
               </tbody>
             </table>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
