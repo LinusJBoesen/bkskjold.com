@@ -42,5 +42,21 @@ export async function migrate(): Promise<void> {
     await sql`ALTER TABLE matches ADD COLUMN score_team2 INTEGER`;
   } catch { /* column already exists */ }
 
+  // Fix training_loss fine amount to 10 kr
+  await sql`UPDATE fine_types SET amount = 10 WHERE id = 'training_loss'`.catch(() => {});
+
+  // Add winner column to training_lineups for recording training match result
+  await sql.unsafe(`ALTER TABLE training_lineups ADD COLUMN IF NOT EXISTS winner INTEGER`).catch(() => {});
+
+  // Add match_lineups table for official match squad (starters + bench)
+  await sql.unsafe(`CREATE TABLE IF NOT EXISTS match_lineups (
+    id TEXT PRIMARY KEY,
+    label TEXT NOT NULL,
+    event_date TIMESTAMPTZ NOT NULL,
+    starters TEXT NOT NULL,
+    bench TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`).catch(() => {});
+
   console.log("Database migrated");
 }

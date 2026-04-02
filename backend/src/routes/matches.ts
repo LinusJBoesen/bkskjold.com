@@ -88,7 +88,7 @@ matches.patch("/:id/result", requireRole("admin"), async (c) => {
     const fineId = `loss-${id}-${loser.player_id}`;
     await sql`
       INSERT INTO fines (id, player_id, fine_type_id, event_name, event_date, amount)
-      VALUES (${fineId}, ${loser.player_id}, 'training_loss', 'Tabt træningsmatch', ${match.date}, 25)
+      VALUES (${fineId}, ${loser.player_id}, 'training_loss', 'Tabt træningsmatch', ${match.date}, 10)
       ON CONFLICT DO NOTHING
     `;
   }
@@ -137,7 +137,7 @@ matches.patch("/:id/complete", requireRole("admin"), async (c) => {
     const fineId = `loss-${id}-${loser.player_id}`;
     await sql`
       INSERT INTO fines (id, player_id, fine_type_id, event_name, event_date, amount)
-      VALUES (${fineId}, ${loser.player_id}, 'training_loss', 'Tabt træningsmatch', ${match.date}, 25)
+      VALUES (${fineId}, ${loser.player_id}, 'training_loss', 'Tabt træningsmatch', ${match.date}, 10)
       ON CONFLICT DO NOTHING
     `;
   }

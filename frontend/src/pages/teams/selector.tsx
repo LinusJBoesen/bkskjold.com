@@ -90,10 +90,12 @@ export default function TeamSelectorPage() {
   const [guestName, setGuestName] = useState("");
   const [guests, setGuests] = useState<string[]>([]);
   const [result, setResult] = useState<TeamResult | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+
   const [savingLineup, setSavingLineup] = useState(false);
   const [savedLineup, setSavedLineup] = useState(false);
+  const [savedLineupId, setSavedLineupId] = useState<string | null>(null);
+  const [winnerSubmitting, setWinnerSubmitting] = useState(false);
+  const [winnerDone, setWinnerDone] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -102,6 +104,13 @@ export default function TeamSelectorPage() {
   const [formationTeam, setFormationTeam] = useState<1 | 2>(1);
   const [playerPositions, setPlayerPositions] = useState<Record<string, Position[]>>({});
   const { toast } = useToast();
+
+  // Match squad state (starters + bench, no two-team split)
+  type SquadPlayer = { id: string; displayName: string; profilePicture?: string | null; winRate: number };
+  const [matchSquad, setMatchSquad] = useState<{ starters: SquadPlayer[]; bench: SquadPlayer[] } | null>(null);
+  const [savingSquad, setSavingSquad] = useState(false);
+  const [savedSquad, setSavedSquad] = useState(false);
+  const [publishedMatchLineup, setPublishedMatchLineup] = useState<{ id: string; label: string; starters: SquadPlayer[]; bench: SquadPlayer[] } | null>(null);
 
   useEffect(() => {
     api.get<AvailableResponse>("/teams/available")
@@ -127,6 +136,11 @@ export default function TeamSelectorPage() {
       .then((res) => setPublishedLineup(res.lineup))
       .catch(() => {/* optional */});
 
+    // Load the latest published match lineup
+    api.get<{ lineup: typeof publishedMatchLineup }>("/teams/match-lineup")
+      .then((res) => setPublishedMatchLineup(res.lineup))
+      .catch(() => {/* optional */});
+
     // Load player positions for formation auto-assignment
     api.get<{ id: string; displayName: string; profilePicture: string | null; positions: string[] }[]>("/formations/players/positions")
       .then((res) => {
@@ -143,7 +157,11 @@ export default function TeamSelectorPage() {
     if (!data) return;
     setActiveTab(tab);
     setResult(null);
-    setSaved(false);
+    setMatchSquad(null);
+    setSavedLineup(false);
+    setSavedLineupId(null);
+    setSavedSquad(false);
+    setWinnerDone(false);
     setCopied(false);
     setGuests([]);
     setViewMode("list");
@@ -175,7 +193,12 @@ export default function TeamSelectorPage() {
 
   const togglePlayer = (id: string) => {
     const next = new Set(selected);
-    if (next.has(id)) next.delete(id); else next.add(id);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      if (activeTab === "match" && next.size >= 10) return;
+      next.add(id);
+    }
     setSelected(next);
   };
 
@@ -187,12 +210,62 @@ export default function TeamSelectorPage() {
     try {
       const res = await api.post<TeamResult>("/teams/generate", { playerIds, algorithm: "greedy" });
       setResult(res);
-      setSaved(false);
       setCopied(false);
       toast("Hold genereret", "success");
     } catch {
       toast("Kunne ikke generere hold", "error");
     }
+  };
+
+  const generateMatchSquad = () => {
+    const players = Array.from(selected)
+      .map((id) => allPlayersList.find((p) => p.id === id))
+      .filter((p): p is AvailablePlayer => !!p)
+      .sort((a, b) => b.winRate - a.winRate);
+    const starters = players.slice(0, 7).map((p) => ({ id: p.id, displayName: p.displayName, profilePicture: p.profilePicture ?? null, winRate: p.winRate }));
+    const bench = players.slice(7, 10).map((p) => ({ id: p.id, displayName: p.displayName, profilePicture: p.profilePicture ?? null, winRate: p.winRate }));
+    setMatchSquad({ starters, bench });
+    setSavedSquad(false);
+    toast("Opstilling klar", "success");
+  };
+
+  const moveToStarters = (playerId: string) => {
+    if (!matchSquad) return;
+    const player = matchSquad.bench.find((p) => p.id === playerId);
+    if (!player || matchSquad.starters.length >= 7) return;
+    setMatchSquad({
+      starters: [...matchSquad.starters, player],
+      bench: matchSquad.bench.filter((p) => p.id !== playerId),
+    });
+  };
+
+  const moveToBench = (playerId: string) => {
+    if (!matchSquad) return;
+    const player = matchSquad.starters.find((p) => p.id === playerId);
+    if (!player || matchSquad.bench.length >= 3) return;
+    setMatchSquad({
+      starters: matchSquad.starters.filter((p) => p.id !== playerId),
+      bench: [...matchSquad.bench, player],
+    });
+  };
+
+  const saveMatchSquad = async () => {
+    if (!matchSquad) return;
+    setSavingSquad(true);
+    try {
+      await api.post("/teams/match-lineup", {
+        eventDate: currentEvent?.date ?? new Date().toISOString(),
+        starters: matchSquad.starters,
+        bench: matchSquad.bench,
+      });
+      setSavedSquad(true);
+      const res = await api.get<{ lineup: typeof publishedMatchLineup }>("/teams/match-lineup");
+      setPublishedMatchLineup(res.lineup);
+      toast("Kamptrup gemt — spillere kan nu se opstillingen", "success");
+    } catch {
+      toast("Kunne ikke gemme kamptrup", "error");
+    }
+    setSavingSquad(false);
   };
 
   const swapPlayer = async (playerId: string) => {
@@ -209,32 +282,18 @@ export default function TeamSelectorPage() {
     }
   };
 
-  const saveMatch = async () => {
-    if (!result) return;
-    setSaving(true);
-    try {
-      await api.post("/matches", {
-        team1: result.team1.map((p) => p.id),
-        team2: result.team2.map((p) => p.id),
-      });
-      setSaved(true);
-      toast("Kamp gemt", "success");
-    } catch {
-      toast("Kunne ikke gemme kamp", "error");
-    }
-    setSaving(false);
-  };
 
   const saveTrainingLineup = async () => {
-    if (!result || !currentEvent) return;
+    if (!result) return;
     setSavingLineup(true);
     try {
-      await api.post("/teams/lineup", {
-        eventDate: currentEvent.date,
+      const saved = await api.post<{ id: string; label: string }>("/teams/lineup", {
+        eventDate: currentEvent?.date ?? new Date().toISOString(),
         team1: result.team1.map((p) => ({ id: p.id, displayName: p.displayName, profilePicture: getPlayerPicture(p.id) })),
         team2: result.team2.map((p) => ({ id: p.id, displayName: p.displayName, profilePicture: getPlayerPicture(p.id) })),
       });
       setSavedLineup(true);
+      setSavedLineupId(saved.id);
       const res = await api.get<{ lineup: typeof publishedLineup }>("/teams/lineup");
       setPublishedLineup(res.lineup);
       toast("Holdopstilling gemt — spillere kan nu se holdene", "success");
@@ -242,6 +301,19 @@ export default function TeamSelectorPage() {
       toast("Kunne ikke gemme holdopstilling", "error");
     }
     setSavingLineup(false);
+  };
+
+  const submitWinner = async (winner: 1 | 2) => {
+    if (!savedLineupId) return;
+    setWinnerSubmitting(true);
+    try {
+      await api.post(`/teams/lineup/${savedLineupId}/result`, { winner });
+      setWinnerDone(true);
+      toast(`Hold ${winner} vandt — bøder tildelt taberne og fraværende`, "success");
+    } catch {
+      toast("Kunne ikke gemme resultat", "error");
+    }
+    setWinnerSubmitting(false);
   };
 
   const copyTeams = async () => {
@@ -384,85 +456,125 @@ export default function TeamSelectorPage() {
         </div>
       )}
 
-      {/* Player view: show latest published lineup */}
+      {/* Player view */}
       {!isAdmin && (
         <div className="mt-2">
-          {publishedLineup ? (
-            <>
-              <div className="mb-4 flex items-center gap-2 text-sm text-zinc-400">
-                <Users className="h-4 w-4" />
-                <span>Holdopstilling til <span className="text-zinc-200 font-medium">{publishedLineup.label}</span></span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Card className="border-white/20">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <div className="h-6 w-6 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-xs font-bold text-zinc-900">1</div>
-                      Hold 1
-                      <span className="text-sm font-medium text-zinc-300 ml-1">— Hvide trøjer</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-1">
-                      {publishedLineup.team1.map((p) => (
-                        <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
-                          <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                          <span className="text-zinc-200">{p.displayName}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-zinc-600 bg-zinc-950">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <div className="h-6 w-6 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-xs font-bold text-zinc-100">2</div>
-                      Hold 2
-                      <span className="text-sm font-medium text-zinc-300 ml-1">— Sorte trøjer</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-1">
-                      {publishedLineup.team2.map((p) => (
-                        <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
-                          <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                          <span className="text-zinc-200">{p.displayName}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </>
+          {activeTab === "training" ? (
+            publishedLineup ? (
+              <>
+                <div className="mb-4 flex items-center gap-2 text-sm text-zinc-400">
+                  <Users className="h-4 w-4" />
+                  <span>Holdopstilling til <span className="text-zinc-200 font-medium">{publishedLineup.label}</span></span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Card className="border-white/20">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-xs font-bold text-zinc-900">1</div>
+                        Hold 1
+                        <span className="text-sm font-medium text-zinc-300 ml-1">— Hvide trøjer</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1">
+                        {publishedLineup.team1.map((p) => (
+                          <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                            <span className="text-zinc-200">{p.displayName}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-zinc-600 bg-zinc-950">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-xs font-bold text-zinc-100">2</div>
+                        Hold 2
+                        <span className="text-sm font-medium text-zinc-300 ml-1">— Sorte trøjer</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1">
+                        {publishedLineup.team2.map((p) => (
+                          <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                            <span className="text-zinc-200">{p.displayName}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            ) : (
+              <Card>
+                <CardContent className="py-6">
+                  <p className="text-zinc-400 text-sm font-medium mb-4">Ingen holdopstilling er delt endnu</p>
+                  <p className="text-zinc-600 text-xs">Træneren gemmer holdene her inden træning</p>
+                </CardContent>
+              </Card>
+            )
           ) : (
-            <Card>
-              <CardContent className="py-6">
-                <p className="text-zinc-400 text-sm font-medium mb-4">Ingen holdopstilling er delt endnu</p>
-                {data?.training && data.training.players.length > 0 ? (
-                  <>
-                    <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-3">
-                      Tilmeldt til {data.training.heading} · {formatDate(data.training.date)}
-                    </p>
-                    <div className="space-y-1">
-                      {data.training.players.map((p) => (
-                        <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
-                          <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                          <span className="text-zinc-200">{p.displayName}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-zinc-600 text-xs mt-1">Træneren gemmer holdene her inden træning</p>
-                )}
-              </CardContent>
-            </Card>
+            publishedMatchLineup ? (
+              <>
+                <div className="mb-4 flex items-center gap-2 text-sm text-zinc-400">
+                  <Trophy className="h-4 w-4" />
+                  <span>Kamptrup til <span className="text-zinc-200 font-medium">{publishedMatchLineup.label}</span></span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Card className="border-blue-500/20 bg-blue-500/5">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Trophy className="h-4 w-4 text-blue-400" />
+                        Startende 7
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1">
+                        {publishedMatchLineup.starters.map((p) => (
+                          <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                            <span className="text-zinc-200">{p.displayName}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-zinc-700">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Users className="h-4 w-4 text-zinc-400" />
+                        Bænk
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1">
+                        {publishedMatchLineup.bench.map((p) => (
+                          <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                            <span className="text-zinc-300">{p.displayName}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            ) : (
+              <Card>
+                <CardContent className="py-6">
+                  <p className="text-zinc-400 text-sm font-medium mb-4">Ingen kamptrup er delt endnu</p>
+                  <p className="text-zinc-600 text-xs">Træneren gemmer kamptruppen her inden kamp</p>
+                </CardContent>
+              </Card>
+            )
           )}
         </div>
       )}
 
-      {/* View mode toggle (only shown after teams generated, admin only) */}
-      {isAdmin && result && (
+      {/* View mode toggle (shown after teams generated for training, or squad generated for match) */}
+      {isAdmin && (result || matchSquad) && (
         <div className="flex items-center gap-2 mb-4" data-testid="view-mode-toggle">
           <div className="flex rounded-lg border border-zinc-700 bg-zinc-900/50 overflow-hidden">
             <button
@@ -491,7 +603,8 @@ export default function TeamSelectorPage() {
             </button>
           </div>
 
-          {viewMode === "formation" && (
+          {/* Team toggle only for training (two teams) */}
+          {activeTab === "training" && viewMode === "formation" && result && (
             <div className="flex rounded-lg border border-zinc-700 bg-zinc-900/50 overflow-hidden ml-2">
               <button
                 data-testid="formation-team-1"
@@ -520,8 +633,8 @@ export default function TeamSelectorPage() {
         </div>
       )}
 
-      {/* Formation View */}
-      {isAdmin && result && viewMode === "formation" && (
+      {/* Formation View — training */}
+      {isAdmin && activeTab === "training" && result && viewMode === "formation" && (
         <FormationView
           key={formationTeam}
           players={getFormationPlayers(formationTeam === 1 ? result.team1 : result.team2)}
@@ -533,8 +646,31 @@ export default function TeamSelectorPage() {
         />
       )}
 
+      {/* Formation View — match (all 10 players: 7 on pitch, 3 on bench) */}
+      {isAdmin && activeTab === "match" && matchSquad && viewMode === "formation" && (
+        <FormationView
+          key="match-formation"
+          players={[...matchSquad.starters, ...matchSquad.bench].map((p) => ({
+            id: p.id,
+            displayName: p.displayName,
+            profilePicture: p.profilePicture,
+            positions: playerPositions[p.id] ?? [],
+          }))}
+          teamNumber={1}
+          initialAssignments={autoAssign(
+            [...matchSquad.starters, ...matchSquad.bench].map((p) => ({
+              id: p.id,
+              displayName: p.displayName,
+              profilePicture: p.profilePicture,
+              positions: playerPositions[p.id] ?? [],
+            })),
+            "1-2-3-1"
+          )}
+        />
+      )}
+
       {/* List View (admin only) */}
-      {isAdmin && (viewMode === "list" || !result) && (
+      {isAdmin && (viewMode === "list" || (activeTab === "training" ? !result : !matchSquad)) && (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Player Selection */}
@@ -657,15 +793,20 @@ export default function TeamSelectorPage() {
                   </Button>
                 </div>
 
+                {isAdmin && activeTab === "match" && selected.size > 0 && (
+                  <p className={`text-xs mt-3 ${selected.size > 10 ? "text-red-400" : selected.size === 10 ? "text-amber-400" : "text-zinc-500"}`}>
+                    {selected.size}/10 valgt · 7 starter + {Math.min(Math.max(selected.size - 7, 0), 3)} bænk
+                  </p>
+                )}
                 {isAdmin && (
                   <Button
                     className="w-full mt-4"
-                    onClick={generateTeams}
-                    disabled={selected.size + guests.length < 2}
+                    onClick={activeTab === "match" ? generateMatchSquad : generateTeams}
+                    disabled={activeTab === "match" ? selected.size < 1 : selected.size + guests.length < 2}
                     data-testid="team-generate-button"
                   >
                     <Shuffle className="h-4 w-4 mr-2" />
-                    Generer hold
+                    {activeTab === "match" ? "Lav opstilling" : "Generer hold"}
                   </Button>
                 )}
               </CardContent>
@@ -755,24 +896,18 @@ export default function TeamSelectorPage() {
             )}
           </div>
 
-          {result && (
-            <div className="mt-6 bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="text-sm text-zinc-300 flex-1" data-testid="team-balance">
-                Balance: <span className="font-bold text-zinc-50">{result.balance.balancePercent}%</span>
-                <span className="text-zinc-500 ml-2">
-                  (forskel: {result.balance.difference})
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={copyTeams}
-                  data-testid="team-copy-button"
-                >
-                  {copied ? <Check className="h-4 w-4 mr-1.5" /> : <ClipboardCopy className="h-4 w-4 mr-1.5" />}
-                  {copied ? "Kopieret!" : "Kopiér hold"}
-                </Button>
-                {activeTab === "training" ? (
+          {result && activeTab === "training" && (
+            <div className="mt-6 bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="text-sm text-zinc-300 flex-1" data-testid="team-balance">
+                  Balance: <span className="font-bold text-zinc-50">{result.balance.balancePercent}%</span>
+                  <span className="text-zinc-500 ml-2">(forskel: {result.balance.difference})</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="secondary" onClick={copyTeams} data-testid="team-copy-button">
+                    {copied ? <Check className="h-4 w-4 mr-1.5" /> : <ClipboardCopy className="h-4 w-4 mr-1.5" />}
+                    {copied ? "Kopieret!" : "Kopiér hold"}
+                  </Button>
                   <Button
                     onClick={saveTrainingLineup}
                     disabled={savingLineup || savedLineup}
@@ -781,16 +916,128 @@ export default function TeamSelectorPage() {
                     <Save className="h-4 w-4 mr-1.5" />
                     {savedLineup ? "Gemt!" : savingLineup ? "Gemmer..." : "Gem træningshold"}
                   </Button>
-                ) : (
-                  <Button
-                    onClick={saveMatch}
-                    disabled={saving || saved}
-                    data-testid="team-save-button"
-                  >
-                    <Save className="h-4 w-4 mr-1.5" />
-                    {saved ? "Gemt!" : saving ? "Gemmer..." : "Gem kamp"}
-                  </Button>
-                )}
+                </div>
+              </div>
+
+              {/* Winner selection — shown after lineup is saved */}
+              {savedLineup && !winnerDone && (
+                <div className="border-t border-zinc-800 pt-4">
+                  <p className="text-sm text-zinc-400 mb-3">Hvem vandt træningskampen?</p>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="secondary"
+                      onClick={() => submitWinner(1)}
+                      disabled={winnerSubmitting}
+                      data-testid="winner-team-1"
+                      className="flex-1 border-white/20 hover:border-white/40 hover:bg-white/5"
+                    >
+                      <div className="h-5 w-5 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-[10px] font-bold text-zinc-900 mr-2">1</div>
+                      Hold 1 vandt
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => submitWinner(2)}
+                      disabled={winnerSubmitting}
+                      data-testid="winner-team-2"
+                      className="flex-1 border-zinc-600 hover:border-zinc-400"
+                    >
+                      <div className="h-5 w-5 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-[10px] font-bold text-zinc-100 mr-2">2</div>
+                      Hold 2 vandt
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {winnerDone && (
+                <div className="border-t border-zinc-800 pt-4 flex items-center gap-2 text-sm text-emerald-400">
+                  <Check className="h-4 w-4" />
+                  Resultat gemt — bøder tildelt automatisk
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Match squad result */}
+          {matchSquad && activeTab === "match" && (
+            <div className="mt-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Card className="border-blue-500/20 bg-blue-500/5">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-blue-400" />
+                      Startende 7
+                      <span className="text-xs text-zinc-500 ml-auto">{matchSquad.starters.length}/7</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1" data-testid="match-starters">
+                      {matchSquad.starters.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between text-sm rounded-lg px-2 py-1.5 hover:bg-white/[0.03]">
+                          <div className="flex items-center gap-2.5">
+                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                            <span className="text-zinc-200">{p.displayName}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                              {Math.round(p.winRate * 100)}%
+                            </span>
+                            {matchSquad.bench.length < 3 && (
+                              <Button variant="ghost" size="sm" onClick={() => moveToBench(p.id)} className="h-6 w-6 p-0" title="Flyt til bænk">
+                                <ArrowRightLeft className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-zinc-700">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Users className="h-4 w-4 text-zinc-400" />
+                      Bænk
+                      <span className="text-xs text-zinc-500 ml-auto">{matchSquad.bench.length}/3</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1" data-testid="match-bench">
+                      {matchSquad.bench.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between text-sm rounded-lg px-2 py-1.5 hover:bg-white/[0.03]">
+                          <div className="flex items-center gap-2.5">
+                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                            <span className="text-zinc-300">{p.displayName}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                              {Math.round(p.winRate * 100)}%
+                            </span>
+                            {matchSquad.starters.length < 7 && (
+                              <Button variant="ghost" size="sm" onClick={() => moveToStarters(p.id)} className="h-6 w-6 p-0" title="Flyt til startende">
+                                <ArrowRightLeft className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {matchSquad.bench.length === 0 && (
+                        <p className="text-xs text-zinc-600 px-2">Ingen bænkspillere</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex justify-end">
+                <Button
+                  onClick={saveMatchSquad}
+                  disabled={savingSquad || savedSquad}
+                  data-testid="match-save-squad-button"
+                >
+                  <Save className="h-4 w-4 mr-1.5" />
+                  {savedSquad ? "Gemt!" : savingSquad ? "Gemmer..." : "Gem kamptrup"}
+                </Button>
               </div>
             </div>
           )}
