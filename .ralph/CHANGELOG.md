@@ -112,3 +112,52 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 - Round 4: Kampanalyse page — goals/assists bar chart, form timeline, season overview
 - Could add per-player detail expansion in the stats table (click row to see match-by-match breakdown)
 - Could add win rate trend sparklines per player in the form column
+| 3 | ? | 2026-04-02 19:05 | iteration 3 |
+
+---
+
+## Iteration 4 — Round 4: Kampanalyse Visual Stats, Charts & Season Overview
+**Date**: 2026-04-02 19:10
+
+### Changes
+- **frontend/src/pages/analysis/match.tsx**: Major upgrade to the Kampanalyse page:
+  - Added Recharts imports (BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell) for goals+assists stacked bar chart.
+  - Added `GoalAssistTooltip` — custom dark-themed tooltip showing player name, goals, and assists.
+  - Added `FormDot` component — colored circles with Danish letters (S/T/U) for the form timeline.
+  - Added `PlayerStatCard` component — visual card per player showing emoji-prefixed stats (goals, assists, clean sheets, cards).
+  - Added `seasonOverview` computed from DBU match scores — parses scores to calculate total goals scored/conceded, clean sheets, and win rate percentage.
+  - Added `goalAssistChart` — top 12 players by combined goals+assists, stacked horizontal bar chart (green=goals, blue=assists).
+  - Added `activePlayers` — filters and sorts players with any contributions for visual card display.
+  - Added Season Overview section with 6 stat tiles: win rate %, goals scored, goals conceded, clean sheets, player goals, player assists.
+  - Added Goals + Assists bar chart section with stacked horizontal bars and legend.
+  - Added Form Timeline section — DBU match results displayed chronologically as colored dots (S/T/U) with opponent names below.
+  - Added Player Highlights section — top 8 contributing players shown as visual stat cards in a responsive grid.
+  - Kept the full player stats table below the visual cards for complete data access.
+  - Added lucide-react icons: Target, Shield, TrendingUp for section headers.
+  - Added `useMemo` for all computed data to prevent unnecessary recalculations.
+- **frontend/src/i18n/da.ts**: Added 10 new analysis keys: `seasonOverview`, `topScorers`, `formTimeline`, `playerHighlights`, `goalsScored`, `goalsConceded`, `cleanSheetsTotal`, `winRatePct`, `playerGoals`, `playerAssists`, `noContributions`.
+
+### Decisions & Reasoning
+- **Decision**: Used stacked horizontal bar chart for goals + assists (not grouped or vertical)
+  **Why**: Stacked bars show total contribution (goals + assists combined) while still distinguishing between the two. Horizontal layout with player names on Y-axis is consistent with the win rate charts from Rounds 1/3. Green for goals, blue for assists — intuitive sports color coding.
+- **Decision**: Parsed goals scored/conceded from DBU match score strings (e.g. "3-1")
+  **Why**: This data isn't available as separate fields from the API — only the combined score string. Parsing it is lightweight and gives us season-level aggregated stats that weren't shown anywhere before.
+- **Decision**: Form timeline uses simple dots, not a line chart
+  **Why**: With ~10-15 DBU matches per season, a line chart would be sparse and hard to read. Discrete colored dots with opponent labels underneath give a clear chronological view of form without interpolation between points.
+- **Decision**: Visual player cards shown for top 8 contributors, full table kept below
+  **Why**: Cards give quick visual scanning for the most active players. Keeping the table preserves full data access for all players. 8 cards fills a 4-column grid neatly (2 rows) without overloading the page.
+- **Decision**: Used `useMemo` for all derived data
+  **Why**: The page re-renders when any state changes (e.g. toggling post-match card). Memoizing chart data and season stats prevents re-computing on every render.
+
+### Data Usage
+- **Used**: `dbuMatches.score` — parsed score strings to derive goalsScored/goalsConceded/cleanSheets for season overview. Previously only used for display in the matches table.
+- **Used**: `dbuSummary` — win rate percentage now calculated and displayed prominently in season overview.
+- **Used**: `playerStats` (goals, assists, cleanSheets, yellowCards, redCards) — now powers both the bar chart and visual stat cards, in addition to the existing table.
+- **Used**: `dbuMatches.result` — now visualized as a form timeline with colored dots.
+- **Unused data noticed**: `spond_attendance` response data (accepted/declined) could show player availability rates. Training match results from `/matches` could be cross-referenced with DBU match performance.
+
+### Next Iteration Ideas
+- Round 5: Cross-page visual consistency, mobile polish, animations
+- Could add head-to-head comparison between training performance and DBU match performance
+- Could add goal difference trend chart for DBU matches
+- Could add player comparison feature (select 2 players, compare stats side by side)

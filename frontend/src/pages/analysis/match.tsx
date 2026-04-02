@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { da } from "@/i18n/da";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/toast";
 import { useAuth } from "@/hooks/use-auth";
-import { BarChart3, Swords, Users, Trophy, XCircle, Clock, Plus, X, ClipboardList, Trash2 } from "lucide-react";
+import { BarChart3, Swords, Users, Trophy, XCircle, Clock, Plus, X, ClipboardList, Trash2, Target, Shield, TrendingUp } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+} from "recharts";
 
 interface DbuMatch {
   date: string;
@@ -266,6 +269,85 @@ function PostMatchCard({
   );
 }
 
+/* ── Custom Tooltip for Bar Chart ── */
+function GoalAssistTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs shadow-lg">
+      <p className="font-semibold text-zinc-100 mb-1">{d.name}</p>
+      <p className="text-emerald-400">{da.analysis.goals}: {d.goals}</p>
+      <p className="text-blue-400">{da.analysis.assists}: {d.assists}</p>
+    </div>
+  );
+}
+
+/* ── Form Dot for timeline ── */
+function FormDot({ result }: { result: "win" | "draw" | "loss" }) {
+  const colors = {
+    win: "bg-emerald-500",
+    draw: "bg-zinc-500",
+    loss: "bg-red-500",
+  };
+  const labels = { win: "S", draw: "U", loss: "T" };
+  return (
+    <span
+      className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold text-white ${colors[result]}`}
+    >
+      {labels[result]}
+    </span>
+  );
+}
+
+/* ── Player Stat Card ── */
+function PlayerStatCard({ player }: { player: PlayerStat }) {
+  const hasContributions = player.goals > 0 || player.assists > 0;
+  const hasCards = player.yellowCards > 0 || player.redCards > 0;
+  return (
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors">
+      <div className="flex items-center gap-3 mb-3">
+        <PlayerAvatar name={player.displayName} src={player.profilePicture} />
+        <span className="font-medium text-zinc-200 text-sm truncate">{player.displayName}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {player.goals > 0 && (
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-emerald-400">⚽</span>
+            <span className="text-zinc-300">{player.goals} {da.analysis.goals.toLowerCase()}</span>
+          </div>
+        )}
+        {player.assists > 0 && (
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-blue-400">🅰️</span>
+            <span className="text-zinc-300">{player.assists} {da.analysis.assists.toLowerCase()}</span>
+          </div>
+        )}
+        {player.cleanSheets > 0 && (
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-sky-400">🛡️</span>
+            <span className="text-zinc-300">{player.cleanSheets} {da.analysis.cleanSheets.toLowerCase()}</span>
+          </div>
+        )}
+        {player.yellowCards > 0 && (
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-yellow-400">🟡</span>
+            <span className="text-zinc-300">{player.yellowCards}</span>
+          </div>
+        )}
+        {player.redCards > 0 && (
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-red-400">🔴</span>
+            <span className="text-zinc-300">{player.redCards}</span>
+          </div>
+        )}
+        {!hasContributions && !hasCards && !player.cleanSheets && (
+          <p className="col-span-2 text-xs text-zinc-600">{da.analysis.noContributions}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function MatchAnalysisPage() {
   const [data, setData] = useState<AnalysisData | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -294,6 +376,56 @@ export default function MatchAnalysisPage() {
   }, []);
 
   const pendingMatches = matches.filter((m) => m.status === "pending");
+
+  // Computed chart data
+  const goalAssistChart = useMemo(() => {
+    if (!data) return [];
+    return [...data.playerStats]
+      .filter((p) => p.goals > 0 || p.assists > 0)
+      .sort((a, b) => (b.goals + b.assists) - (a.goals + a.assists))
+      .slice(0, 12)
+      .map((p) => ({
+        name: p.displayName.split(" ")[0],
+        fullName: p.displayName,
+        goals: p.goals,
+        assists: p.assists,
+      }));
+  }, [data]);
+
+  const seasonOverview = useMemo(() => {
+    if (!data) return null;
+    // Parse goals from DBU match scores
+    let goalsScored = 0;
+    let goalsConceded = 0;
+    let cleanSheets = 0;
+    for (const m of data.dbuMatches) {
+      const [home, away] = m.score.split("-").map((s) => parseInt(s));
+      if (isNaN(home) || isNaN(away)) continue;
+      if (m.isHome) {
+        goalsScored += home;
+        goalsConceded += away;
+        if (away === 0) cleanSheets++;
+      } else {
+        goalsScored += away;
+        goalsConceded += home;
+        if (home === 0) cleanSheets++;
+      }
+    }
+    const winPct = data.dbuSummary.total > 0
+      ? Math.round((data.dbuSummary.wins / data.dbuSummary.total) * 100)
+      : 0;
+    const totalPlayerGoals = data.playerStats.reduce((s, p) => s + p.goals, 0);
+    const totalPlayerAssists = data.playerStats.reduce((s, p) => s + p.assists, 0);
+    return { goalsScored, goalsConceded, cleanSheets, winPct, totalPlayerGoals, totalPlayerAssists };
+  }, [data]);
+
+  // Players with contributions for visual cards
+  const activePlayers = useMemo(() => {
+    if (!data) return [];
+    return [...data.playerStats]
+      .filter((p) => p.goals > 0 || p.assists > 0 || p.cleanSheets > 0 || p.yellowCards > 0 || p.redCards > 0)
+      .sort((a, b) => (b.goals + b.assists) - (a.goals + a.assists));
+  }, [data]);
 
   const registerResult = async (matchId: string, winningTeam: number) => {
     try {
@@ -459,6 +591,97 @@ export default function MatchAnalysisPage() {
         ))}
       </div>
 
+      {/* Season Overview */}
+      {seasonOverview && data.dbuSummary.total > 0 && (
+        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 sm:p-6 mb-6" data-testid="analysis-season-overview">
+          <h2 className="text-lg font-semibold text-zinc-50 mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-red-400" />
+            {da.analysis.seasonOverview}
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.winRatePct}</p>
+              <p className="text-xl font-bold text-emerald-400">{seasonOverview.winPct}%</p>
+            </div>
+            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.goalsScored}</p>
+              <p className="text-xl font-bold text-emerald-400">{seasonOverview.goalsScored}</p>
+            </div>
+            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.goalsConceded}</p>
+              <p className="text-xl font-bold text-red-400">{seasonOverview.goalsConceded}</p>
+            </div>
+            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.cleanSheetsTotal}</p>
+              <p className="text-xl font-bold text-sky-400">{seasonOverview.cleanSheets}</p>
+            </div>
+            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.playerGoals}</p>
+              <p className="text-xl font-bold text-zinc-100">{seasonOverview.totalPlayerGoals}</p>
+            </div>
+            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.playerAssists}</p>
+              <p className="text-xl font-bold text-zinc-100">{seasonOverview.totalPlayerAssists}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Goals + Assists Bar Chart */}
+      {goalAssistChart.length > 0 && (
+        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 sm:p-6 mb-6" data-testid="analysis-goals-assists-chart">
+          <h2 className="text-lg font-semibold text-zinc-50 mb-4 flex items-center gap-2">
+            <Target className="w-5 h-5 text-emerald-400" />
+            {da.analysis.topScorers}
+          </h2>
+          <ResponsiveContainer width="100%" height={Math.max(200, goalAssistChart.length * 36)}>
+            <BarChart data={goalAssistChart} layout="vertical" margin={{ left: 0, right: 16, top: 0, bottom: 0 }}>
+              <XAxis type="number" tick={{ fill: "#a1a1aa", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={80}
+                tick={{ fill: "#d4d4d8", fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip content={<GoalAssistTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+              <Bar dataKey="goals" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} name={da.analysis.goals} />
+              <Bar dataKey="assists" stackId="a" fill="#3b82f6" radius={[0, 4, 4, 0]} name={da.analysis.assists} />
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="flex items-center gap-4 mt-3 text-xs text-zinc-400">
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" /> {da.analysis.goals}</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-500 inline-block" /> {da.analysis.assists}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Form Timeline */}
+      {data.dbuMatches.length > 0 && (
+        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 sm:p-6 mb-6" data-testid="analysis-form-timeline">
+          <h2 className="text-lg font-semibold text-zinc-50 mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-zinc-400" />
+            {da.analysis.formTimeline}
+          </h2>
+          <div className="flex flex-wrap gap-2 items-center">
+            {[...data.dbuMatches].reverse().map((m, i) => (
+              <div key={i} className="flex flex-col items-center gap-1">
+                <FormDot result={m.result} />
+                <span className="text-[10px] text-zinc-600 truncate max-w-[48px]" title={m.opponent}>
+                  {m.opponent.split(" ").pop()}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 mt-3 text-xs text-zinc-500">
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" /> {da.analysis.win}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-zinc-500 inline-block" /> {da.analysis.draw}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block" /> {da.analysis.loss}</span>
+          </div>
+        </div>
+      )}
+
       {/* DBU Matches */}
       {data.dbuMatches.length === 0 ? (
         <Card className="mb-6"><CardContent className="py-8 text-center">
@@ -499,7 +722,22 @@ export default function MatchAnalysisPage() {
         </div>
       )}
 
-      {/* Player Match Stats */}
+      {/* Visual Player Stat Cards */}
+      {activePlayers.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-zinc-50 mb-4 flex items-center gap-2">
+            <Shield className="w-5 h-5 text-sky-400" />
+            {da.analysis.playerHighlights}
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" data-testid="analysis-player-cards">
+            {activePlayers.slice(0, 8).map((p) => (
+              <PlayerStatCard key={p.id} player={p} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Player Match Stats Table */}
       {data.playerStats.length === 0 ? (
         <Card><CardContent className="py-8 text-center">
           <p className="text-zinc-500" data-testid="analysis-no-stats">Ingen spillerstatistik endnu</p>

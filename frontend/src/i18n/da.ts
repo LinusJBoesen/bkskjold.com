@@ -220,6 +220,17 @@ export const da = {
     trainingLosses: "Nederlag",
     winRate: "Sejrsrate",
     summary: "Oversigt",
+    seasonOverview: "Sæsonoversigt",
+    topScorers: "Topscorere & assists",
+    formTimeline: "Formkurve",
+    playerHighlights: "Spillerhøjdepunkter",
+    goalsScored: "Mål scoret",
+    goalsConceded: "Mål imod",
+    cleanSheetsTotal: "Clean sheets",
+    winRatePct: "Sejrsrate",
+    playerGoals: "Spillermål",
+    playerAssists: "Spillerassists",
+    noContributions: "Ingen hændelser endnu",
   },
   // Post Match
   postMatch: {

@@ -1,7 +1,7 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 4
+- **Round**: 5
 - **Task**: Starting
 - **Last updated**: 2026-04-02
 
@@ -34,12 +34,12 @@
 - [x] Commit
 
 ### Round 4: Kampanalyse — Visual Stats & Charts
-- [ ] Goals + assists bar chart
-- [ ] Form timeline
-- [ ] Visual player stat cards
-- [ ] Season overview section
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Goals + assists bar chart
+- [x] Form timeline
+- [x] Visual player stat cards
+- [x] Season overview section
+- [x] Run E2E tests
+- [x] Commit
 
 ### Round 5: Cross-Page Polish & Consistency
 - [ ] Visual consistency across pages
@@ -65,4 +65,5 @@
 |------|------|-------------|
 | 2026-04-02 | d1de549 | Round 1: Dashboard charts upgrade |
 | 2026-04-02 | e5dbb6c | Round 2: Dashboard activity feed, attendance trends, responsive polish |
-| 2026-04-02 | TBD | Round 3: Træningshistorik charts, sortable stats, form streaks |
+| 2026-04-02 | 79ce29e | Round 3: Træningshistorik charts, sortable stats, form streaks |
+| 2026-04-02 | TBD | Round 4: Kampanalyse visual stats, charts, season overview |
