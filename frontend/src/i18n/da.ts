@@ -48,6 +48,17 @@ export const da = {
   // Fines
   fines: {
     payWithMobilePay: "Betal med MobilePay",
+    bulkAssign: "Tildel bøde",
+    bulkAssignTitle: "Tildel bøde til flere spillere",
+    chooseFineType: "Vælg bødetype",
+    choosePlayers: "Vælg spillere",
+    selectAll: "Alle",
+    deselectAll: "Fravælg alle",
+    notes: "Bemærkning (valgfrit)",
+    confirmBulk: "Tildel bøde",
+    successBulk: (count: number) => `Bøde tildelt ${count} spiller${count === 1 ? "" : "e"}`,
+    errorBulk: "Kunne ikke tildele bøder",
+    noPlayersSelected: "Vælg mindst én spiller",
   },
 
   // Common

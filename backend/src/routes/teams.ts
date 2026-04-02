@@ -185,4 +185,98 @@ teams.get("/lineup", requireRole("admin", "spiller"), async (c) => {
   });
 });
 
+// POST /api/teams/lineup/:id/result — record training match winner + assign fines (admin only)
+teams.post("/lineup/:id/result", requireRole("admin"), async (c) => {
+  const lineupId = c.req.param("id");
+  const { winner } = await c.req.json() as { winner: 1 | 2 };
+
+  if (winner !== 1 && winner !== 2) {
+    return c.json({ error: "winner skal være 1 eller 2" }, 400);
+  }
+
+  const rows = await sql`SELECT * FROM training_lineups WHERE id = ${lineupId}` as any[];
+  if (rows.length === 0) return c.json({ error: "Lineup ikke fundet" }, 404);
+
+  const lineup = rows[0];
+  const team1: { id: string }[] = JSON.parse(lineup.team1);
+  const team2: { id: string }[] = JSON.parse(lineup.team2);
+  const allInLineup = new Set([...team1.map(p => p.id), ...team2.map(p => p.id)]);
+
+  await sql`UPDATE training_lineups SET winner = ${winner} WHERE id = ${lineupId}`;
+
+  const eventDate = lineup.event_date;
+  const losingTeam = winner === 1 ? team2 : team1;
+
+  // Fines for losing team
+  for (const p of losingTeam) {
+    const fineId = `loss-${lineupId}-${p.id}`;
+    await sql`
+      INSERT INTO fines (id, player_id, fine_type_id, event_name, event_date, amount)
+      VALUES (${fineId}, ${p.id}, 'training_loss', 'Tabt træningsmatch', ${eventDate}, 10)
+      ON CONFLICT DO NOTHING
+    `;
+  }
+
+  // Fines for absent active players
+  const activePlayers = await sql`SELECT id FROM players WHERE active = 1` as any[];
+  for (const p of activePlayers) {
+    if (!allInLineup.has(p.id)) {
+      const fineId = `absent-${lineupId}-${p.id}`;
+      await sql`
+        INSERT INTO fines (id, player_id, fine_type_id, event_name, event_date, amount)
+        VALUES (${fineId}, ${p.id}, 'missing_training', 'Manglende træning', ${eventDate}, 30)
+        ON CONFLICT DO NOTHING
+      `;
+    }
+  }
+
+  return c.json({ success: true });
+});
+
+// POST /api/teams/match-lineup — save match squad: starters + bench (admin only)
+teams.post("/match-lineup", requireRole("admin"), async (c) => {
+  const body = await c.req.json();
+  const { starters, bench, eventDate } = body;
+
+  if (!Array.isArray(starters) || !Array.isArray(bench)) {
+    return c.json({ error: "Ugyldigt opstillingsdata" }, 400);
+  }
+
+  const id = crypto.randomUUID();
+  const date = eventDate ?? new Date().toISOString();
+  const lbl = new Date(date).toLocaleDateString("da-DK", { weekday: "long", day: "numeric", month: "long" });
+
+  await sql`
+    INSERT INTO match_lineups (id, label, event_date, starters, bench)
+    VALUES (${id}, ${lbl}, ${date}, ${JSON.stringify(starters)}, ${JSON.stringify(bench)})
+  `;
+
+  return c.json({ id, label: lbl });
+});
+
+// GET /api/teams/match-lineup — get the latest saved match squad that hasn't expired (admin + spiller)
+teams.get("/match-lineup", requireRole("admin", "spiller"), async (c) => {
+  const rows = await sql`
+    SELECT id, label, event_date, starters, bench, created_at
+    FROM match_lineups
+    WHERE event_date::date >= CURRENT_DATE
+    ORDER BY event_date ASC
+    LIMIT 1
+  ` as any[];
+
+  if (rows.length === 0) return c.json({ lineup: null });
+
+  const row = rows[0];
+  return c.json({
+    lineup: {
+      id: row.id,
+      label: row.label,
+      eventDate: row.event_date,
+      starters: JSON.parse(row.starters),
+      bench: JSON.parse(row.bench),
+      createdAt: row.created_at,
+    },
+  });
+});
+
 export default teams;

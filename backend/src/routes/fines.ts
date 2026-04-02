@@ -49,6 +49,26 @@ fines.get("/summary", requireRole("admin", "spiller"), async (c) => {
   return c.json(rows);
 });
 
+// POST /api/fines/bulk — create fines for multiple players (admin only)
+fines.post("/bulk", requireRole("admin"), async (c) => {
+  const body = await c.req.json();
+  const { player_ids, fine_type_id, amount, notes } = body;
+
+  if (!Array.isArray(player_ids) || player_ids.length === 0) {
+    return c.json({ error: "player_ids skal være et ikke-tomt array" }, 400);
+  }
+
+  for (const player_id of player_ids) {
+    const id = randomUUID();
+    await sql`
+      INSERT INTO fines (id, player_id, fine_type_id, amount, notes)
+      VALUES (${id}, ${player_id}, ${fine_type_id}, ${amount}, ${notes || null})
+    `;
+  }
+
+  return c.json({ success: true, count: player_ids.length }, 201);
+});
+
 // POST /api/fines — create manual fine (admin only)
 fines.post("/", requireRole("admin"), async (c) => {
   const body = await c.req.json();

@@ -156,6 +156,15 @@ export const tables = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
 
+  `CREATE TABLE IF NOT EXISTS match_lineups (
+    id TEXT PRIMARY KEY,
+    label TEXT NOT NULL,
+    event_date TIMESTAMPTZ NOT NULL,
+    starters TEXT NOT NULL,
+    bench TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+
   `CREATE TABLE IF NOT EXISTS lineup_slots (
     formation_id TEXT NOT NULL REFERENCES lineup_formations(id) ON DELETE CASCADE,
     slot_index INTEGER NOT NULL,

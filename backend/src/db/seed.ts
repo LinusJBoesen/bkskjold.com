@@ -6,7 +6,7 @@ export async function seed(): Promise<void> {
     { id: "missing_match", name: "Manglende kamp", amount: 100, description: "Ikke mødt til kamp", is_system: 1 },
     { id: "missing_training", name: "Manglende træning", amount: 30, description: "Ikke mødt til træning", is_system: 1 },
     { id: "no_response_24h", name: "Intet svar 24t", amount: 60, description: "Ikke svaret inden for 24 timer", is_system: 1 },
-    { id: "training_loss", name: "Tabt træning", amount: 25, description: "Tabte holdets træningsmatch", is_system: 1 },
+    { id: "training_loss", name: "Tabt træning", amount: 10, description: "Tabte holdets træningsmatch", is_system: 1 },
   ];
 
   for (const ft of fineTypes) {
