@@ -67,3 +67,48 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 - Round 3: Træningshistorik page — win rate bar chart per player, form streaks, sortable stats table
 - Could add spond attendance acceptance rate to the attendance trend chart
 - Could add goals/assists leaderboard to dashboard using match_events data
+---
+
+## Iteration 3 — Round 3: Træningshistorik Charts, Sortable Stats, Form Streaks
+**Date**: 2026-04-02
+
+### Changes
+- **frontend/src/pages/history/training.tsx**: Complete upgrade of the training history page:
+  - Added Recharts imports (BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell) for horizontal win rate bar chart.
+  - Added `FormDot` component — colored circles with Danish letters (S/T/U) showing each player's last 5 match results.
+  - Added `StreakBadge` component — shows active win/loss streaks with flame icon (e.g., "3S" for 3 wins in a row).
+  - Added `SortIcon` component — chevron indicators for sortable table columns.
+  - Added `WinRateBarTooltip` custom tooltip for the bar chart (shows player name, win rate, W/L/total breakdown).
+  - Added `statSort` state (`SortKey` + `SortDir`) for sortable table — supports sorting by name, matches, wins, losses, win rate.
+  - Added `playerFormMap` computed from matches data — derives last 5 W/L/D per player without an extra API call.
+  - Added `winRateChartData` — top 15 players by win rate, color-coded bars (green ≥60%, amber ≥40%, red <40%).
+  - Added `bestId`/`worstId` computation — highlights MVP (best win rate, ≥2 matches) with emerald left border and "MVP" badge, worst with red left border.
+  - Added `formatDate` helper for Danish-formatted dates on match cards.
+  - Improved match history cards: score now in a pill-shaped badge, teams shown in separate colored boxes (emerald border for winning team), trophy emoji for winner, draw state handled, responsive grid (stacked on mobile).
+  - Form column added to stats table (hidden on mobile with `hidden sm:table-cell`).
+  - All table headers now clickable for sorting with visual sort direction indicators.
+- **frontend/src/i18n/da.ts**: Added `history` section with keys: winRateChart, playerStats, matchHistory, name, matchesCol, winsCol, lossesCol, winRate, form, matchesPlayed.
+
+### Decisions & Reasoning
+- **Decision**: Computed form data on the frontend from already-fetched matches, not via a new API call
+  **Why**: The page already fetches `/matches` with full player arrays. Computing W/L per player from this avoids adding a backend endpoint or duplicating the dashboard's `playerForm` call. Keeps the page self-contained.
+- **Decision**: Horizontal bar chart for win rate (not vertical or radar)
+  **Why**: Consistent with the dashboard's win rate chart from Round 1. Horizontal bars with player names on Y-axis are the most readable for percentage comparison — users scan top-to-bottom like a leaderboard.
+- **Decision**: Color-coded bars by win rate threshold (green ≥60%, amber ≥40%, red <40%)
+  **Why**: Gives immediate visual feedback without needing to read exact numbers. Three tiers is enough to distinguish strong, average, and weak performance.
+- **Decision**: MVP badge only for players with ≥2 matches
+  **Why**: A player with 1 match and 1 win has 100% win rate but that's not meaningful. ≥2 matches filters out noise while still being generous for small datasets.
+- **Decision**: Form column hidden on mobile (`hidden sm:table-cell`)
+  **Why**: Mobile tables are already tight with 5 columns. The form dots add 100px+ of width. Hiding on mobile keeps the table readable; users can rotate to landscape or use desktop for the full view.
+- **Decision**: Match cards redesigned with team boxes instead of inline text
+  **Why**: The original layout had "Hold 1: name, name, name" as flat text. Separate boxes with colored borders make it instantly clear which team won. The visual weight matches the importance of the information.
+
+### Data Usage
+- **Used**: `/matches` player arrays — derived per-player form (W/L/D last 5) directly from match data already fetched.
+- **Used**: `/matches/stats/all` — powers the sortable table and win rate bar chart. No schema changes needed.
+- **Unused data noticed**: `match_events` table (goals, assists, cards) not used on this page — relevant for Kampanalyse in Round 4. `profile_picture` from stats used for avatars in table rows.
+
+### Next Iteration Ideas
+- Round 4: Kampanalyse page — goals/assists bar chart, form timeline, season overview
+- Could add per-player detail expansion in the stats table (click row to see match-by-match breakdown)
+- Could add win rate trend sparklines per player in the form column

@@ -1,7 +1,7 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 3
+- **Round**: 4
 - **Task**: Starting
 - **Last updated**: 2026-04-02
 
@@ -14,7 +14,7 @@
 - [x] Polish stat cards and layout
 - [x] i18n strings
 - [x] Run E2E tests
-- [ ] Commit
+- [x] Commit
 
 ### Round 2: Dashboard — Activity Feed & Responsive
 - [x] Attendance/participation trend chart
@@ -25,13 +25,13 @@
 - [x] Commit
 
 ### Round 3: Træningshistorik — Charts & Smart Stats
-- [ ] Win rate bar chart per player
-- [ ] Form streaks (W/L indicators)
-- [ ] Sortable stats table
-- [ ] Visual highlights
-- [ ] Improved match history cards
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Win rate bar chart per player
+- [x] Form streaks (W/L indicators)
+- [x] Sortable stats table
+- [x] Visual highlights
+- [x] Improved match history cards
+- [x] Run E2E tests
+- [x] Commit
 
 ### Round 4: Kampanalyse — Visual Stats & Charts
 - [ ] Goals + assists bar chart
@@ -56,12 +56,13 @@
 (none)
 
 ## Notes
-- 13 pre-existing E2E failures in tournament/admin/teams/history/integration — not related to dashboard changes
-- All 4 dashboard E2E tests pass
+- 12 pre-existing E2E failures in tournament/admin/teams/history-pending/integration — not related to dashboard/history changes
+- All dashboard and history E2E tests pass (player-stats, match-history)
 
 ## Commit Log
 
 | Date | Hash | Description |
 |------|------|-------------|
 | 2026-04-02 | d1de549 | Round 1: Dashboard charts upgrade |
-| 2026-04-02 | TBD | Round 2: Dashboard activity feed, attendance trends, responsive polish |
+| 2026-04-02 | e5dbb6c | Round 2: Dashboard activity feed, attendance trends, responsive polish |
+| 2026-04-02 | TBD | Round 3: Træningshistorik charts, sortable stats, form streaks |

@@ -181,6 +181,20 @@ export const da = {
     match: "Kamp",
   },
 
+  // History
+  history: {
+    winRateChart: "Sejrsrate per spiller",
+    playerStats: "Spillerstatistik",
+    matchHistory: "Kamphistorik",
+    name: "Navn",
+    matchesCol: "Kampe",
+    winsCol: "Sejre",
+    lossesCol: "Nederlag",
+    winRate: "Sejrsrate",
+    form: "Form",
+    matchesPlayed: "kampe",
+  },
+
   // Analysis
   analysis: {
     title: "Kampanalyse",
