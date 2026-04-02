@@ -226,3 +226,35 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 - Goal difference trend chart for DBU matches
 - Player comparison feature (select 2 players, compare side by side)
 - Position-based grouping of stats using player_positions table
+| 2 | 7 | 2026-04-02 19:59 | iteration 2 |
+
+---
+
+## Iteration 7 — Round 7: Bødekasse Balance Widget on Dashboard
+**Date**: 2026-04-02
+
+### Changes
+- **backend/src/routes/stats.ts**: Added `bodekasse` balance query — runs two parallel queries: `SUM(amount) FROM fines WHERE paid = 1` for total collected and `SUM(amount) FROM bodekasse_expenses` for total spent. Returns `bodekasse: { totalCollected, totalSpent, remaining }` in the dashboard JSON response.
+- **frontend/src/pages/dashboard.tsx**: Added `bodekasse` to `DashboardData` interface. Added `Wallet` icon import from lucide-react. Added bødekasse balance widget between totals cards and Top 3 section, featuring: (1) three-column layout showing collected (green), spent (red), and remaining balance, (2) a gradient progress bar showing percentage of funds spent vs collected.
+- **frontend/src/i18n/da.ts**: Added 4 new dashboard keys: `bodekasse`, `collected`, `spent`, `balance`.
+
+### Decisions & Reasoning
+- **Decision**: Added bødekasse balance to dashboard (not a separate page)
+  **Why**: The `bodekasse_expenses` table and `/api/bodekasse` endpoint already existed but the data wasn't surfaced on the dashboard. For a football team, "how much money is in the fine box?" is one of the most frequently asked questions. Making it visible on the main page eliminates the need to navigate elsewhere. The existing `/api/bodekasse` endpoint could be used, but adding the query directly to the stats endpoint avoids an extra API call from the frontend.
+- **Decision**: Used a progress bar showing spent % (not a pie/donut chart)
+  **Why**: The balance is fundamentally a "how much have we used?" question, which a linear progress bar answers more intuitively than a circular chart. Red gradient matches the "spending/expense" semantic. Stays compact — a chart would take up too much vertical space for just two data points.
+- **Decision**: Placed widget between totals and Top 3 cards (not at the bottom)
+  **Why**: Financial info is high-priority for team management. Placing it near the top ensures it's immediately visible without scrolling, right after the summary stats.
+- **Decision**: Used safe optional chaining (`data?.bodekasse`)
+  **Why**: Backward compatibility — if the frontend loads before the backend is updated, the widget simply doesn't render rather than crashing.
+
+### Data Usage
+- **New**: `bodekasse_expenses` table now queried by dashboard endpoint — previously only accessible via the dedicated `/api/bodekasse` route. Combined with paid fines total to show net balance.
+- **Unused data noticed**: `spond_attendance` response data (accepted/declined/pending) could show player availability rates. `player_positions` table could enable position-based filtering. `lineup_formations` and `lineup_slots` could power a formation visualization.
+
+### Next Iteration Ideas
+- Head-to-head training vs DBU performance comparison
+- Goal difference trend chart for DBU matches
+- Player comparison feature (select 2 players, compare side by side)
+- Position-based grouping of stats using player_positions table
+- Spond attendance acceptance rate visualization

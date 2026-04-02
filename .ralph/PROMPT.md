@@ -57,7 +57,9 @@ The changelog (`.ralph/CHANGELOG.md`) is how the user tracks your work in real t
 - [E.g. "Tried radar chart for player comparison but Recharts radar doesn't support dark theme tooltips well"]
 
 ### Next Iteration Ideas
-- [What you'd improve next if you continue]
+- [Only list NEW ideas not already mentioned in previous changelog entries]
+- [If a previous iteration already suggested something and it wasn't done, don't repeat it — it's already in the changelog for future reference]
+- [Focus on ideas that came from THIS iteration's review, not carried over]
 ```
 
 This is critical — the user reviews the changelog while the loop runs to stay informed. Be specific, not vague. "Added a chart" is bad. "Added a donut chart for fine breakdown by type using the existing `fineByType` data from `/api/stats/dashboard`, chose donut over bar chart because it better shows proportional distribution" is good.

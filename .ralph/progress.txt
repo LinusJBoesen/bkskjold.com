@@ -1,7 +1,7 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 7
+- **Round**: 8
 - **Task**: Starting
 - **Last updated**: 2026-04-02
 
@@ -57,7 +57,14 @@
 - [x] Run E2E tests (55 pass, 12 pre-existing failures)
 - [x] Commit
 
-### Round 7+: Continuous Improvement
+### Round 7: Bødekasse Balance Widget on Dashboard
+- [x] Added bødekasse balance query to stats endpoint (paid fines vs expenses)
+- [x] Added bødekasse widget with collected/spent/balance + progress bar
+- [x] i18n strings for bødekasse section
+- [x] Run E2E tests (55 pass, 12 pre-existing failures)
+- [x] Commit
+
+### Round 8+: Continuous Improvement
 (Infinite — each iteration picks the most impactful improvement)
 
 ## Blockers
@@ -77,3 +84,4 @@
 | 2026-04-02 | b17bb50 | Round 4: Kampanalyse visual stats, charts, season overview |
 | 2026-04-02 | TBD | Round 5: Cross-page polish, mobile UX, visual consistency |
 | 2026-04-02 | TBD | Round 6: Top contributors on dashboard from match_events |
+| 2026-04-02 | TBD | Round 7: Bødekasse balance widget on dashboard |

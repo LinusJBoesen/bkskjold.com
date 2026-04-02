@@ -185,6 +185,10 @@ export const da = {
     yellowCards: "Gule kort",
     totalGoals: "Mål i alt",
     totalAssists: "Assists i alt",
+    bodekasse: "Bødekasse",
+    collected: "Indsamlet",
+    spent: "Brugt",
+    balance: "Saldo",
   },
 
   // History

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
-import { RefreshCw, Users, Banknote, CheckCircle, Trophy, TrendingUp, AlertTriangle, Heart, Activity, Clock, Swords, Target, Star } from "lucide-react";
+import { RefreshCw, Users, Banknote, CheckCircle, Trophy, TrendingUp, AlertTriangle, Heart, Activity, Clock, Swords, Target, Star, Wallet } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart,
@@ -50,6 +50,11 @@ interface DashboardData {
     redCards: number;
     cleanSheets: number;
   }>;
+  bodekasse: {
+    totalCollected: number;
+    totalSpent: number;
+    remaining: number;
+  };
   totals: {
     players: number;
     totalFines: number;
@@ -271,6 +276,51 @@ export default function DashboardPage() {
         <StatCard icon={Banknote} label="Total bøder" value={`${data?.totals.totalFines ?? 0} kr`} color="text-red-400" testId="dashboard-total-fines" />
         <StatCard icon={CheckCircle} label="Betalt" value={`${data?.totals.paidFines ?? 0} kr`} color="text-emerald-400" testId="dashboard-paid-fines" />
       </div>
+
+      {/* Bødekasse Balance */}
+      {data?.bodekasse && (
+        <Card className="mb-6" data-testid="dashboard-bodekasse">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 border border-zinc-700/50">
+                <Wallet className="h-4 w-4 text-zinc-400" />
+              </div>
+              <span className="text-sm font-semibold text-zinc-50">{da.dashboard.bodekasse}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              <div className="text-center">
+                <p className="text-xs text-zinc-500 mb-0.5">{da.dashboard.collected}</p>
+                <p className="text-lg font-bold text-emerald-400 tabular-nums">{data.bodekasse.totalCollected} kr</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-zinc-500 mb-0.5">{da.dashboard.spent}</p>
+                <p className="text-lg font-bold text-red-400 tabular-nums">{data.bodekasse.totalSpent} kr</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-zinc-500 mb-0.5">{da.dashboard.balance}</p>
+                <p className={`text-lg font-bold tabular-nums ${data.bodekasse.remaining >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {data.bodekasse.remaining} kr
+                </p>
+              </div>
+            </div>
+            {/* Progress bar showing spent vs collected */}
+            {data.bodekasse.totalCollected > 0 && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-zinc-500">
+                  <span>{da.dashboard.spent}</span>
+                  <span className="tabular-nums">{Math.round((data.bodekasse.totalSpent / data.bodekasse.totalCollected) * 100)}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-red-500 to-red-400 transition-all duration-500"
+                    style={{ width: `${Math.min(100, (data.bodekasse.totalSpent / data.bodekasse.totalCollected) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Top 3 */}
       {data && (

@@ -206,6 +206,17 @@ stats.get("/dashboard", async (c) => {
     cleanSheets: Number(r.clean_sheets),
   }));
 
+  // Bødekasse balance
+  const [expenseRows, paidFineRows] = await Promise.all([
+    sql`SELECT COALESCE(SUM(amount), 0) AS total FROM bodekasse_expenses`,
+    sql`SELECT COALESCE(SUM(amount), 0) AS total FROM fines WHERE paid = 1`,
+  ]);
+  const bodekasse = {
+    totalCollected: Number(paidFineRows[0]?.total ?? 0),
+    totalSpent: Number(expenseRows[0]?.total ?? 0),
+    remaining: Number(paidFineRows[0]?.total ?? 0) - Number(expenseRows[0]?.total ?? 0),
+  };
+
   // Aggregate totals for match events
   const eventTotals = (await sql`
     SELECT
@@ -252,6 +263,7 @@ stats.get("/dashboard", async (c) => {
     attendanceTrend,
     recentActivity,
     topContributors,
+    bodekasse,
     totals: {
       players: totalPlayers,
       totalFines,
