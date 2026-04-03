@@ -323,3 +323,34 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 - Kampanalyse page has similar duplication: player highlight cards show same data as goals+assists chart and player stats table — could consolidate
 - Season overview "Spillermål" / "Spillerassists" tiles overlap with the goals+assists bar chart on the same page
 - Consider collapsible sections or tabs to reduce vertical scroll on data-heavy pages
+| 1 | 10 | 2026-04-03 18:21 | iteration 1 |
+
+---
+
+## Iteration 11 — Round 11: Kampanalyse KPI Deduplication
+**Date**: 2026-04-03
+
+### Changes
+- **frontend/src/pages/analysis/match.tsx**: Removed `PlayerStatCard` component (47 lines) — was rendering per-player stat cards that duplicated both the Goals+Assists bar chart and the Player Stats table. Removed `activePlayers` useMemo — computed active players list only used by the now-removed PlayerStatCard section. Removed `eventTypeIcon` function — defined but never called anywhere. Removed `Shield` import from lucide-react — only used by the removed Player Highlights section header. Removed "Spillermål" and "Spillerassists" tiles from Season Overview grid (lines 646-653) — these showed aggregate player goals/assists totals that are already visualized in the Goals+Assists stacked bar chart directly below. Removed `totalPlayerGoals` and `totalPlayerAssists` from `seasonOverview` computed memo. Changed Season Overview grid from `grid-cols-2 sm:grid-cols-3 lg:grid-cols-6` to `grid-cols-2 sm:grid-cols-4` for the remaining 4 tiles (win rate, goals scored, goals conceded, clean sheets).
+
+### Decisions & Reasoning
+- **Decision**: Removed Player Highlights card section entirely rather than keeping a reduced version
+  **Why**: The card section showed goals, assists, clean sheets, and cards per player — the exact same data as the Player Stats table below it, just in a different visual format. The Goals+Assists bar chart already provides the visual comparison that the cards attempted to offer. Keeping even a reduced card section would still duplicate the table. The table is more complete (shows all players, not just top 8) and more information-dense.
+- **Decision**: Removed "Spillermål"/"Spillerassists" tiles rather than removing the bar chart
+  **Why**: The bar chart provides per-player breakdown with visual comparison — much richer than two aggregate numbers. The tiles were just `reduce()` sums of the same data the chart visualizes. The remaining 4 tiles (win rate, goals scored/conceded, clean sheets) all show team-level DBU match data that isn't visualized elsewhere on the page.
+- **Decision**: Changed Season Overview from 6-col to 4-col grid
+  **Why**: With 4 tiles, a 6-col grid would leave 2 empty columns on large screens. `grid-cols-2 sm:grid-cols-4` gives a clean 2×2 on mobile and 1×4 on tablet+desktop.
+- **Decision**: Removed `eventTypeIcon` function
+  **Why**: Defined at line 76 but never called anywhere in the file. Likely leftover from an earlier iteration or copy-paste. Dead code removal.
+
+### Data Usage
+- No new data sources — this iteration was purely about removing duplicate presentations of existing data.
+- Season Overview now shows only team-level DBU stats (win rate, goals scored/conceded, clean sheets). Per-player contribution data (goals, assists) is exclusively in the Goals+Assists bar chart and Player Stats table — no overlap.
+
+### Failed Attempts & Dead Ends
+- None — followed through on the duplication identified in Round 10's changelog.
+
+### Next Iteration Ideas
+- Consider collapsible sections or tabs on Kampanalyse to reduce vertical scroll (page still has 7 sections)
+- The DBU Matches table and Form Timeline show overlapping data (both show match results chronologically) — could merge into a single enriched timeline
+- Dashboard "Training Results" chart and "Fines per Player" chart could benefit from a shared filter (e.g., last N months)

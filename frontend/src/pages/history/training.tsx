@@ -45,6 +45,12 @@ interface MatchPlayer {
   display_name: string;
 }
 
+interface MatchEvent {
+  event_type: string;
+  minute: number | null;
+  display_name: string;
+}
+
 interface Match {
   id: string;
   date: string;
@@ -53,6 +59,7 @@ interface Match {
   score_team1: number | null;
   score_team2: number | null;
   players: MatchPlayer[];
+  events?: MatchEvent[];
 }
 
 interface PlayerStat {
@@ -476,6 +483,11 @@ export default function TrainingHistoryPage() {
               const team1 = m.players.filter((p) => p.team === 1);
               const team2 = m.players.filter((p) => p.team === 2);
               const isDraw = m.winning_team === null;
+              const events = m.events || [];
+              const goals = events.filter((e) => e.event_type === "goal");
+              const assists = events.filter((e) => e.event_type === "assist");
+              const cards = events.filter((e) => e.event_type === "yellow_card" || e.event_type === "red_card");
+              const hasEvents = events.length > 0;
               return (
                 <div key={m.id} className="border border-zinc-800 rounded-lg p-4 text-sm bg-zinc-900/30 transition-all duration-200 hover:border-zinc-700" data-testid={`completed-match-${m.id}`}>
                   <div className="flex items-center justify-between mb-2">
@@ -522,6 +534,28 @@ export default function TrainingHistoryPage() {
                       </div>
                     </div>
                   </div>
+                  {hasEvents && (
+                    <div className="mt-2 pt-2 border-t border-zinc-800/50 flex flex-wrap gap-x-4 gap-y-1">
+                      {goals.length > 0 && (
+                        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                          <span className="text-emerald-400">{da.history.goalsLabel}:</span>
+                          <span>{goals.map((g) => g.display_name + (g.minute ? ` (${g.minute}')` : "")).join(", ")}</span>
+                        </div>
+                      )}
+                      {assists.length > 0 && (
+                        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                          <span className="text-blue-400">{da.history.assistsLabel}:</span>
+                          <span>{assists.map((a) => a.display_name + (a.minute ? ` (${a.minute}')` : "")).join(", ")}</span>
+                        </div>
+                      )}
+                      {cards.length > 0 && (
+                        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                          <span className="text-yellow-400">{da.history.cardsLabel}:</span>
+                          <span>{cards.map((c) => c.display_name + (c.event_type === "red_card" ? " (R)" : "")).join(", ")}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}

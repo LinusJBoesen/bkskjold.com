@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/toast";
 import { useAuth } from "@/hooks/use-auth";
-import { BarChart3, Swords, Users, Trophy, XCircle, Clock, Plus, X, ClipboardList, Trash2, Target, Shield, TrendingUp } from "lucide-react";
+import { BarChart3, Swords, Users, Trophy, XCircle, Clock, Plus, X, ClipboardList, Trash2, Target, TrendingUp } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, CartesianGrid,
@@ -72,17 +72,6 @@ function PlayerAvatar({ name, src }: { name: string; src?: string | null }) {
     </div>
   );
 }
-
-const eventTypeIcon = (type: string) => {
-  switch (type) {
-    case "goal": return "⚽";
-    case "assist": return "🅰️";
-    case "clean_sheet": return "🛡️";
-    case "yellow_card": return "🟡";
-    case "red_card": return "🔴";
-    default: return "";
-  }
-};
 
 interface MatchPlayer {
   player_id: string;
@@ -300,55 +289,6 @@ function FormDot({ result }: { result: "win" | "draw" | "loss" }) {
   );
 }
 
-/* ── Player Stat Card ── */
-function PlayerStatCard({ player }: { player: PlayerStat }) {
-  const hasContributions = player.goals > 0 || player.assists > 0;
-  const hasCards = player.yellowCards > 0 || player.redCards > 0;
-  return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors">
-      <div className="flex items-center gap-3 mb-3">
-        <PlayerAvatar name={player.displayName} src={player.profilePicture} />
-        <span className="font-medium text-zinc-200 text-sm truncate">{player.displayName}</span>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        {player.goals > 0 && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-emerald-400">⚽</span>
-            <span className="text-zinc-300">{player.goals} {da.analysis.goals.toLowerCase()}</span>
-          </div>
-        )}
-        {player.assists > 0 && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-blue-400">🅰️</span>
-            <span className="text-zinc-300">{player.assists} {da.analysis.assists.toLowerCase()}</span>
-          </div>
-        )}
-        {player.cleanSheets > 0 && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-sky-400">🛡️</span>
-            <span className="text-zinc-300">{player.cleanSheets} {da.analysis.cleanSheets.toLowerCase()}</span>
-          </div>
-        )}
-        {player.yellowCards > 0 && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-yellow-400">🟡</span>
-            <span className="text-zinc-300">{player.yellowCards}</span>
-          </div>
-        )}
-        {player.redCards > 0 && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-red-400">🔴</span>
-            <span className="text-zinc-300">{player.redCards}</span>
-          </div>
-        )}
-        {!hasContributions && !hasCards && !player.cleanSheets && (
-          <p className="col-span-2 text-xs text-zinc-600">{da.analysis.noContributions}</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function MatchAnalysisPage() {
   const [data, setData] = useState<AnalysisData | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -415,17 +355,7 @@ export default function MatchAnalysisPage() {
     const winPct = data.dbuSummary.total > 0
       ? Math.round((data.dbuSummary.wins / data.dbuSummary.total) * 100)
       : 0;
-    const totalPlayerGoals = data.playerStats.reduce((s, p) => s + p.goals, 0);
-    const totalPlayerAssists = data.playerStats.reduce((s, p) => s + p.assists, 0);
-    return { goalsScored, goalsConceded, cleanSheets, winPct, totalPlayerGoals, totalPlayerAssists };
-  }, [data]);
-
-  // Players with contributions for visual cards
-  const activePlayers = useMemo(() => {
-    if (!data) return [];
-    return [...data.playerStats]
-      .filter((p) => p.goals > 0 || p.assists > 0 || p.cleanSheets > 0 || p.yellowCards > 0 || p.redCards > 0)
-      .sort((a, b) => (b.goals + b.assists) - (a.goals + a.assists));
+    return { goalsScored, goalsConceded, cleanSheets, winPct };
   }, [data]);
 
   // Cumulative goal difference trend across DBU matches
@@ -626,7 +556,7 @@ export default function MatchAnalysisPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 animate-stagger">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-stagger">
               <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
                 <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.winRatePct}</p>
                 <p className="text-xl font-bold text-emerald-400 tabular-nums">{seasonOverview.winPct}%</p>
@@ -642,14 +572,6 @@ export default function MatchAnalysisPage() {
               <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
                 <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.cleanSheetsTotal}</p>
                 <p className="text-xl font-bold text-sky-400 tabular-nums">{seasonOverview.cleanSheets}</p>
-              </div>
-              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.playerGoals}</p>
-                <p className="text-xl font-bold text-zinc-100 tabular-nums">{seasonOverview.totalPlayerGoals}</p>
-              </div>
-              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.playerAssists}</p>
-                <p className="text-xl font-bold text-zinc-100 tabular-nums">{seasonOverview.totalPlayerAssists}</p>
               </div>
             </div>
           </CardContent>
@@ -841,25 +763,6 @@ export default function MatchAnalysisPage() {
               </tbody>
             </table>
           </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Visual Player Stat Cards */}
-      {activePlayers.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Shield className="w-5 h-5 text-sky-400" />
-              {da.analysis.playerHighlights}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" data-testid="analysis-player-cards">
-              {activePlayers.slice(0, 8).map((p) => (
-                <PlayerStatCard key={p.id} player={p} />
-              ))}
-            </div>
           </CardContent>
         </Card>
       )}

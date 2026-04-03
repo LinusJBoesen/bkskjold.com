@@ -29,7 +29,22 @@ Follow the existing dark theme (zinc-950 backgrounds, zinc-900/50 cards, red acc
 - **Keep all existing functionality.** Nothing should regress.
 - **All UI text in Danish** — use `frontend/src/i18n/da.ts` for new strings.
 - **Fresh context**: You will be restarted after each round. All state is in files — read progress.txt to know where you are.
-- **After Round 5**: Enter continuous improvement mode. Each iteration: first **read `.ralph/CHANGELOG.md`** to see all previous decisions and improvements (this is your memory across context resets — do not repeat or undo previous work). Then review all pages, pick the single most impactful NEW improvement, implement it, commit, exit. Focus on: unused data, better chart types, mobile UX, smarter statistical insights, modern UI patterns.
+
+## Design Philosophy — IMPORTANT
+
+- **No duplicate KPIs**: A data point or metric must NOT appear more than once on the same page. If win rate is shown in a chart, it should not also appear in a card and a table on the same page. Audit each page and remove duplicates.
+- **Simplicity over quantity**: The dashboard should be simple, clean, and meaningful. Fewer widgets done well beats many widgets competing for attention. Every element must earn its place — if it doesn't provide unique, actionable insight, remove it.
+- **Refine before adding**: Priority is to make existing elements better (clearer labels, better chart types, smarter layout, better mobile UX) rather than adding new features. Only add something new if there's a clear gap.
+- **Each page has a clear purpose**: Dashboard = high-level overview at a glance. Træningshistorik = deep dive into training performance. Kampanalyse = deep dive into competitive match data. Don't let pages overlap in what they show.
+
+## Continuous Improvement Mode
+
+After the defined rounds, enter review-and-improve mode. Each iteration: first **read `.ralph/CHANGELOG.md`** to see all previous decisions and improvements (this is your memory across context resets — do not repeat or undo previous work). Then:
+
+1. **Audit** each page for duplicate KPIs, redundant sections, and clutter
+2. **Simplify** — remove or consolidate anything that doesn't add unique value
+3. **Refine** — improve what's there (layout, responsiveness, clarity) before adding anything new
+4. Pick the single most impactful improvement, implement it, commit, exit.
 
 ## Changelog Rules
 

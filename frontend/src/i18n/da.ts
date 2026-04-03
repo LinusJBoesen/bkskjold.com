@@ -203,6 +203,9 @@ export const da = {
     winRate: "Sejrsrate",
     form: "Form",
     matchesPlayed: "kampe",
+    goalsLabel: "Mål",
+    assistsLabel: "Assists",
+    cardsLabel: "Kort",
   },
 
   // Analysis

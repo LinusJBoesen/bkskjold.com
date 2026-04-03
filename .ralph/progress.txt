@@ -1,8 +1,8 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 10
-- **Task**: Completed — Dashboard KPI deduplication
+- **Round**: 11
+- **Task**: Completed — Kampanalyse KPI deduplication
 - **Last updated**: 2026-04-03
 
 ## Checklist
@@ -88,7 +88,15 @@
 - [x] Run E2E tests (49 pass, 18 pre-existing failures — no dashboard regressions)
 - [x] Commit
 
-### Round 11+: Continuous Improvement
+### Round 11: Kampanalyse KPI Deduplication
+- [x] Removed "Spillermål" and "Spillerassists" tiles from Season Overview (duplicate of Goals+Assists bar chart)
+- [x] Removed Player Highlights card section (duplicate of bar chart + player stats table)
+- [x] Removed unused PlayerStatCard component, activePlayers memo, eventTypeIcon function, Shield import
+- [x] Adjusted Season Overview grid from 6-col to 4-col layout
+- [x] Run E2E tests (53 pass, 14 pre-existing failures — no new regressions)
+- [x] Commit
+
+### Round 12+: Continuous Improvement
 (Infinite — each iteration picks the most impactful improvement)
 
 ## Blockers
@@ -112,3 +120,4 @@
 | 2026-04-02 | TBD | Round 8: Goal difference trend chart on Kampanalyse |
 | 2026-04-02 | TBD | Round 9: Match events in Træningshistorik cards |
 | 2026-04-03 | TBD | Round 10: Dashboard KPI deduplication & declutter |
+| 2026-04-03 | TBD | Round 11: Kampanalyse KPI deduplication |
