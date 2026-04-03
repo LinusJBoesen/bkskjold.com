@@ -2,7 +2,7 @@
 
 ## Current Status
 - **Round**: 14
-- **Task**: Completed — Hold Udvælger mobile UX overhaul (search, select all, larger touch targets)
+- **Task**: Completed — Hold Udvælger position badges in player selection list
 - **Last updated**: 2026-04-03
 
 ## Checklist
@@ -109,13 +109,11 @@
 - [x] Run E2E tests (50 pass, 17 pre-existing failures — no new regressions)
 - [x] Commit
 
-### Round 14: Hold Udvælger Mobile UX Overhaul
-- [x] Added player search filter to player selection list
-- [x] Added "Alle" (select all) and "Ingen" (deselect all) quick action buttons
-- [x] Increased touch targets on mobile (taller rows, larger checkboxes, bigger swap buttons)
-- [x] Improved mode tabs to stack vertically on mobile, with thicker active borders
-- [x] Made PlayerAvatar slightly larger on mobile for better visibility
-- [x] Added active:bg feedback on touch for player rows
+### Round 14: Hold Udvælger Position Badges
+- [x] Added PositionBadges component with color-coded position abbreviations (MV, F, K, C, A)
+- [x] Added POSITION_LABELS map with Danish abbreviations and per-position colors
+- [x] Added position badges to all three player list sections (Spond-accepted, other, fallback)
+- [x] Badges show up to 2 positions per player, using existing playerPositions data
 - [x] Run E2E tests (50 pass, 17 pre-existing failures — no new regressions)
 - [x] Commit
 

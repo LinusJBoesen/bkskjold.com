@@ -71,6 +71,35 @@ function PlayerAvatar({ name, src, size = "sm" }: { name: string; src?: string |
   );
 }
 
+const POSITION_LABELS: Record<string, { short: string; color: string }> = {
+  keeper: { short: "MV", color: "text-amber-400 bg-amber-400/10 border-amber-400/20" },
+  defender: { short: "F", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
+  wing: { short: "K", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
+  midfield: { short: "C", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
+  attacker: { short: "A", color: "text-red-400 bg-red-400/10 border-red-400/20" },
+};
+
+function PositionBadges({ positions }: { positions: string[] }) {
+  if (positions.length === 0) return null;
+  return (
+    <div className="flex gap-0.5 shrink-0">
+      {positions.slice(0, 2).map((pos) => {
+        const label = POSITION_LABELS[pos];
+        if (!label) return null;
+        return (
+          <span
+            key={pos}
+            className={`text-[9px] font-bold px-1 py-0.5 rounded border leading-none ${label.color}`}
+            title={da.formation[pos as keyof typeof da.formation] ?? pos}
+          >
+            {label.short}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 function formatDate(iso: string) {
   const d = new Date(iso);
   const days = ["søn", "man", "tir", "ons", "tor", "fre", "lør"];
@@ -766,10 +795,13 @@ export default function TeamSelectorPage() {
                               className="accent-red-500 rounded h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0"
                             />
                             <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                            <span className="text-zinc-200 truncate">{p.displayName}</span>
-                            <span className={`ml-auto tabular-nums text-xs font-medium shrink-0 ${winRateColor(p.winRate)}`}>
-                              {Math.round(p.winRate * 100)}%
-                            </span>
+                            <span className="text-zinc-200 truncate min-w-0">{p.displayName}</span>
+                            <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                              <PositionBadges positions={playerPositions[p.id] ?? []} />
+                              <span className={`tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                                {Math.round(p.winRate * 100)}%
+                              </span>
+                            </div>
                           </label>
                         ))}
                       </>
@@ -793,10 +825,13 @@ export default function TeamSelectorPage() {
                               className="accent-red-500 rounded h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0"
                             />
                             <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                            <span className="text-zinc-400 truncate">{p.displayName}</span>
-                            <span className={`ml-auto tabular-nums text-xs font-medium shrink-0 ${winRateColor(p.winRate)}`}>
-                              {Math.round(p.winRate * 100)}%
-                            </span>
+                            <span className="text-zinc-400 truncate min-w-0">{p.displayName}</span>
+                            <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                              <PositionBadges positions={playerPositions[p.id] ?? []} />
+                              <span className={`tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                                {Math.round(p.winRate * 100)}%
+                              </span>
+                            </div>
                           </label>
                         ))}
                       </>
@@ -815,10 +850,13 @@ export default function TeamSelectorPage() {
                           className="accent-red-500 rounded h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0"
                         />
                         <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                        <span className="text-zinc-200 truncate">{p.displayName}</span>
-                        <span className={`ml-auto tabular-nums text-xs font-medium shrink-0 ${winRateColor(p.winRate)}`}>
-                          {Math.round(p.winRate * 100)}%
-                        </span>
+                        <span className="text-zinc-200 truncate min-w-0">{p.displayName}</span>
+                        <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                          <PositionBadges positions={playerPositions[p.id] ?? []} />
+                          <span className={`tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                            {Math.round(p.winRate * 100)}%
+                          </span>
+                        </div>
                       </label>
                     ))}
 

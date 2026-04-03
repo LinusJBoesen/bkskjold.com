@@ -415,33 +415,32 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 
 ---
 
-## Iteration 14 — Round 14: Hold Udvælger Mobile UX Overhaul
+## Iteration 14 — Round 14: Hold Udvælger Position Badges in Player List
 **Date**: 2026-04-03 21:30
 
 ### Changes
-- **frontend/src/pages/teams/selector.tsx**: Added `useMemo`, `Search`, `CheckSquare`, `Square` imports. Added `playerSearch` state for search filtering. Added `filteredSpondPlayers` and `filteredOtherPlayers` memos that filter player lists by search term. Added `selectAll()` and `deselectAll()` helper functions. Added search input with search icon at top of player list. Added "Alle"/"Ingen" quick action buttons next to the player count. Increased player row padding to `py-2.5 sm:py-1.5` for larger mobile touch targets. Added `active:bg-white/[0.07]` touch feedback on all player rows. Increased checkbox size to `h-4 w-4 sm:h-3.5 sm:w-3.5` for easier mobile tapping. Made PlayerAvatar responsive — `h-8 w-8` on mobile, `h-7 w-7` on desktop. Added `shrink-0` to avatars and win rate badges to prevent text wrapping issues. Changed mode toggle tabs from `flex` to `grid grid-cols-1 sm:grid-cols-2` so they stack on mobile. Made tab icons larger on mobile (`h-5 w-5 sm:h-4 sm:w-4`). Added thicker active tab borders (`border-2` vs `border`). Increased swap button size to `h-8 w-8 sm:h-6 sm:w-6` on mobile. Added "no results" message when search filter matches nothing. Changed player list max-height from `28rem` to `32rem` for better scrollability. Added `truncate` to player names to prevent overflow. Updated guest row spacing to match new player row sizing.
+- **frontend/src/pages/teams/selector.tsx**: Added `POSITION_LABELS` constant mapping each position to a Danish abbreviation and color scheme: MV (målmand/amber), F (forsvar/blue), K (kant/emerald), C (central/purple), A (angriber/red). Added `PositionBadges` component rendering up to 2 tiny color-coded badges per player. Added `PositionBadges` to all three player list sections (Spond-accepted, other players, fallback list). Each badge has a title tooltip with the full Danish position name from `da.formation`. Wrapped player name + badges in a flex container with `min-w-0` for proper truncation. Badges use the existing `playerPositions` state data that was already loaded from `/api/formations/players/positions` but only used in formation view.
 
 ### Decisions & Reasoning
-- **Decision**: Started the Hold Udvælger overhaul with mobile UX fundamentals (not new features)
-  **Why**: Per the PROMPT.md priority directive, Hold Udvælger is the next major focus. The page already has solid functionality (two modes, formation view, team generation) but the mobile UX has small touch targets and no way to search/filter the player list. Improving the foundation first (touch targets, search, responsiveness) before adding new features like drag-to-reorder.
-- **Decision**: Added search filter as the first new feature
-  **Why**: With 15+ players on the list, finding and toggling specific players on a phone is tedious. A search box instantly narrows the list. This is the highest-impact mobile UX improvement for minimal code.
-- **Decision**: Used `grid grid-cols-1 sm:grid-cols-2` for mode tabs instead of `flex`
-  **Why**: On a 375px phone screen, two flex tabs with event dates squeeze uncomfortably. Stacking them vertically gives each tab full width, making the text and touch targets much more comfortable on mobile. Side-by-side still works on sm+ breakpoints.
-- **Decision**: Kept `active:bg` feedback on touch instead of adding a ripple effect
-  **Why**: The existing design uses hover-only feedback, which is invisible on touch devices. Adding `active:bg-white/[0.07]` gives immediate visual feedback when a player row is tapped, without needing any JavaScript animation library. Simple and consistent with the existing design language.
-- **Decision**: Made swap buttons 33% larger on mobile (h-8 vs h-6)
-  **Why**: The swap button between teams is the most frequently tapped action after generating teams. At h-6 (24px) it's below Apple's 44px minimum recommended touch target. At h-8 (32px) it's still not 44px but significantly more comfortable, and larger would look disproportionate.
+- **Decision**: Added position badges to the player selection list (not the generated team cards)
+  **Why**: When selecting which players to include in a team, seeing their positions is most valuable — it helps the coach balance the team by position before generating. The generated team cards already show players in the formation view where positions are visible on the pitch. The selection list was the gap.
+- **Decision**: Used 2-letter Danish abbreviations (MV, F, K, C, A) instead of icons or full names
+  **Why**: Space is tight on mobile player rows. Full position names would wrap. Icons would require new assets. Single-letter abbreviations (M, F, K, C, A) are ambiguous (M could be midfield or målmand). Two-letter abbreviations are unique and familiar to Danish football players. MV=Målvogter, F=Forsvar, K=Kant, C=Central, A=Angriber.
+- **Decision**: Limited to showing max 2 positions per player
+  **Why**: Some players may have 3+ positions assigned. Showing all of them would overflow the row on mobile. The first 2 positions (which are typically the primary and secondary) give enough information for team composition decisions.
+- **Decision**: Used distinct colors per position type (amber/blue/emerald/purple/red)
+  **Why**: Color-coding makes it instantly scannable — you can visually count how many defenders vs attackers are selected without reading labels. The colors were chosen to be distinct from each other and visible against the dark zinc background, avoiding the red brand color for goalkeeper (used for attacker instead, matching football convention where attackers are "hot").
+- **Decision**: Reused existing `playerPositions` state data instead of adding a new API call
+  **Why**: The page already fetches `/api/formations/players/positions` on mount and stores the result in `playerPositions`. This data was previously only used in formation view — now it serves double duty in the selection list, with zero additional API overhead.
 
 ### Data Usage
-- No new backend data — all changes are frontend-only UX improvements.
-- The `filteredSpondPlayers` and `filteredOtherPlayers` memos use existing `spondPlayers` and `otherPlayers` arrays, filtering by `displayName`.
+- **Reused**: `playerPositions` from `/api/formations/players/positions` — already loaded on mount, previously only consumed by `FormationView` component. Now also drives the position badges in the selection list.
+- **Reused**: `da.formation.*` i18n strings for tooltip titles.
 
 ### Failed Attempts & Dead Ends
-- None — all changes were straightforward responsive CSS and React state additions.
+- Discovered that the previous iteration (Round 13) had already implemented the mobile UX improvements (search, select all, larger touch targets) but progress.txt only documented the Kampanalyse table sort. Wasted initial effort re-applying no-op edits before realizing they were already present. The mobile UX overhaul logged in the initial CHANGELOG entry for this round was NOT actually done this round — it was already in the codebase.
 
 ### Next Iteration Ideas
-- Add position badges next to player names in the selection list (showing their preferred positions from `player_positions`)
-- Implement tap-to-move between teams — tap a player in Team 1 list to move them to Team 2 (currently requires the small swap button)
+- Implement tap-to-move between teams — tap a player in Team 1 list to move them to Team 2 (more mobile-friendly than the small swap button)
 - Add a "smart generate" option that uses position data to balance teams by position distribution, not just win rate
-- Consider a mobile-optimized "card view" instead of the current checkbox list — swipe right to select, left to deselect
+- Show a position distribution summary after team generation (e.g. "Hold 1: 1 MV, 2 F, 2 K, 1 C, 1 A")
