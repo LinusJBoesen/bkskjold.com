@@ -369,91 +369,52 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Stacked bar chart */}
-              <div>
-                <ResponsiveContainer width="100%" height={Math.max(200, (data.topContributors?.length ?? 0) * 36)}>
-                  <BarChart
-                    data={data.topContributors}
-                    layout="vertical"
-                    margin={{ left: 0, right: 12 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#27272A" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: "#A1A1AA" }} stroke="#3F3F46" allowDecimals={false} />
-                    <YAxis
-                      type="category"
-                      dataKey="displayName"
-                      tick={{ fontSize: 11, fill: "#A1A1AA" }}
-                      stroke="#3F3F46"
-                      width={80}
-                    />
-                    <Tooltip
-                      contentStyle={darkTooltipStyle}
-                      cursor={{ fill: "rgba(255,255,255,0.02)" }}
-                      formatter={(value: number, name: string) => [
-                        value,
-                        name === "goals" ? da.dashboard.goals : da.dashboard.assists,
-                      ]}
-                    />
-                    <Legend
-                      wrapperStyle={{ color: "#A1A1AA", fontSize: "12px" }}
-                      formatter={(value: string) => (
-                        <span className="text-zinc-300 text-xs">
-                          {value === "goals" ? da.dashboard.goals : da.dashboard.assists}
-                        </span>
-                      )}
-                    />
-                    <Bar dataKey="goals" stackId="a" fill="#16A34A" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="assists" stackId="a" fill="#3B82F6" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height={Math.max(200, (data.topContributors?.length ?? 0) * 36)}>
+              <BarChart
+                data={data.topContributors}
+                layout="vertical"
+                margin={{ left: 0, right: 12 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272A" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 11, fill: "#A1A1AA" }} stroke="#3F3F46" allowDecimals={false} />
+                <YAxis
+                  type="category"
+                  dataKey="displayName"
+                  tick={{ fontSize: 11, fill: "#A1A1AA" }}
+                  stroke="#3F3F46"
+                  width={80}
+                />
+                <Tooltip
+                  contentStyle={darkTooltipStyle}
+                  cursor={{ fill: "rgba(255,255,255,0.02)" }}
+                  formatter={(value: number, name: string) => [
+                    value,
+                    name === "goals" ? da.dashboard.goals : da.dashboard.assists,
+                  ]}
+                />
+                <Legend
+                  wrapperStyle={{ color: "#A1A1AA", fontSize: "12px" }}
+                  formatter={(value: string) => (
+                    <span className="text-zinc-300 text-xs">
+                      {value === "goals" ? da.dashboard.goals : da.dashboard.assists}
+                    </span>
+                  )}
+                />
+                <Bar dataKey="goals" stackId="a" fill="#16A34A" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="assists" stackId="a" fill="#3B82F6" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            {(data.totals.goals > 0 || data.totals.assists > 0) && (
+              <div className="flex items-center gap-4 mt-2 pt-2 border-t border-zinc-800/50">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                  <Star className="h-3 w-3" />
+                  <span>{da.dashboard.totalGoals}: <span className="text-emerald-400 font-medium tabular-nums">{data.totals.goals}</span></span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                  <span>{da.dashboard.totalAssists}: <span className="text-blue-400 font-medium tabular-nums">{data.totals.assists}</span></span>
+                </div>
               </div>
-              {/* Contributor cards */}
-              <div className="space-y-1.5">
-                {data.topContributors.slice(0, 5).map((p, i) => (
-                  <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg bg-zinc-800/50 border border-zinc-700/30">
-                    <span className="text-xs font-bold text-zinc-500 w-5 text-center tabular-nums">{i + 1}</span>
-                    <PlayerAvatar name={p.displayName} src={p.profilePicture} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-zinc-200 truncate">{p.displayName}</p>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs tabular-nums">
-                      {p.goals > 0 && (
-                        <span className="text-emerald-400" title={da.dashboard.goals}>
-                          ⚽ {p.goals}
-                        </span>
-                      )}
-                      {p.assists > 0 && (
-                        <span className="text-blue-400" title={da.dashboard.assists}>
-                          🅰️ {p.assists}
-                        </span>
-                      )}
-                      {p.cleanSheets > 0 && (
-                        <span className="text-zinc-400" title="Clean sheets">
-                          🧤 {p.cleanSheets}
-                        </span>
-                      )}
-                      {p.yellowCards > 0 && (
-                        <span className="text-yellow-400" title={da.dashboard.yellowCards}>
-                          🟨 {p.yellowCards}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {(data.totals.goals > 0 || data.totals.assists > 0) && (
-                  <div className="flex items-center gap-4 pt-2 mt-1 border-t border-zinc-800/50">
-                    <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                      <Star className="h-3 w-3" />
-                      <span>{da.dashboard.totalGoals}: <span className="text-emerald-400 font-medium tabular-nums">{data.totals.goals}</span></span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                      <span>{da.dashboard.totalAssists}: <span className="text-blue-400 font-medium tabular-nums">{data.totals.assists}</span></span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       )}

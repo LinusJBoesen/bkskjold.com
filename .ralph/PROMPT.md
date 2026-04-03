@@ -37,9 +37,30 @@ Follow the existing dark theme (zinc-950 backgrounds, zinc-900/50 cards, red acc
 - **Refine before adding**: Priority is to make existing elements better (clearer labels, better chart types, smarter layout, better mobile UX) rather than adding new features. Only add something new if there's a clear gap.
 - **Each page has a clear purpose**: Dashboard = high-level overview at a glance. Træningshistorik = deep dive into training performance. Kampanalyse = deep dive into competitive match data. Don't let pages overlap in what they show.
 
+## PRIORITY: Hold Udvælger (Team Selector) Overhaul
+
+After finishing the current iteration, the NEXT focus is making the Hold Udvælger page world-class. Spend multiple iterations on this. Key requirements:
+
+### Mobile UX
+- Make it easy to move players around on mobile — drag-and-drop or tap-to-move, large touch targets
+- The page must work beautifully on phone screens
+
+### Smart Auto-Placement
+- Auto-place players into positions based on their assigned position (from `player_positions` table)
+- Balance teams automatically using position data — don't put all defenders on one team
+
+### Two Modes — Kamp vs Træning
+- **Kamp (match)**: Only setting up OUR team (one team). Includes a bench. Players placed on pitch + bench.
+- **Træning (training)**: Two teams, no bench. Split players evenly into balanced teams.
+- The mode should be clearly selectable and change the UI accordingly.
+
+### General
+- Make it top-class, intuitive, visually appealing
+- Read the current `frontend/src/pages/teams/selector.tsx` and `backend/src/routes/teams.ts` to understand existing functionality before making changes
+
 ## Continuous Improvement Mode
 
-After the defined rounds, enter review-and-improve mode. Each iteration: first **read `.ralph/CHANGELOG.md`** to see all previous decisions and improvements (this is your memory across context resets — do not repeat or undo previous work). Then:
+After Hold Udvælger is done, enter review-and-improve mode. Each iteration: first **read `.ralph/CHANGELOG.md`** to see all previous decisions and improvements (this is your memory across context resets — do not repeat or undo previous work). Then:
 
 1. **Audit** each page for duplicate KPIs, redundant sections, and clutter
 2. **Simplify** — remove or consolidate anything that doesn't add unique value

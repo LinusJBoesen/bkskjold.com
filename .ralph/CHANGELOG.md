@@ -354,3 +354,31 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 - Consider collapsible sections or tabs on Kampanalyse to reduce vertical scroll (page still has 7 sections)
 - The DBU Matches table and Form Timeline show overlapping data (both show match results chronologically) — could merge into a single enriched timeline
 - Dashboard "Training Results" chart and "Fines per Player" chart could benefit from a shared filter (e.g., last N months)
+| 2 | 11 | 2026-04-03 18:38 | iteration 2 |
+| 3 | 11 | 2026-04-03 18:39 | iteration 3 |
+
+---
+
+## Iteration 12 — Round 12: Dashboard Top Contributors Deduplication
+**Date**: 2026-04-03 19:30
+
+### Changes
+- **frontend/src/pages/dashboard.tsx**: Removed the contributor ranked card list (top 5 players with emoji stats) from the Top Contributors section. The section previously had a 2-column `grid-cols-1 lg:grid-cols-2` layout with a stacked bar chart on the left and card list on the right. Now it's a single-column layout with just the bar chart and totals footer. Removed the grid wrapper, leaving the `ResponsiveContainer` directly inside `CardContent`. Moved the totals footer (total goals + total assists) from inside the card list column to directly below the chart.
+
+### Decisions & Reasoning
+- **Decision**: Removed the contributor card list, kept the bar chart
+  **Why**: The card list showed goals, assists, clean sheets, and yellow cards per player — the exact same data visualized in the stacked bar chart (goals + assists) right next to it. Per the design philosophy ("A data point must NOT appear more than once on the same page"), this was a clear duplication. The bar chart provides better visual comparison at a glance. Clean sheets and yellow cards were minor additions in the card list but are already visible on the Kampanalyse player stats table — showing them on the dashboard duplicates cross-page data.
+- **Decision**: Kept the totals footer below the chart
+  **Why**: The aggregate "Total mål" and "Total assists" counts are summary stats not shown elsewhere on the dashboard. They complement the per-player breakdown in the chart without duplicating it.
+- **Decision**: Did not remove the entire Top Contributors section
+  **Why**: Goal/assist data is unique to this section — no other dashboard widget shows who's scoring. It earns its place as the only match-event-based section on the dashboard.
+
+### Data Usage
+- No new data sources — purely UI deduplication of existing `topContributors` data.
+
+### Failed Attempts & Dead Ends
+- None — straightforward removal of duplicate presentation.
+
+### Next Iteration Ideas
+- Dashboard has 8 sections and is long — consider whether Recent Form (9 player cards) could be condensed to fewer players or a more compact layout
+- The analysis page's 4 match-analysis E2E tests are timing out (pre-existing) — could investigate if the page has a rendering issue causing slow loads

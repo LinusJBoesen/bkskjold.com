@@ -1,8 +1,8 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 11
-- **Task**: Completed — Kampanalyse KPI deduplication
+- **Round**: 12
+- **Task**: Completed — Dashboard Top Contributors deduplication (removed card list)
 - **Last updated**: 2026-04-03
 
 ## Checklist
@@ -96,7 +96,13 @@
 - [x] Run E2E tests (53 pass, 14 pre-existing failures — no new regressions)
 - [x] Commit
 
-### Round 12+: Continuous Improvement
+### Round 12: Dashboard Top Contributors Deduplication
+- [x] Removed duplicate contributor card list (showed same data as bar chart)
+- [x] Kept stacked bar chart + totals footer as single-column layout
+- [x] Run E2E tests (49 pass, 18 pre-existing failures — no new regressions)
+- [x] Commit
+
+### Round 13+: Continuous Improvement
 (Infinite — each iteration picks the most impactful improvement)
 
 ## Blockers
@@ -121,3 +127,4 @@
 | 2026-04-02 | TBD | Round 9: Match events in Træningshistorik cards |
 | 2026-04-03 | TBD | Round 10: Dashboard KPI deduplication & declutter |
 | 2026-04-03 | TBD | Round 11: Kampanalyse KPI deduplication |
+| 2026-04-03 | TBD | Round 12: Dashboard top contributors deduplication |

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/toast";
 import { useAuth } from "@/hooks/use-auth";
-import { BarChart3, Swords, Users, Trophy, XCircle, Clock, Plus, X, ClipboardList, Trash2, Target, TrendingUp } from "lucide-react";
+import { BarChart3, Swords, Users, Trophy, XCircle, Clock, Plus, X, ClipboardList, Trash2, Target, TrendingUp, ChevronUp, ChevronDown } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, CartesianGrid,
@@ -272,6 +272,16 @@ function GoalAssistTooltip({ active, payload }: any) {
   );
 }
 
+type StatSortKey = "name" | "goals" | "assists" | "cleanSheets" | "yellowCards" | "redCards";
+type StatSortDir = "asc" | "desc";
+
+function StatSortIcon({ active, dir }: { active: boolean; dir: StatSortDir }) {
+  if (!active) return <ChevronDown className="w-3 h-3 text-zinc-600 inline ml-0.5" />;
+  return dir === "asc"
+    ? <ChevronUp className="w-3 h-3 text-red-400 inline ml-0.5" />
+    : <ChevronDown className="w-3 h-3 text-red-400 inline ml-0.5" />;
+}
+
 /* ── Form Dot for timeline ── */
 function FormDot({ result }: { result: "win" | "draw" | "loss" }) {
   const colors = {
@@ -295,6 +305,7 @@ export default function MatchAnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activePostMatch, setActivePostMatch] = useState<string | null>(null);
+  const [statSort, setStatSort] = useState<{ key: StatSortKey; dir: StatSortDir }>({ key: "goals", dir: "desc" });
   const { toast } = useToast();
   const { role } = useAuth();
 
@@ -379,6 +390,42 @@ export default function MatchAnalysisPage() {
       };
     }).filter(Boolean);
   }, [data]);
+
+  const sortedPlayerStats = useMemo(() => {
+    if (!data) return [];
+    return [...data.playerStats].sort((a, b) => {
+      let cmp = 0;
+      switch (statSort.key) {
+        case "name":
+          cmp = a.displayName.localeCompare(b.displayName);
+          break;
+        case "goals":
+          cmp = a.goals - b.goals;
+          break;
+        case "assists":
+          cmp = a.assists - b.assists;
+          break;
+        case "cleanSheets":
+          cmp = a.cleanSheets - b.cleanSheets;
+          break;
+        case "yellowCards":
+          cmp = a.yellowCards - b.yellowCards;
+          break;
+        case "redCards":
+          cmp = a.redCards - b.redCards;
+          break;
+      }
+      return statSort.dir === "asc" ? cmp : -cmp;
+    });
+  }, [data, statSort]);
+
+  const toggleStatSort = (key: StatSortKey) => {
+    setStatSort((prev) =>
+      prev.key === key
+        ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { key, dir: "desc" }
+    );
+  };
 
   const registerResult = async (matchId: string, winningTeam: number) => {
     try {
@@ -693,36 +740,7 @@ export default function MatchAnalysisPage() {
         </Card>
       )}
 
-      {/* Form Timeline */}
-      {data.dbuMatches.length > 0 && (
-        <Card className="mb-6" data-testid="analysis-form-timeline">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-zinc-400" />
-              {da.analysis.formTimeline}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2 items-center">
-              {[...data.dbuMatches].reverse().map((m, i) => (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <FormDot result={m.result} />
-                  <span className="text-[10px] text-zinc-600 truncate max-w-[48px]" title={m.opponent}>
-                    {m.opponent.split(" ").pop()}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-3 mt-3 text-xs text-zinc-500">
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" /> {da.analysis.win}</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-zinc-500 inline-block" /> {da.analysis.draw}</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block" /> {da.analysis.loss}</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* DBU Matches */}
+      {/* DBU Matches with integrated Form Timeline */}
       {data.dbuMatches.length === 0 ? (
         <Card className="mb-6"><CardContent className="py-8 text-center">
           <p className="text-zinc-500">Ingen DBU-kampe endnu</p>
@@ -734,6 +752,17 @@ export default function MatchAnalysisPage() {
               <Swords className="w-5 h-5 text-zinc-400" />
               {da.analysis.dbuMatches}
             </CardTitle>
+            {/* Compact form strip */}
+            <div className="flex flex-wrap gap-1.5 items-center mt-2" data-testid="analysis-form-timeline">
+              {[...data.dbuMatches].reverse().map((m, i) => (
+                <FormDot key={i} result={m.result} />
+              ))}
+              <div className="flex items-center gap-2 ml-2 text-[10px] text-zinc-500">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> {da.analysis.win}</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-zinc-500 inline-block" /> {da.analysis.draw}</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> {da.analysis.loss}</span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -748,18 +777,21 @@ export default function MatchAnalysisPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.dbuMatches.map((m) => (
-                  <tr
-                    key={`${m.date}-${m.opponent}`}
-                    className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors"
-                  >
-                    <td className="px-4 py-3 text-sm tabular-nums text-zinc-300">{m.date}</td>
-                    <td className="px-4 py-3 text-sm text-zinc-200">{m.opponent}</td>
-                    <td className="px-4 py-3 text-center text-sm font-medium tabular-nums text-zinc-100">{m.score}</td>
-                    <td className="px-4 py-3 text-center text-sm text-zinc-400">{m.isHome ? da.analysis.home : da.analysis.away}</td>
-                    <td className="px-4 py-3 text-center">{resultBadge(m.result)}</td>
-                  </tr>
-                ))}
+                {data.dbuMatches.map((m) => {
+                  const borderColor = m.result === "win" ? "border-l-emerald-500" : m.result === "loss" ? "border-l-red-500" : "border-l-zinc-500";
+                  return (
+                    <tr
+                      key={`${m.date}-${m.opponent}`}
+                      className={`border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors border-l-2 ${borderColor}`}
+                    >
+                      <td className="px-4 py-3 text-sm tabular-nums text-zinc-300">{m.date}</td>
+                      <td className="px-4 py-3 text-sm text-zinc-200">{m.opponent}</td>
+                      <td className="px-4 py-3 text-center text-sm font-medium tabular-nums text-zinc-100">{m.score}</td>
+                      <td className="px-4 py-3 text-center text-sm text-zinc-400">{m.isHome ? da.analysis.home : da.analysis.away}</td>
+                      <td className="px-4 py-3 text-center">{resultBadge(m.result)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -785,16 +817,34 @@ export default function MatchAnalysisPage() {
             <table className="w-full" data-testid="analysis-player-rates-table">
               <thead>
                 <tr className="bg-zinc-900 text-zinc-400 text-xs font-medium uppercase tracking-wider">
-                  <th className="px-4 py-3 text-left">Navn</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.goals}</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.assists}</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.cleanSheets}</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.yellowCards}</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.redCards}</th>
+                  <th className="px-4 py-3 text-left cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("name")}>
+                    Navn
+                    <StatSortIcon active={statSort.key === "name"} dir={statSort.dir} />
+                  </th>
+                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("goals")}>
+                    {da.analysis.goals}
+                    <StatSortIcon active={statSort.key === "goals"} dir={statSort.dir} />
+                  </th>
+                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("assists")}>
+                    {da.analysis.assists}
+                    <StatSortIcon active={statSort.key === "assists"} dir={statSort.dir} />
+                  </th>
+                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("cleanSheets")}>
+                    {da.analysis.cleanSheets}
+                    <StatSortIcon active={statSort.key === "cleanSheets"} dir={statSort.dir} />
+                  </th>
+                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("yellowCards")}>
+                    {da.analysis.yellowCards}
+                    <StatSortIcon active={statSort.key === "yellowCards"} dir={statSort.dir} />
+                  </th>
+                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("redCards")}>
+                    {da.analysis.redCards}
+                    <StatSortIcon active={statSort.key === "redCards"} dir={statSort.dir} />
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {data.playerStats.map((p) => (
+                {sortedPlayerStats.map((p) => (
                   <tr
                     key={p.id}
                     className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors"
