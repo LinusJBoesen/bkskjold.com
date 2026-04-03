@@ -259,8 +259,15 @@ export default function TeamSelectorPage() {
       ...Array.from(selected),
       ...guests.map((_, i) => `guest-${i}-${guests[i]}`),
     ];
+    // Send position data so the algorithm can balance by position distribution
+    const positionsPayload: Record<string, string[]> = {};
+    for (const id of playerIds) {
+      if (playerPositions[id]?.length) {
+        positionsPayload[id] = playerPositions[id] as string[];
+      }
+    }
     try {
-      const res = await api.post<TeamResult>("/teams/generate", { playerIds, algorithm: "greedy" });
+      const res = await api.post<TeamResult>("/teams/generate", { playerIds, algorithm: "greedy", positions: positionsPayload });
       setResult(res);
       setCopied(false);
       toast("Hold genereret", "success");
@@ -389,6 +396,24 @@ export default function TeamSelectorPage() {
       toast("Kunne ikke kopiere", "error");
     }
   };
+
+  // Compute position distribution for generated teams
+  const teamPositionSummary = useMemo(() => {
+    if (!result) return null;
+    const countPositions = (team: PlayerStats[]) => {
+      const counts: Record<string, number> = {};
+      for (const p of team) {
+        for (const pos of (playerPositions[p.id] ?? [])) {
+          counts[pos] = (counts[pos] ?? 0) + 1;
+        }
+      }
+      return counts;
+    };
+    return {
+      team1: countPositions(result.team1),
+      team2: countPositions(result.team2),
+    };
+  }, [result, playerPositions]);
 
   const winRateColor = (rate: number) => {
     if (rate > 0.5) return "text-emerald-400";
@@ -998,9 +1023,28 @@ export default function TeamSelectorPage() {
           {result && activeTab === "training" && (
             <div className="mt-6 bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="text-sm text-zinc-300 flex-1" data-testid="team-balance">
-                  Balance: <span className="font-bold text-zinc-50">{result.balance.balancePercent}%</span>
-                  <span className="text-zinc-500 ml-2">(forskel: {result.balance.difference})</span>
+                <div className="flex-1 space-y-2">
+                  <div className="text-sm text-zinc-300" data-testid="team-balance">
+                    Balance: <span className="font-bold text-zinc-50">{result.balance.balancePercent}%</span>
+                    <span className="text-zinc-500 ml-2">(forskel: {result.balance.difference})</span>
+                  </div>
+                  {teamPositionSummary && Object.keys({ ...teamPositionSummary.team1, ...teamPositionSummary.team2 }).length > 0 && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500" data-testid="team-position-summary">
+                      {(["keeper", "defender", "wing", "midfield", "attacker"] as const)
+                        .filter((pos) => (teamPositionSummary.team1[pos] ?? 0) + (teamPositionSummary.team2[pos] ?? 0) > 0)
+                        .map((pos) => {
+                          const label = POSITION_LABELS[pos];
+                          const c1 = teamPositionSummary.team1[pos] ?? 0;
+                          const c2 = teamPositionSummary.team2[pos] ?? 0;
+                          return (
+                            <span key={pos} className="flex items-center gap-1">
+                              <span className={`text-[9px] font-bold px-1 py-0.5 rounded border leading-none ${label.color}`}>{label.short}</span>
+                              <span>{c1}–{c2}</span>
+                            </span>
+                          );
+                        })}
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button variant="secondary" onClick={copyTeams} data-testid="team-copy-button">

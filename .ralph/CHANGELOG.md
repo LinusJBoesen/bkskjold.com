@@ -444,3 +444,36 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 - Implement tap-to-move between teams — tap a player in Team 1 list to move them to Team 2 (more mobile-friendly than the small swap button)
 - Add a "smart generate" option that uses position data to balance teams by position distribution, not just win rate
 - Show a position distribution summary after team generation (e.g. "Hold 1: 1 MV, 2 F, 2 K, 1 C, 1 A")
+| 2 | 14 | 2026-04-03 20:04 | iteration 2 |
+
+---
+
+## Iteration 15 — Round 15: Position-Aware Team Balancing Algorithm
+**Date**: 2026-04-03 22:00
+
+### Changes
+- **backend/src/services/team-generator.ts**: Added `getPositionCounts()` helper that counts positions per team using a position map. Added `positionImbalancePenalty()` that computes the total absolute difference in position counts between two teams across all positions. Modified `greedy()` to accept an optional `positions` parameter — when provided, each player placement considers both teams and picks the one with lower position imbalance, breaking ties by win rate balance (original behavior). Updated `generateBalancedTeams()` signature to accept optional `positions: Record<string, string[]>` and pass it through to `greedy()`.
+- **backend/src/routes/teams.ts**: Extract `positions` from the POST `/teams/generate` request body (defaults to `{}`) and pass it to `generateBalancedTeams()`.
+- **frontend/src/pages/teams/selector.tsx**: Updated `generateTeams()` to build a `positionsPayload` object from `playerPositions` state and send it with the generate API call. Added `teamPositionSummary` useMemo that computes position counts per team from the generated result. Added position distribution display below the balance percentage — shows color-coded position badges (MV, F, K, C, A) with per-team counts (e.g. "F 2–2", "A 1–1").
+
+### Decisions & Reasoning
+- **Decision**: Modified the greedy algorithm to consider positions rather than adding a new algorithm mode
+  **Why**: The greedy algorithm is the default and only algorithm used by the frontend. Adding a separate "position-aware" mode would require UI for algorithm selection and add complexity. Instead, the existing greedy algorithm now transparently uses position data when available, with zero-cost fallback when no positions are provided (backward compatible).
+- **Decision**: Used position imbalance penalty as primary sort criterion, with win rate as tiebreaker
+  **Why**: Position balance is the primary goal of this feature — the coach wants defenders distributed evenly. Win rate differences are typically small (0.4-0.6 range), so slight win rate imbalance is acceptable if position distribution is better. When position balance is tied, the original win rate logic kicks in.
+- **Decision**: Showed position distribution as compact badges with counts (e.g. "F 2–2") below balance %
+  **Why**: This gives the coach instant visual confirmation that positions are balanced without needing a separate section. The en-dash format "2–2" is concise and universally understood for team comparisons. Reused the existing `POSITION_LABELS` and color scheme for consistency with the player list badges.
+- **Decision**: Sent positions from frontend rather than querying DB in backend
+  **Why**: The frontend already has `playerPositions` loaded from `/api/formations/players/positions`. Sending it with the request avoids an extra DB query in the backend and keeps the generate endpoint stateless. The positions payload is small (just player IDs to position arrays).
+
+### Data Usage
+- **Reused**: `playerPositions` state (from `/api/formations/players/positions`) — already loaded on page mount for formation view. Now also sent to the backend for team balancing and used locally for position distribution display.
+- No new API endpoints or database queries added.
+
+### Failed Attempts & Dead Ends
+- None — straightforward implementation following the existing architecture patterns.
+
+### Next Iteration Ideas
+- Tap-to-move between teams on mobile — tap a player row to cycle them between Team 1 and Team 2 (more intuitive than small swap button on touch devices)
+- Show position badges next to player names in the generated team cards (not just in the selection list)
+- Add a "re-balance" button that runs the algorithm again with different random seeds to explore alternative team compositions

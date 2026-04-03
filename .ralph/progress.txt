@@ -1,8 +1,8 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 14
-- **Task**: Completed — Hold Udvælger position badges in player selection list
+- **Round**: 15
+- **Task**: Completed — Position-aware team balancing algorithm + position distribution summary
 - **Last updated**: 2026-04-03
 
 ## Checklist
@@ -117,7 +117,15 @@
 - [x] Run E2E tests (50 pass, 17 pre-existing failures — no new regressions)
 - [x] Commit
 
-### Round 15+: Hold Udvælger Continued Improvements
+### Round 15: Position-Aware Team Balancing
+- [x] Added position imbalance penalty to greedy algorithm in team-generator.ts
+- [x] Backend route passes position data from frontend to generator
+- [x] Frontend sends playerPositions with generate request
+- [x] Added position distribution summary (MV, F, K, C, A counts per team) below balance %
+- [x] Run E2E tests (51 pass, 16 pre-existing failures — no new regressions)
+- [x] Commit
+
+### Round 16+: Hold Udvælger Continued Improvements
 (Infinite — each iteration picks the most impactful improvement)
 
 ## Blockers
