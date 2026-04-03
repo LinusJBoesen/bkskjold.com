@@ -412,3 +412,36 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 - The 4 analysis E2E tests are timing out (pre-existing) — could investigate if the page has a slow rendering or API issue
 - Dashboard Recent Form section (9 player cards) takes significant vertical space — could condense to top 6 or a more compact horizontal layout
 - Training Results and Fines Per Player charts use vertical bars with player names on X-axis — hard to read on mobile with many players; could convert to horizontal layout
+
+---
+
+## Iteration 14 — Round 14: Hold Udvælger Mobile UX Overhaul
+**Date**: 2026-04-03 21:30
+
+### Changes
+- **frontend/src/pages/teams/selector.tsx**: Added `useMemo`, `Search`, `CheckSquare`, `Square` imports. Added `playerSearch` state for search filtering. Added `filteredSpondPlayers` and `filteredOtherPlayers` memos that filter player lists by search term. Added `selectAll()` and `deselectAll()` helper functions. Added search input with search icon at top of player list. Added "Alle"/"Ingen" quick action buttons next to the player count. Increased player row padding to `py-2.5 sm:py-1.5` for larger mobile touch targets. Added `active:bg-white/[0.07]` touch feedback on all player rows. Increased checkbox size to `h-4 w-4 sm:h-3.5 sm:w-3.5` for easier mobile tapping. Made PlayerAvatar responsive — `h-8 w-8` on mobile, `h-7 w-7` on desktop. Added `shrink-0` to avatars and win rate badges to prevent text wrapping issues. Changed mode toggle tabs from `flex` to `grid grid-cols-1 sm:grid-cols-2` so they stack on mobile. Made tab icons larger on mobile (`h-5 w-5 sm:h-4 sm:w-4`). Added thicker active tab borders (`border-2` vs `border`). Increased swap button size to `h-8 w-8 sm:h-6 sm:w-6` on mobile. Added "no results" message when search filter matches nothing. Changed player list max-height from `28rem` to `32rem` for better scrollability. Added `truncate` to player names to prevent overflow. Updated guest row spacing to match new player row sizing.
+
+### Decisions & Reasoning
+- **Decision**: Started the Hold Udvælger overhaul with mobile UX fundamentals (not new features)
+  **Why**: Per the PROMPT.md priority directive, Hold Udvælger is the next major focus. The page already has solid functionality (two modes, formation view, team generation) but the mobile UX has small touch targets and no way to search/filter the player list. Improving the foundation first (touch targets, search, responsiveness) before adding new features like drag-to-reorder.
+- **Decision**: Added search filter as the first new feature
+  **Why**: With 15+ players on the list, finding and toggling specific players on a phone is tedious. A search box instantly narrows the list. This is the highest-impact mobile UX improvement for minimal code.
+- **Decision**: Used `grid grid-cols-1 sm:grid-cols-2` for mode tabs instead of `flex`
+  **Why**: On a 375px phone screen, two flex tabs with event dates squeeze uncomfortably. Stacking them vertically gives each tab full width, making the text and touch targets much more comfortable on mobile. Side-by-side still works on sm+ breakpoints.
+- **Decision**: Kept `active:bg` feedback on touch instead of adding a ripple effect
+  **Why**: The existing design uses hover-only feedback, which is invisible on touch devices. Adding `active:bg-white/[0.07]` gives immediate visual feedback when a player row is tapped, without needing any JavaScript animation library. Simple and consistent with the existing design language.
+- **Decision**: Made swap buttons 33% larger on mobile (h-8 vs h-6)
+  **Why**: The swap button between teams is the most frequently tapped action after generating teams. At h-6 (24px) it's below Apple's 44px minimum recommended touch target. At h-8 (32px) it's still not 44px but significantly more comfortable, and larger would look disproportionate.
+
+### Data Usage
+- No new backend data — all changes are frontend-only UX improvements.
+- The `filteredSpondPlayers` and `filteredOtherPlayers` memos use existing `spondPlayers` and `otherPlayers` arrays, filtering by `displayName`.
+
+### Failed Attempts & Dead Ends
+- None — all changes were straightforward responsive CSS and React state additions.
+
+### Next Iteration Ideas
+- Add position badges next to player names in the selection list (showing their preferred positions from `player_positions`)
+- Implement tap-to-move between teams — tap a player in Team 1 list to move them to Team 2 (currently requires the small swap button)
+- Add a "smart generate" option that uses position data to balance teams by position distribution, not just win rate
+- Consider a mobile-optimized "card view" instead of the current checkbox list — swipe right to select, left to deselect

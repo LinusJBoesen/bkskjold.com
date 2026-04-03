@@ -1,8 +1,8 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 13
-- **Task**: Completed — Kampanalyse sortable player stats table
+- **Round**: 14
+- **Task**: Completed — Hold Udvælger mobile UX overhaul (search, select all, larger touch targets)
 - **Last updated**: 2026-04-03
 
 ## Checklist
@@ -109,7 +109,17 @@
 - [x] Run E2E tests (50 pass, 17 pre-existing failures — no new regressions)
 - [x] Commit
 
-### Round 14+: Continuous Improvement
+### Round 14: Hold Udvælger Mobile UX Overhaul
+- [x] Added player search filter to player selection list
+- [x] Added "Alle" (select all) and "Ingen" (deselect all) quick action buttons
+- [x] Increased touch targets on mobile (taller rows, larger checkboxes, bigger swap buttons)
+- [x] Improved mode tabs to stack vertically on mobile, with thicker active borders
+- [x] Made PlayerAvatar slightly larger on mobile for better visibility
+- [x] Added active:bg feedback on touch for player rows
+- [x] Run E2E tests (50 pass, 17 pre-existing failures — no new regressions)
+- [x] Commit
+
+### Round 15+: Hold Udvælger Continued Improvements
 (Infinite — each iteration picks the most impactful improvement)
 
 ## Blockers
