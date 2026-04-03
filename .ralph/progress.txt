@@ -1,8 +1,8 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 12
-- **Task**: Completed — Dashboard Top Contributors deduplication (removed card list)
+- **Round**: 13
+- **Task**: Completed — Kampanalyse sortable player stats table
 - **Last updated**: 2026-04-03
 
 ## Checklist
@@ -102,7 +102,14 @@
 - [x] Run E2E tests (49 pass, 18 pre-existing failures — no new regressions)
 - [x] Commit
 
-### Round 13+: Continuous Improvement
+### Round 13: Kampanalyse Sortable Player Stats Table
+- [x] Added sortable headers to Kampanalyse player stats table (name, goals, assists, clean sheets, yellow/red cards)
+- [x] Added StatSortIcon component and sort toggle logic
+- [x] Default sort by goals descending — consistent with page's focus on match performance
+- [x] Run E2E tests (50 pass, 17 pre-existing failures — no new regressions)
+- [x] Commit
+
+### Round 14+: Continuous Improvement
 (Infinite — each iteration picks the most impactful improvement)
 
 ## Blockers
@@ -128,3 +135,4 @@
 | 2026-04-03 | TBD | Round 10: Dashboard KPI deduplication & declutter |
 | 2026-04-03 | TBD | Round 11: Kampanalyse KPI deduplication |
 | 2026-04-03 | TBD | Round 12: Dashboard top contributors deduplication |
+| 2026-04-03 | TBD | Round 13: Kampanalyse sortable player stats table |

@@ -382,3 +382,33 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 ### Next Iteration Ideas
 - Dashboard has 8 sections and is long — consider whether Recent Form (9 player cards) could be condensed to fewer players or a more compact layout
 - The analysis page's 4 match-analysis E2E tests are timing out (pre-existing) — could investigate if the page has a rendering issue causing slow loads
+| 1 | 12 | 2026-04-03 19:22 | iteration 1 |
+
+---
+
+## Iteration 13 — Round 13: Kampanalyse Sortable Player Stats Table
+**Date**: 2026-04-03 20:00
+
+### Changes
+- **frontend/src/pages/analysis/match.tsx**: Added `StatSortKey` and `StatSortDir` types for sort state. Added `StatSortIcon` component (chevron up/down with red-400 active color, matching Træningshistorik's `SortIcon`). Added `statSort` state defaulting to `{ key: "goals", dir: "desc" }`. Added `sortedPlayerStats` useMemo — sorts `data.playerStats` by the selected column using `localeCompare` for names and numeric comparison for stats. Added `toggleStatSort` function — toggles direction if same key clicked, defaults to descending for new key. Made all 6 table headers (`th` elements) clickable with `cursor-pointer`, `select-none`, `hover:text-zinc-200` styling. Added `StatSortIcon` to each header showing active sort direction. Changed table body to iterate over `sortedPlayerStats` instead of `data.playerStats`. Added `ChevronUp` and `ChevronDown` imports from lucide-react.
+
+### Decisions & Reasoning
+- **Decision**: Made the Kampanalyse player stats table sortable (matching Træningshistorik's table)
+  **Why**: The Træningshistorik page (Round 3) already has a fully sortable stats table with clickable headers and visual sort indicators. The Kampanalyse player stats table was static — users couldn't sort by goals, assists, or cards. This was an obvious UX inconsistency. Users visiting Kampanalyse expect the same interactive table behavior they see on Træningshistorik.
+- **Decision**: Default sort by goals descending (not alphabetical)
+  **Why**: The Kampanalyse page focuses on competitive match performance. Top scorers are the most interesting data point. Sorting by goals descending surfaces the most impactful players immediately, matching the page's analytical purpose. Træningshistorik defaults to win rate, which makes sense for that page's training context.
+- **Decision**: Used a separate `StatSortIcon` component instead of importing from Træningshistorik
+  **Why**: The existing `SortIcon` in training.tsx is a local component, not exported. Extracting shared components was explicitly deferred in Round 5 (see changelog). A 6-line component isn't worth the import overhead.
+- **Decision**: Did not add MVP/worst highlighting to this table
+  **Why**: The Kampanalyse table shows goals/assists/cards — there's no single "best" metric like win rate. Highlighting the top scorer would ignore the top assister. Keeping the table neutral lets users sort by whatever metric matters to them.
+
+### Data Usage
+- No new data sources — uses existing `data.playerStats` from `/api/analysis/player-rates`. Only changed how the data is rendered (sorted vs unsorted).
+
+### Failed Attempts & Dead Ends
+- None — straightforward implementation following the established pattern from Træningshistorik.
+
+### Next Iteration Ideas
+- The 4 analysis E2E tests are timing out (pre-existing) — could investigate if the page has a slow rendering or API issue
+- Dashboard Recent Form section (9 player cards) takes significant vertical space — could condense to top 6 or a more compact horizontal layout
+- Training Results and Fines Per Player charts use vertical bars with player names on X-axis — hard to read on mobile with many players; could convert to horizontal layout
