@@ -292,3 +292,34 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 - Training vs competitive performance overlay (compare training win rate trend with DBU results)
 - Per-player goal contribution sparklines in the stats table
 - Spond attendance acceptance rate chart using spond_attendance response data
+| 4 | 9 | 2026-04-02 20:36 | iteration 4 |
+
+---
+
+## Iteration 10 — Round 10: Dashboard KPI Deduplication & Declutter
+**Date**: 2026-04-03
+
+### Changes
+- **frontend/src/pages/dashboard.tsx**: Removed "Betalt" (paid fines) stat card — was showing the exact same value as the bødekasse widget's "Indsamlet" (collected) field. Removed win rate distribution horizontal bar chart — was duplicating the Top 3 "Bedste sejrsrate" card (both show player win rates). Changed stat cards grid from `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` to `grid-cols-2 sm:grid-cols-4` for the now-4 cards. Removed `dashboard-fine-by-type` from nested 2-col grid into standalone full-width Card. Cleaned up unused imports: `CheckCircle` from lucide-react, `LineChart` and `Line` from Recharts (were imported but never used).
+
+### Decisions & Reasoning
+- **Decision**: Removed "Betalt" stat card rather than bødekasse "Indsamlet"
+  **Why**: The bødekasse widget provides richer context (collected + spent + remaining balance with progress bar), while the stat card showed just one number. Keeping the widget and removing the card preserves more information density.
+- **Decision**: Removed win rate distribution chart rather than Top 3 "Bedste sejrsrate" card
+  **Why**: The Top 3 card is more compact and fits the dashboard's "at a glance" purpose — users see the top 3 instantly. The full 10-player horizontal bar chart duplicated this with more visual weight but less clarity. Win rate data is also derivable from the training results chart (which shows wins/losses per player). The Træningshistorik page has a dedicated win rate chart for deep-dive analysis.
+- **Decision**: Made fine breakdown donut a standalone full-width card
+  **Why**: Previously it was in a 2-col grid with the now-removed win rate chart. Leaving it alone in a 2-col grid would waste half the row. As a standalone card it still reads well since donut charts are inherently compact.
+- **Decision**: Did not remove additional sections despite dashboard having 8+ widgets
+  **Why**: Each remaining section now shows unique, non-overlapping data: totals (summary numbers), bødekasse (financial health), top 3 (leaderboards), recent form (streaks), top contributors (goals/assists), training results + fines per player (activity charts), fine breakdown (type distribution), attendance + activity (trends + timeline). Further reduction would lose unique insights.
+
+### Data Usage
+- No new data sources — this iteration was purely about removing duplicate presentations of existing data.
+- The `paidFines` field is still returned by the API and used in the bødekasse widget indirectly. The `trainingChart.winRate` field is still available for the training results chart but no longer has its own dedicated chart on the dashboard.
+
+### Failed Attempts & Dead Ends
+- None — the duplicate identification was straightforward from reading the page.
+
+### Next Iteration Ideas
+- Kampanalyse page has similar duplication: player highlight cards show same data as goals+assists chart and player stats table — could consolidate
+- Season overview "Spillermål" / "Spillerassists" tiles overlap with the goals+assists bar chart on the same page
+- Consider collapsible sections or tabs to reduce vertical scroll on data-heavy pages

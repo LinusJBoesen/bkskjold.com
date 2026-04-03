@@ -1,9 +1,9 @@
 # Dashboard & Stats Upgrade — PROGRESS
 
 ## Current Status
-- **Round**: 9
-- **Task**: Starting
-- **Last updated**: 2026-04-02
+- **Round**: 10
+- **Task**: Completed — Dashboard KPI deduplication
+- **Last updated**: 2026-04-03
 
 ## Checklist
 
@@ -72,7 +72,23 @@
 - [x] Run E2E tests (54 pass, 13 pre-existing failures)
 - [x] Commit
 
-### Round 9+: Continuous Improvement
+### Round 9: Match Events in Træningshistorik Cards
+- [x] Added match_events to /api/matches list response (goals, assists, cards per match)
+- [x] Updated training history match cards to show goal scorers, assisters, and cards
+- [x] i18n strings for event labels (goalsLabel, assistsLabel, cardsLabel)
+- [x] Run E2E tests (54 pass, 13 pre-existing failures)
+- [x] Commit
+
+### Round 10: Dashboard KPI Deduplication & Declutter
+- [x] Audited dashboard for duplicate KPIs per design philosophy
+- [x] Removed "Betalt" stat card (exact duplicate of bødekasse "Indsamlet")
+- [x] Removed win rate distribution chart (duplicate of Top 3 "Bedste sejrsrate" card)
+- [x] Cleaned up unused imports (CheckCircle, LineChart, Line)
+- [x] Adjusted stat card grid from 5-col to 4-col layout
+- [x] Run E2E tests (49 pass, 18 pre-existing failures — no dashboard regressions)
+- [x] Commit
+
+### Round 11+: Continuous Improvement
 (Infinite — each iteration picks the most impactful improvement)
 
 ## Blockers
@@ -94,3 +110,5 @@
 | 2026-04-02 | TBD | Round 6: Top contributors on dashboard from match_events |
 | 2026-04-02 | TBD | Round 7: Bødekasse balance widget on dashboard |
 | 2026-04-02 | TBD | Round 8: Goal difference trend chart on Kampanalyse |
+| 2026-04-02 | TBD | Round 9: Match events in Træningshistorik cards |
+| 2026-04-03 | TBD | Round 10: Dashboard KPI deduplication & declutter |

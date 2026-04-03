@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
-import { RefreshCw, Users, Banknote, CheckCircle, Trophy, TrendingUp, AlertTriangle, Heart, Activity, Clock, Swords, Target, Star, Wallet } from "lucide-react";
+import { RefreshCw, Users, Banknote, Trophy, TrendingUp, AlertTriangle, Heart, Activity, Clock, Swords, Target, Star, Wallet } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart,
+  ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart,
 } from "recharts";
 
 interface Top3Item {
@@ -269,12 +269,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Totals */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 animate-stagger">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 animate-stagger">
         <StatCard icon={Users} label="Spillere" value={String(data?.totals.players ?? 0)} testId="player-count" />
         <StatCard icon={Swords} label="Kampe" value={String(data?.totals.matches ?? 0)} color="text-zinc-50" testId="dashboard-match-count" />
         <StatCard icon={Heart} label="Fans" value={String(data?.totals.fans ?? 0)} color="text-zinc-50" testId="dashboard-fan-count" />
         <StatCard icon={Banknote} label="Total bøder" value={`${data?.totals.totalFines ?? 0} kr`} color="text-red-400" testId="dashboard-total-fines" />
-        <StatCard icon={CheckCircle} label="Betalt" value={`${data?.totals.paidFines ?? 0} kr`} color="text-emerald-400" testId="dashboard-paid-fines" />
       </div>
 
       {/* Bødekasse Balance */}
@@ -502,77 +501,42 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Fine Breakdown Donut + Win Rate Chart */}
-      {data && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
-          {/* Fine breakdown by type - donut chart */}
-          {data.fineByType.length > 0 && (
-            <Card data-testid="dashboard-fine-by-type">
-              <CardHeader>
-                <CardTitle className="text-lg text-zinc-50">{da.dashboard.fineBreakdown}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                  <PieChart>
-                    <Pie
-                      data={data.fineByType}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={90}
-                      paddingAngle={3}
-                      dataKey="total"
-                      nameKey="name"
-                      stroke="none"
-                    >
-                      {data.fineByType.map((_, i) => (
-                        <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={darkTooltipStyle}
-                      formatter={(value: number) => [`${value} kr`, ""]}
-                    />
-                    <Legend
-                      wrapperStyle={{ color: "#A1A1AA", fontSize: "12px" }}
-                      formatter={(value: string) => <span className="text-zinc-300 text-xs">{value}</span>}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Win rate distribution - horizontal bar chart */}
-          {data.trainingChart.filter(p => p.wins + p.losses > 0).length > 0 && (
-            <Card data-testid="dashboard-win-rate">
-              <CardHeader>
-                <CardTitle className="text-lg text-zinc-50">{da.dashboard.winRateDistribution}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart
-                    data={data.trainingChart
-                      .filter(p => p.wins + p.losses > 0)
-                      .sort((a, b) => b.winRate - a.winRate)
-                      .slice(0, 10)}
-                    layout="vertical"
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#27272A" horizontal={false} />
-                    <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: "#A1A1AA" }} stroke="#3F3F46" tickFormatter={(v) => `${v}%`} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#A1A1AA" }} stroke="#3F3F46" width={80} />
-                    <Tooltip
-                      contentStyle={darkTooltipStyle}
-                      cursor={{ fill: "rgba(255,255,255,0.02)" }}
-                      formatter={(value: number) => [`${value}%`, da.dashboard.winRate]}
-                    />
-                    <Bar dataKey="winRate" fill="#D42428" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+      {/* Fine Breakdown Donut */}
+      {data && data.fineByType.length > 0 && (
+        <Card className="mb-6" data-testid="dashboard-fine-by-type">
+          <CardHeader>
+            <CardTitle className="text-lg text-zinc-50">{da.dashboard.fineBreakdown}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={data.fineByType}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={90}
+                  paddingAngle={3}
+                  dataKey="total"
+                  nameKey="name"
+                  stroke="none"
+                >
+                  {data.fineByType.map((_, i) => (
+                    <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={darkTooltipStyle}
+                  formatter={(value: number) => [`${value} kr`, ""]}
+                />
+                <Legend
+                  wrapperStyle={{ color: "#A1A1AA", fontSize: "12px" }}
+                  formatter={(value: string) => <span className="text-zinc-300 text-xs">{value}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       )}
 
       {/* Attendance Trend + Recent Activity */}
