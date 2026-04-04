@@ -477,3 +477,4 @@ Each iteration documents all changes, decisions, and reasoning so you can review
 - Tap-to-move between teams on mobile — tap a player row to cycle them between Team 1 and Team 2 (more intuitive than small swap button on touch devices)
 - Show position badges next to player names in the generated team cards (not just in the selection list)
 - Add a "re-balance" button that runs the algorithm again with different random seeds to explore alternative team compositions
+| 3 | 15 | 2026-04-03 20:40 | iteration 3 |
