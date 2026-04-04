@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
 import { FormationView, autoAssign, type PlayerInfo, type Position } from "@/components/pitch";
-import { Users, Shuffle, Save, UserPlus, ClipboardCopy, Check, ArrowRightLeft, Calendar, Trophy, LayoutGrid, List } from "lucide-react";
+import { Users, Shuffle, Save, UserPlus, ClipboardCopy, Check, ArrowRightLeft, Calendar, Trophy, LayoutGrid, List, Search, CheckSquare, Square } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 interface AvailablePlayer {
@@ -50,23 +50,52 @@ interface TeamResult {
 }
 
 function PlayerAvatar({ name, src, size = "sm" }: { name: string; src?: string | null; size?: "sm" | "md" }) {
-  const dim = size === "sm" ? "h-7 w-7" : "h-9 w-9";
-  const textSize = size === "sm" ? "text-[10px]" : "text-xs";
+  const dim = size === "sm" ? "h-8 w-8 sm:h-7 sm:w-7" : "h-10 w-10 sm:h-9 sm:w-9";
+  const textSize = size === "sm" ? "text-[11px] sm:text-[10px]" : "text-xs";
 
   if (src) {
     return (
       <img
         src={src}
         alt={name}
-        className={`${dim} rounded-full object-cover border border-zinc-700`}
+        className={`${dim} rounded-full object-cover border border-zinc-700 shrink-0`}
       />
     );
   }
 
   const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
   return (
-    <div className={`${dim} rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center ${textSize} font-medium text-zinc-400`}>
+    <div className={`${dim} rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center ${textSize} font-medium text-zinc-400 shrink-0`}>
       {initials}
+    </div>
+  );
+}
+
+const POSITION_LABELS: Record<string, { short: string; color: string }> = {
+  keeper: { short: "MV", color: "text-amber-400 bg-amber-400/10 border-amber-400/20" },
+  defender: { short: "F", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
+  wing: { short: "K", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
+  midfield: { short: "C", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
+  attacker: { short: "A", color: "text-red-400 bg-red-400/10 border-red-400/20" },
+};
+
+function PositionBadges({ positions }: { positions: string[] }) {
+  if (positions.length === 0) return null;
+  return (
+    <div className="flex gap-0.5 shrink-0">
+      {positions.slice(0, 2).map((pos) => {
+        const label = POSITION_LABELS[pos];
+        if (!label) return null;
+        return (
+          <span
+            key={pos}
+            className={`text-[9px] font-bold px-1 py-0.5 rounded border leading-none ${label.color}`}
+            title={da.formation[pos as keyof typeof da.formation] ?? pos}
+          >
+            {label.short}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -103,6 +132,7 @@ export default function TeamSelectorPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [formationTeam, setFormationTeam] = useState<1 | 2>(1);
   const [playerPositions, setPlayerPositions] = useState<Record<string, Position[]>>({});
+  const [playerSearch, setPlayerSearch] = useState("");
   const { toast } = useToast();
 
   // Match squad state (starters + bench, no two-team split)
@@ -184,6 +214,28 @@ export default function TeamSelectorPage() {
     (p, i, arr) => arr.findIndex((x) => x.id === p.id) === i
   );
 
+  // Filter players by search term
+  const filteredSpondPlayers = useMemo(() => {
+    if (!playerSearch.trim()) return spondPlayers;
+    const q = playerSearch.toLowerCase();
+    return spondPlayers.filter((p) => p.displayName.toLowerCase().includes(q));
+  }, [spondPlayers, playerSearch]);
+
+  const filteredOtherPlayers = useMemo(() => {
+    if (!playerSearch.trim()) return otherPlayers;
+    const q = playerSearch.toLowerCase();
+    return otherPlayers.filter((p) => p.displayName.toLowerCase().includes(q));
+  }, [otherPlayers, playerSearch]);
+
+  const selectAll = () => {
+    const all = new Set(allPlayersList.map((p) => p.id));
+    setSelected(all);
+  };
+
+  const deselectAll = () => {
+    setSelected(new Set());
+  };
+
   const addGuest = () => {
     if (guestName.trim()) {
       setGuests([...guests, guestName.trim()]);
@@ -207,8 +259,15 @@ export default function TeamSelectorPage() {
       ...Array.from(selected),
       ...guests.map((_, i) => `guest-${i}-${guests[i]}`),
     ];
+    // Send position data so the algorithm can balance by position distribution
+    const positionsPayload: Record<string, string[]> = {};
+    for (const id of playerIds) {
+      if (playerPositions[id]?.length) {
+        positionsPayload[id] = playerPositions[id] as string[];
+      }
+    }
     try {
-      const res = await api.post<TeamResult>("/teams/generate", { playerIds, algorithm: "greedy" });
+      const res = await api.post<TeamResult>("/teams/generate", { playerIds, algorithm: "greedy", positions: positionsPayload });
       setResult(res);
       setCopied(false);
       toast("Hold genereret", "success");
@@ -338,6 +397,24 @@ export default function TeamSelectorPage() {
     }
   };
 
+  // Compute position distribution for generated teams
+  const teamPositionSummary = useMemo(() => {
+    if (!result) return null;
+    const countPositions = (team: PlayerStats[]) => {
+      const counts: Record<string, number> = {};
+      for (const p of team) {
+        for (const pos of (playerPositions[p.id] ?? [])) {
+          counts[pos] = (counts[pos] ?? 0) + 1;
+        }
+      }
+      return counts;
+    };
+    return {
+      team1: countPositions(result.team1),
+      team2: countPositions(result.team2),
+    };
+  }, [result, playerPositions]);
+
   const winRateColor = (rate: number) => {
     if (rate > 0.5) return "text-emerald-400";
     if (rate < 0.5) return "text-red-400";
@@ -397,19 +474,19 @@ export default function TeamSelectorPage() {
         </div>
       </div>
 
-      {/* Event Tabs */}
-      <div className="flex gap-2 mb-6">
+      {/* Event Tabs — stack on mobile, side-by-side on larger */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
         <button
           onClick={() => switchTab("training")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+          className={`flex items-center gap-3 px-4 py-3 sm:py-2.5 rounded-lg text-sm font-medium transition-all ${
             activeTab === "training"
-              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+              ? "bg-emerald-500/10 text-emerald-400 border-2 border-emerald-500/30"
               : "bg-zinc-900/50 text-zinc-400 border border-zinc-800 hover:text-zinc-200 hover:border-zinc-700"
           }`}
         >
-          <Calendar className="h-4 w-4" />
+          <Calendar className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
           <div className="text-left">
-            <div>Næste træning</div>
+            <div className="text-base sm:text-sm">Træning</div>
             {data?.training ? (
               <div className="text-xs opacity-70">{formatDate(data.training.date)} — {data.training.players.length} tilmeldt</div>
             ) : (
@@ -419,15 +496,15 @@ export default function TeamSelectorPage() {
         </button>
         <button
           onClick={() => switchTab("match")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+          className={`flex items-center gap-3 px-4 py-3 sm:py-2.5 rounded-lg text-sm font-medium transition-all ${
             activeTab === "match"
-              ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+              ? "bg-blue-500/10 text-blue-400 border-2 border-blue-500/30"
               : "bg-zinc-900/50 text-zinc-400 border border-zinc-800 hover:text-zinc-200 hover:border-zinc-700"
           }`}
         >
-          <Trophy className="h-4 w-4" />
+          <Trophy className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
           <div className="text-left">
-            <div>Næste kamp</div>
+            <div className="text-base sm:text-sm">Kamp</div>
             {data?.match ? (
               <div className="text-xs opacity-70">{formatDate(data.match.date)} — {data.match.players.length} tilmeldt</div>
             ) : (
@@ -680,99 +757,146 @@ export default function TeamSelectorPage() {
                   <Users className="h-4 w-4 text-zinc-400" />
                   Spillere
                 </CardTitle>
-                <p className="text-xs text-zinc-500">
-                  {selected.size + guests.length} valgt
-                  {spondPlayers.length > 0 ? (
-                    <span className="ml-1.5 text-emerald-400">({spondPlayers.length} tilmeldt via Spond)</span>
-                  ) : null}
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-zinc-500">
+                    {selected.size + guests.length} valgt
+                    {spondPlayers.length > 0 ? (
+                      <span className="ml-1.5 text-emerald-400">({spondPlayers.length} tilmeldt via Spond)</span>
+                    ) : null}
+                  </p>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={selectAll}
+                      className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors px-1.5 py-0.5 rounded"
+                      data-testid="team-select-all"
+                    >
+                      <CheckSquare className="h-3 w-3" />
+                      Alle
+                    </button>
+                    <button
+                      onClick={deselectAll}
+                      className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors px-1.5 py-0.5 rounded"
+                      data-testid="team-deselect-all"
+                    >
+                      <Square className="h-3 w-3" />
+                      Ingen
+                    </button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
+                {/* Search filter */}
+                <div className="relative mb-3">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+                  <input
+                    type="text"
+                    placeholder="Søg spiller..."
+                    value={playerSearch}
+                    onChange={(e) => setPlayerSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2 text-sm bg-zinc-900/50 border border-zinc-800 rounded-lg text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
+                    data-testid="team-player-search"
+                  />
+                </div>
+
                 {allPlayersList.length === 0 && guests.length === 0 ? (
                   <p className="text-sm text-zinc-500" data-testid="team-empty-state">Ingen spillere tilgængelige</p>
                 ) : (
-                  <div className="space-y-1 max-h-[28rem] overflow-y-auto pr-1" data-testid="team-available-players">
+                  <div className="space-y-0.5 max-h-[32rem] overflow-y-auto pr-1 -mx-1" data-testid="team-available-players">
                     {/* Spond-accepted players */}
-                    {spondPlayers.length > 0 && (
+                    {filteredSpondPlayers.length > 0 && (
                       <>
-                        <div className="text-[10px] uppercase tracking-wider font-semibold text-emerald-400/70 px-2 pt-1 pb-0.5">
+                        <div className="text-[10px] uppercase tracking-wider font-semibold text-emerald-400/70 px-3 pt-1 pb-1">
                           Tilmeldt
                         </div>
-                        {spondPlayers.map((p) => (
+                        {filteredSpondPlayers.map((p) => (
                           <label
                             key={p.id}
-                            className="flex items-center gap-2.5 text-sm cursor-pointer rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors"
+                            className="flex items-center gap-3 text-sm cursor-pointer rounded-lg px-3 py-2.5 sm:py-1.5 hover:bg-white/[0.04] active:bg-white/[0.07] transition-colors"
                           >
                             <input
                               type="checkbox"
                               checked={selected.has(p.id)}
                               onChange={() => togglePlayer(p.id)}
-                              className="accent-red-500 rounded"
+                              className="accent-red-500 rounded h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0"
                             />
                             <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                            <span className="text-zinc-200">{p.displayName}</span>
-                            <span className={`ml-auto tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
-                              {Math.round(p.winRate * 100)}%
-                            </span>
+                            <span className="text-zinc-200 truncate min-w-0">{p.displayName}</span>
+                            <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                              <PositionBadges positions={playerPositions[p.id] ?? []} />
+                              <span className={`tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                                {Math.round(p.winRate * 100)}%
+                              </span>
+                            </div>
                           </label>
                         ))}
                       </>
                     )}
 
                     {/* Other players (not signed up on Spond) */}
-                    {otherPlayers.length > 0 && (
+                    {filteredOtherPlayers.length > 0 && (
                       <>
-                        <div className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 px-2 pt-3 pb-0.5 border-t border-zinc-800/50 mt-2">
+                        <div className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 px-3 pt-3 pb-1 border-t border-zinc-800/50 mt-1">
                           {spondPlayers.length > 0 ? "Ikke tilmeldt" : "Alle spillere"}
                         </div>
-                        {otherPlayers.map((p) => (
+                        {filteredOtherPlayers.map((p) => (
                           <label
                             key={p.id}
-                            className="flex items-center gap-2.5 text-sm cursor-pointer rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors opacity-70 hover:opacity-100"
+                            className="flex items-center gap-3 text-sm cursor-pointer rounded-lg px-3 py-2.5 sm:py-1.5 hover:bg-white/[0.04] active:bg-white/[0.07] transition-colors opacity-70 hover:opacity-100"
                           >
                             <input
                               type="checkbox"
                               checked={selected.has(p.id)}
                               onChange={() => togglePlayer(p.id)}
-                              className="accent-red-500 rounded"
+                              className="accent-red-500 rounded h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0"
                             />
                             <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                            <span className="text-zinc-400">{p.displayName}</span>
-                            <span className={`ml-auto tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
-                              {Math.round(p.winRate * 100)}%
-                            </span>
+                            <span className="text-zinc-400 truncate min-w-0">{p.displayName}</span>
+                            <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                              <PositionBadges positions={playerPositions[p.id] ?? []} />
+                              <span className={`tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                                {Math.round(p.winRate * 100)}%
+                              </span>
+                            </div>
                           </label>
                         ))}
                       </>
                     )}
 
                     {/* Fallback: if no Spond event, show all players normally */}
-                    {spondPlayers.length === 0 && otherPlayers.length === 0 && (data?.allPlayers ?? []).map((p) => (
+                    {filteredSpondPlayers.length === 0 && filteredOtherPlayers.length === 0 && !playerSearch.trim() && (data?.allPlayers ?? []).map((p) => (
                       <label
                         key={p.id}
-                        className="flex items-center gap-2.5 text-sm cursor-pointer rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors"
+                        className="flex items-center gap-3 text-sm cursor-pointer rounded-lg px-3 py-2.5 sm:py-1.5 hover:bg-white/[0.04] active:bg-white/[0.07] transition-colors"
                       >
                         <input
                           type="checkbox"
                           checked={selected.has(p.id)}
                           onChange={() => togglePlayer(p.id)}
-                          className="accent-red-500 rounded"
+                          className="accent-red-500 rounded h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0"
                         />
                         <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                        <span className="text-zinc-200">{p.displayName}</span>
-                        <span className={`ml-auto tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
-                          {Math.round(p.winRate * 100)}%
-                        </span>
+                        <span className="text-zinc-200 truncate min-w-0">{p.displayName}</span>
+                        <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                          <PositionBadges positions={playerPositions[p.id] ?? []} />
+                          <span className={`tabular-nums text-xs font-medium ${winRateColor(p.winRate)}`}>
+                            {Math.round(p.winRate * 100)}%
+                          </span>
+                        </div>
                       </label>
                     ))}
 
+                    {/* No results for search */}
+                    {playerSearch.trim() && filteredSpondPlayers.length === 0 && filteredOtherPlayers.length === 0 && (
+                      <p className="text-xs text-zinc-600 px-3 py-2">Ingen spillere matcher "{playerSearch}"</p>
+                    )}
+
                     {guests.map((g, i) => (
-                      <div key={`guest-${i}`} className="flex items-center gap-2.5 text-sm text-zinc-500 px-2 py-1.5">
-                        <input type="checkbox" checked disabled className="accent-red-500" />
-                        <div className="h-7 w-7 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-[10px] font-medium text-zinc-500">
+                      <div key={`guest-${i}`} className="flex items-center gap-3 text-sm text-zinc-500 px-3 py-2.5 sm:py-1.5">
+                        <input type="checkbox" checked disabled className="accent-red-500 h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0" />
+                        <div className="h-8 w-8 sm:h-7 sm:w-7 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-[11px] sm:text-[10px] font-medium text-zinc-500 shrink-0">
                           G
                         </div>
-                        <span>Gæst: {g}</span>
+                        <span className="truncate">Gæst: {g}</span>
                       </div>
                     ))}
                   </div>
@@ -829,7 +953,7 @@ export default function TeamSelectorPage() {
                   <CardContent>
                     <div className="space-y-1" data-testid="team-1-players">
                       {result.team1.map((p) => (
-                        <div key={p.id} className="flex items-center justify-between text-sm rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors">
+                        <div key={p.id} className="flex items-center justify-between text-sm rounded-lg px-2 py-2.5 sm:py-1.5 hover:bg-white/[0.03] active:bg-white/[0.06] transition-colors">
                           <div className="flex items-center gap-2.5">
                             <PlayerAvatar name={p.displayName} src={getPlayerPicture(p.id)} />
                             <span className="text-zinc-200">{p.displayName}</span>
@@ -843,9 +967,9 @@ export default function TeamSelectorPage() {
                               size="sm"
                               onClick={() => swapPlayer(p.id)}
                               data-testid={`team-swap-${p.id}`}
-                              className="h-6 w-6 p-0"
+                              className="h-8 w-8 sm:h-6 sm:w-6 p-0"
                             >
-                              <ArrowRightLeft className="h-3.5 w-3.5" />
+                              <ArrowRightLeft className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                             </Button>
                           </div>
                         </div>
@@ -868,7 +992,7 @@ export default function TeamSelectorPage() {
                   <CardContent>
                     <div className="space-y-1" data-testid="team-2-players">
                       {result.team2.map((p) => (
-                        <div key={p.id} className="flex items-center justify-between text-sm rounded-lg px-2 py-1.5 hover:bg-white/[0.03] transition-colors">
+                        <div key={p.id} className="flex items-center justify-between text-sm rounded-lg px-2 py-2.5 sm:py-1.5 hover:bg-white/[0.03] active:bg-white/[0.06] transition-colors">
                           <div className="flex items-center gap-2.5">
                             <PlayerAvatar name={p.displayName} src={getPlayerPicture(p.id)} />
                             <span className="text-zinc-200">{p.displayName}</span>
@@ -882,9 +1006,9 @@ export default function TeamSelectorPage() {
                               size="sm"
                               onClick={() => swapPlayer(p.id)}
                               data-testid={`team-swap-${p.id}`}
-                              className="h-6 w-6 p-0"
+                              className="h-8 w-8 sm:h-6 sm:w-6 p-0"
                             >
-                              <ArrowRightLeft className="h-3.5 w-3.5" />
+                              <ArrowRightLeft className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                             </Button>
                           </div>
                         </div>
@@ -899,9 +1023,28 @@ export default function TeamSelectorPage() {
           {result && activeTab === "training" && (
             <div className="mt-6 bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="text-sm text-zinc-300 flex-1" data-testid="team-balance">
-                  Balance: <span className="font-bold text-zinc-50">{result.balance.balancePercent}%</span>
-                  <span className="text-zinc-500 ml-2">(forskel: {result.balance.difference})</span>
+                <div className="flex-1 space-y-2">
+                  <div className="text-sm text-zinc-300" data-testid="team-balance">
+                    Balance: <span className="font-bold text-zinc-50">{result.balance.balancePercent}%</span>
+                    <span className="text-zinc-500 ml-2">(forskel: {result.balance.difference})</span>
+                  </div>
+                  {teamPositionSummary && Object.keys({ ...teamPositionSummary.team1, ...teamPositionSummary.team2 }).length > 0 && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500" data-testid="team-position-summary">
+                      {(["keeper", "defender", "wing", "midfield", "attacker"] as const)
+                        .filter((pos) => (teamPositionSummary.team1[pos] ?? 0) + (teamPositionSummary.team2[pos] ?? 0) > 0)
+                        .map((pos) => {
+                          const label = POSITION_LABELS[pos];
+                          const c1 = teamPositionSummary.team1[pos] ?? 0;
+                          const c2 = teamPositionSummary.team2[pos] ?? 0;
+                          return (
+                            <span key={pos} className="flex items-center gap-1">
+                              <span className={`text-[9px] font-bold px-1 py-0.5 rounded border leading-none ${label.color}`}>{label.short}</span>
+                              <span>{c1}–{c2}</span>
+                            </span>
+                          );
+                        })}
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button variant="secondary" onClick={copyTeams} data-testid="team-copy-button">
@@ -982,8 +1125,8 @@ export default function TeamSelectorPage() {
                               {Math.round(p.winRate * 100)}%
                             </span>
                             {matchSquad.bench.length < 3 && (
-                              <Button variant="ghost" size="sm" onClick={() => moveToBench(p.id)} className="h-6 w-6 p-0" title="Flyt til bænk">
-                                <ArrowRightLeft className="h-3.5 w-3.5" />
+                              <Button variant="ghost" size="sm" onClick={() => moveToBench(p.id)} className="h-8 w-8 sm:h-6 sm:w-6 p-0" title="Flyt til bænk">
+                                <ArrowRightLeft className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                               </Button>
                             )}
                           </div>
@@ -1014,8 +1157,8 @@ export default function TeamSelectorPage() {
                               {Math.round(p.winRate * 100)}%
                             </span>
                             {matchSquad.starters.length < 7 && (
-                              <Button variant="ghost" size="sm" onClick={() => moveToStarters(p.id)} className="h-6 w-6 p-0" title="Flyt til startende">
-                                <ArrowRightLeft className="h-3.5 w-3.5" />
+                              <Button variant="ghost" size="sm" onClick={() => moveToStarters(p.id)} className="h-8 w-8 sm:h-6 sm:w-6 p-0" title="Flyt til startende">
+                                <ArrowRightLeft className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                               </Button>
                             )}
                           </div>

@@ -27,6 +27,30 @@ matches.get("/", requireRole("admin", "spiller"), async (c) => {
         baseQuery + " GROUP BY m.id ORDER BY m.date DESC"
       );
 
+  // Fetch match events and attach to each match
+  const matchIds = rows.map((r: any) => r.id);
+  if (matchIds.length > 0) {
+    const events = await sql`
+      SELECT me.match_id, me.event_type, me.minute, p.display_name
+      FROM match_events me
+      JOIN players p ON me.player_id = p.id
+      WHERE me.match_id = ANY(${sql.array(matchIds, 'TEXT')})
+      ORDER BY me.minute ASC NULLS LAST
+    `;
+    const eventsByMatch: Record<string, any[]> = {};
+    for (const e of events) {
+      if (!eventsByMatch[e.match_id]) eventsByMatch[e.match_id] = [];
+      eventsByMatch[e.match_id].push({
+        event_type: e.event_type,
+        minute: e.minute,
+        display_name: e.display_name,
+      });
+    }
+    for (const row of rows) {
+      (row as any).events = eventsByMatch[(row as any).id] || [];
+    }
+  }
+
   return c.json(rows);
 });
 

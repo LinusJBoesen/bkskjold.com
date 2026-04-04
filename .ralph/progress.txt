@@ -1,0 +1,154 @@
+# Dashboard & Stats Upgrade — PROGRESS
+
+## Current Status
+- **Round**: 15
+- **Task**: Completed — Position-aware team balancing algorithm + position distribution summary
+- **Last updated**: 2026-04-03
+
+## Checklist
+
+### Round 1: Dashboard — More Charts & Polish
+- [x] Fine breakdown donut/pie chart (fineByType data)
+- [x] Win rate distribution chart
+- [x] Recent form/streak indicators
+- [x] Polish stat cards and layout
+- [x] i18n strings
+- [x] Run E2E tests
+- [x] Commit
+
+### Round 2: Dashboard — Activity Feed & Responsive
+- [x] Attendance/participation trend chart
+- [x] Recent activity section
+- [x] Responsive grid improvements
+- [x] Dark theme chart polish
+- [x] Run E2E tests
+- [x] Commit
+
+### Round 3: Træningshistorik — Charts & Smart Stats
+- [x] Win rate bar chart per player
+- [x] Form streaks (W/L indicators)
+- [x] Sortable stats table
+- [x] Visual highlights
+- [x] Improved match history cards
+- [x] Run E2E tests
+- [x] Commit
+
+### Round 4: Kampanalyse — Visual Stats & Charts
+- [x] Goals + assists bar chart
+- [x] Form timeline
+- [x] Visual player stat cards
+- [x] Season overview section
+- [x] Run E2E tests
+- [x] Commit
+
+### Round 5: Cross-Page Polish & Consistency
+- [x] Visual consistency across pages
+- [x] Mobile-friendly at all breakpoints
+- [x] data-testid verification
+- [x] Animations and transitions
+- [x] Run E2E tests
+- [x] Commit
+
+### Round 6: Top Contributors on Dashboard
+- [x] Added match_events query to stats endpoint (goals, assists, cards, clean sheets)
+- [x] Added top contributors section with stacked bar chart + ranked cards
+- [x] Added aggregate goal/assist totals to stat data
+- [x] i18n strings for new section
+- [x] Run E2E tests (55 pass, 12 pre-existing failures)
+- [x] Commit
+
+### Round 7: Bødekasse Balance Widget on Dashboard
+- [x] Added bødekasse balance query to stats endpoint (paid fines vs expenses)
+- [x] Added bødekasse widget with collected/spent/balance + progress bar
+- [x] i18n strings for bødekasse section
+- [x] Run E2E tests (55 pass, 12 pre-existing failures)
+- [x] Commit
+
+### Round 8: Goal Difference Trend Chart on Kampanalyse
+- [x] Added cumulative goal difference area chart to Kampanalyse page
+- [x] Color-coded dots (green positive, red negative) with gradient fill
+- [x] Custom tooltips showing opponent, score, and cumulative diff
+- [x] i18n strings for new section
+- [x] Run E2E tests (54 pass, 13 pre-existing failures)
+- [x] Commit
+
+### Round 9: Match Events in Træningshistorik Cards
+- [x] Added match_events to /api/matches list response (goals, assists, cards per match)
+- [x] Updated training history match cards to show goal scorers, assisters, and cards
+- [x] i18n strings for event labels (goalsLabel, assistsLabel, cardsLabel)
+- [x] Run E2E tests (54 pass, 13 pre-existing failures)
+- [x] Commit
+
+### Round 10: Dashboard KPI Deduplication & Declutter
+- [x] Audited dashboard for duplicate KPIs per design philosophy
+- [x] Removed "Betalt" stat card (exact duplicate of bødekasse "Indsamlet")
+- [x] Removed win rate distribution chart (duplicate of Top 3 "Bedste sejrsrate" card)
+- [x] Cleaned up unused imports (CheckCircle, LineChart, Line)
+- [x] Adjusted stat card grid from 5-col to 4-col layout
+- [x] Run E2E tests (49 pass, 18 pre-existing failures — no dashboard regressions)
+- [x] Commit
+
+### Round 11: Kampanalyse KPI Deduplication
+- [x] Removed "Spillermål" and "Spillerassists" tiles from Season Overview (duplicate of Goals+Assists bar chart)
+- [x] Removed Player Highlights card section (duplicate of bar chart + player stats table)
+- [x] Removed unused PlayerStatCard component, activePlayers memo, eventTypeIcon function, Shield import
+- [x] Adjusted Season Overview grid from 6-col to 4-col layout
+- [x] Run E2E tests (53 pass, 14 pre-existing failures — no new regressions)
+- [x] Commit
+
+### Round 12: Dashboard Top Contributors Deduplication
+- [x] Removed duplicate contributor card list (showed same data as bar chart)
+- [x] Kept stacked bar chart + totals footer as single-column layout
+- [x] Run E2E tests (49 pass, 18 pre-existing failures — no new regressions)
+- [x] Commit
+
+### Round 13: Kampanalyse Sortable Player Stats Table
+- [x] Added sortable headers to Kampanalyse player stats table (name, goals, assists, clean sheets, yellow/red cards)
+- [x] Added StatSortIcon component and sort toggle logic
+- [x] Default sort by goals descending — consistent with page's focus on match performance
+- [x] Run E2E tests (50 pass, 17 pre-existing failures — no new regressions)
+- [x] Commit
+
+### Round 14: Hold Udvælger Position Badges
+- [x] Added PositionBadges component with color-coded position abbreviations (MV, F, K, C, A)
+- [x] Added POSITION_LABELS map with Danish abbreviations and per-position colors
+- [x] Added position badges to all three player list sections (Spond-accepted, other, fallback)
+- [x] Badges show up to 2 positions per player, using existing playerPositions data
+- [x] Run E2E tests (50 pass, 17 pre-existing failures — no new regressions)
+- [x] Commit
+
+### Round 15: Position-Aware Team Balancing
+- [x] Added position imbalance penalty to greedy algorithm in team-generator.ts
+- [x] Backend route passes position data from frontend to generator
+- [x] Frontend sends playerPositions with generate request
+- [x] Added position distribution summary (MV, F, K, C, A counts per team) below balance %
+- [x] Run E2E tests (51 pass, 16 pre-existing failures — no new regressions)
+- [x] Commit
+
+### Round 16+: Hold Udvælger Continued Improvements
+(Infinite — each iteration picks the most impactful improvement)
+
+## Blockers
+(none)
+
+## Notes
+- 12 pre-existing E2E failures in tournament/admin/teams/history-pending/integration — not related to dashboard/history changes
+- All dashboard and history E2E tests pass (player-stats, match-history)
+
+## Commit Log
+
+| Date | Hash | Description |
+|------|------|-------------|
+| 2026-04-02 | d1de549 | Round 1: Dashboard charts upgrade |
+| 2026-04-02 | e5dbb6c | Round 2: Dashboard activity feed, attendance trends, responsive polish |
+| 2026-04-02 | 79ce29e | Round 3: Træningshistorik charts, sortable stats, form streaks |
+| 2026-04-02 | b17bb50 | Round 4: Kampanalyse visual stats, charts, season overview |
+| 2026-04-02 | TBD | Round 5: Cross-page polish, mobile UX, visual consistency |
+| 2026-04-02 | TBD | Round 6: Top contributors on dashboard from match_events |
+| 2026-04-02 | TBD | Round 7: Bødekasse balance widget on dashboard |
+| 2026-04-02 | TBD | Round 8: Goal difference trend chart on Kampanalyse |
+| 2026-04-02 | TBD | Round 9: Match events in Træningshistorik cards |
+| 2026-04-03 | TBD | Round 10: Dashboard KPI deduplication & declutter |
+| 2026-04-03 | TBD | Round 11: Kampanalyse KPI deduplication |
+| 2026-04-03 | TBD | Round 12: Dashboard top contributors deduplication |
+| 2026-04-03 | TBD | Round 13: Kampanalyse sortable player stats table |

@@ -68,8 +68,9 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
   echo "$OUTPUT"
 
   # Log to changelog
-  CURRENT_ROUND=$(grep -oP '^\- \*\*Round\*\*: \K.*' "$PROGRESS_FILE" 2>/dev/null || echo "?")
-  SUMMARY=$(echo "$OUTPUT" | grep -oP 'git commit -m "\K[^"]+' | tail -1 || echo "iteration $i")
+  CURRENT_ROUND=$(sed -n 's/^- \*\*Round\*\*: //p' "$PROGRESS_FILE" 2>/dev/null || echo "?")
+  SUMMARY=$(echo "$OUTPUT" | sed -n 's/.*git commit -m "\([^"]*\)".*/\1/p' | tail -1)
+  [[ -z "$SUMMARY" ]] && SUMMARY="iteration $i"
   echo "| $i | $CURRENT_ROUND | $(date +%Y-%m-%d\ %H:%M) | $SUMMARY |" >> "$CHANGELOG_FILE"
 
   if echo "$OUTPUT" | grep -q "$COMPLETION_PROMISE"; then
