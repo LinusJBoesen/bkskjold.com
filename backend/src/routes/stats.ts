@@ -119,6 +119,19 @@ stats.get("/dashboard", async (c) => {
   const fanRows = await sql`SELECT COUNT(*) as count FROM users WHERE role = 'fan' AND approved = 1` as any[];
   const totalFans = Number(fanRows[0]?.count ?? 0);
 
+  // Fines trend: total fines accumulated over time (by month)
+  const finesTrend = (await sql`
+    SELECT
+      TO_CHAR(DATE_TRUNC('month', created_at::timestamp), 'YYYY-MM') as month,
+      SUM(amount) as total
+    FROM fines
+    GROUP BY DATE_TRUNC('month', created_at::timestamp)
+    ORDER BY DATE_TRUNC('month', created_at::timestamp) ASC
+  ` as any[]).map((r: any) => ({
+    month: r.month,
+    total: Number(r.total),
+  }));
+
   // Attendance trend: number of players per match over time
   const attendanceTrend = (await sql`
     SELECT
@@ -192,8 +205,8 @@ stats.get("/dashboard", async (c) => {
     JOIN match_events me ON me.player_id = p.id
     WHERE p.active = 1
     GROUP BY p.id, p.display_name, p.profile_picture
-    HAVING (goals + assists) > 0
-    ORDER BY (goals + assists) DESC, goals DESC
+    HAVING COALESCE(SUM(CASE WHEN me.event_type = 'goal' THEN 1 ELSE 0 END), 0) + COALESCE(SUM(CASE WHEN me.event_type = 'assist' THEN 1 ELSE 0 END), 0) > 0
+    ORDER BY COALESCE(SUM(CASE WHEN me.event_type = 'goal' THEN 1 ELSE 0 END), 0) + COALESCE(SUM(CASE WHEN me.event_type = 'assist' THEN 1 ELSE 0 END), 0) DESC, COALESCE(SUM(CASE WHEN me.event_type = 'goal' THEN 1 ELSE 0 END), 0) DESC
     LIMIT 10
   ` as any[]).map((r: any) => ({
     id: r.id,
@@ -261,6 +274,7 @@ stats.get("/dashboard", async (c) => {
     fineByType,
     playerForm,
     attendanceTrend,
+    finesTrend,
     recentActivity,
     topContributors,
     bodekasse,

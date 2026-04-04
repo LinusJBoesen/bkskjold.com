@@ -26,6 +26,7 @@ interface DashboardData {
   trainingChart: Array<{ name: string; wins: number; losses: number; winRate: number }>;
   fineChart: Array<{ name: string; paid: number; unpaid: number }>;
   fineByType: Array<{ name: string; total: number }>;
+  finesTrend: Array<{ month: string; total: number }>;
   playerForm: Array<{
     playerId: string;
     displayName: string;
@@ -500,10 +501,64 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Attendance Trend + Recent Activity */}
+      {/* Fines Trend + Attendance Trend — side by side */}
       {data && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {/* Attendance trend - area chart */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+          {/* Fines over time */}
+          {(data.finesTrend?.length ?? 0) > 1 && (
+            <Card data-testid="dashboard-fines-trend">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Banknote className="h-4 w-4 text-zinc-500" />
+                  <CardTitle className="text-lg text-zinc-50">{da.dashboard.finesTrend}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={260}>
+                  <AreaChart data={data.finesTrend}>
+                    <defs>
+                      <linearGradient id="finesGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#D42428" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#D42428" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 11, fill: "#A1A1AA" }}
+                      stroke="#3F3F46"
+                      tickFormatter={(v) => {
+                        const [y, m] = v.split("-");
+                        const months = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+                        return `${months[parseInt(m) - 1]} ${y.slice(2)}`;
+                      }}
+                    />
+                    <YAxis tick={{ fontSize: 11, fill: "#A1A1AA" }} stroke="#3F3F46" />
+                    <Tooltip
+                      contentStyle={darkTooltipStyle}
+                      labelFormatter={(v) => {
+                        const [y, m] = v.split("-");
+                        const d = new Date(parseInt(y), parseInt(m) - 1);
+                        return d.toLocaleDateString("da-DK", { month: "long", year: "numeric" });
+                      }}
+                      formatter={(value: number) => [`${value} kr`, "Bøder"]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="total"
+                      stroke="#D42428"
+                      strokeWidth={2}
+                      fill="url(#finesGradient)"
+                      dot={{ fill: "#D42428", strokeWidth: 0, r: 3 }}
+                      activeDot={{ fill: "#D42428", strokeWidth: 2, stroke: "#fff", r: 5 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Attendance trend */}
           {(data.attendanceTrend?.length ?? 0) > 1 && (
             <Card data-testid="dashboard-attendance-trend">
               <CardHeader>
@@ -517,8 +572,8 @@ export default function DashboardPage() {
                   <AreaChart data={data.attendanceTrend}>
                     <defs>
                       <linearGradient id="attendanceGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#D42428" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#D42428" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#16A34A" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#16A34A" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
@@ -543,62 +598,62 @@ export default function DashboardPage() {
                     <Area
                       type="monotone"
                       dataKey="players"
-                      stroke="#D42428"
+                      stroke="#16A34A"
                       strokeWidth={2}
                       fill="url(#attendanceGradient)"
-                      dot={{ fill: "#D42428", strokeWidth: 0, r: 3 }}
-                      activeDot={{ fill: "#D42428", strokeWidth: 2, stroke: "#fff", r: 5 }}
+                      dot={{ fill: "#16A34A", strokeWidth: 0, r: 3 }}
+                      activeDot={{ fill: "#16A34A", strokeWidth: 2, stroke: "#fff", r: 5 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
           )}
-
-          {/* Recent activity feed */}
-          {(data.recentActivity?.length ?? 0) > 0 && (
-            <Card data-testid="dashboard-recent-activity">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-zinc-500" />
-                  <CardTitle className="text-lg text-zinc-50">{da.dashboard.recentActivity}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-1">
-                  {data.recentActivity.map((event) => (
-                    <div
-                      key={`${event.type}-${event.id}`}
-                      className="flex items-start gap-3 py-2.5 border-b border-zinc-800/50 last:border-0"
-                    >
-                      <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5 ${
-                        event.type === "fine"
-                          ? "bg-red-500/10 border border-red-500/20"
-                          : "bg-emerald-500/10 border border-emerald-500/20"
-                      }`}>
-                        {event.type === "fine" ? (
-                          <Banknote className="h-3.5 w-3.5 text-red-400" />
-                        ) : (
-                          <Swords className="h-3.5 w-3.5 text-emerald-400" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-zinc-200 leading-snug">{event.description}</p>
-                        <p className="text-xs text-zinc-500 mt-0.5">
-                          {new Date(event.date).toLocaleDateString("da-DK", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
+      )}
+
+      {/* Recent Activity — full width */}
+      {data && (data.recentActivity?.length ?? 0) > 0 && (
+        <Card data-testid="dashboard-recent-activity">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-zinc-500" />
+              <CardTitle className="text-lg text-zinc-50">{da.dashboard.recentActivity}</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+              {data.recentActivity.map((event) => (
+                <div
+                  key={`${event.type}-${event.id}`}
+                  className="flex items-start gap-3 py-2.5 border-b border-zinc-800/50 last:border-0"
+                >
+                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5 ${
+                    event.type === "fine"
+                      ? "bg-red-500/10 border border-red-500/20"
+                      : "bg-emerald-500/10 border border-emerald-500/20"
+                  }`}>
+                    {event.type === "fine" ? (
+                      <Banknote className="h-3.5 w-3.5 text-red-400" />
+                    ) : (
+                      <Swords className="h-3.5 w-3.5 text-emerald-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-zinc-200 leading-snug">{event.description}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      {new Date(event.date).toLocaleDateString("da-DK", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

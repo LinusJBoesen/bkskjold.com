@@ -34,7 +34,7 @@ matches.get("/", requireRole("admin", "spiller"), async (c) => {
       SELECT me.match_id, me.event_type, me.minute, p.display_name
       FROM match_events me
       JOIN players p ON me.player_id = p.id
-      WHERE me.match_id = ANY(${matchIds})
+      WHERE me.match_id = ANY(${sql.array(matchIds, 'TEXT')})
       ORDER BY me.minute ASC NULLS LAST
     `;
     const eventsByMatch: Record<string, any[]> = {};

@@ -174,6 +174,7 @@ export const da = {
     winsInARow: "sejre i træk",
     lossesInARow: "nederlag i træk",
     attendanceTrend: "Deltagelse over tid",
+    finesTrend: "Bøder over tid",
     recentActivity: "Seneste aktivitet",
     players: "Spillere",
     matches: "Kampe",
