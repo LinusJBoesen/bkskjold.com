@@ -169,8 +169,9 @@ export default function TeamSelectorPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [formationTeam, setFormationTeam] = useState<1 | 2>(1);
   const [playerPositions, setPlayerPositions] = useState<Record<string, Position[]>>({});
-  const [savedFormation1, setSavedFormation1] = useState<SavedFormation | null>(null);
-  const [savedFormation2, setSavedFormation2] = useState<SavedFormation | null>(null);
+  const [savedMatchFormation, setSavedMatchFormation] = useState<SavedFormation | null>(null);
+  const [savedTrainingFormation1, setSavedTrainingFormation1] = useState<SavedFormation | null>(null);
+  const [savedTrainingFormation2, setSavedTrainingFormation2] = useState<SavedFormation | null>(null);
   const [playerSearch, setPlayerSearch] = useState("");
   const { toast } = useToast();
 
@@ -226,11 +227,14 @@ export default function TeamSelectorPage() {
   }, []);
 
   const loadSavedFormations = () => {
-    api.get<{ formation: SavedFormation | null }>("/formations/latest/1")
-      .then((res) => setSavedFormation1(res.formation))
+    api.get<{ formation: SavedFormation | null }>("/formations/latest/1?context=match")
+      .then((res) => setSavedMatchFormation(res.formation))
       .catch(() => {});
-    api.get<{ formation: SavedFormation | null }>("/formations/latest/2")
-      .then((res) => setSavedFormation2(res.formation))
+    api.get<{ formation: SavedFormation | null }>("/formations/latest/1?context=training")
+      .then((res) => setSavedTrainingFormation1(res.formation))
+      .catch(() => {});
+    api.get<{ formation: SavedFormation | null }>("/formations/latest/2?context=training")
+      .then((res) => setSavedTrainingFormation2(res.formation))
       .catch(() => {});
   };
 
@@ -590,10 +594,10 @@ export default function TeamSelectorPage() {
           {activeTab === "training" ? (
             <>
               {/* Formation pitches for training teams (if saved) */}
-              {(savedFormation1 || savedFormation2) && (
+              {(savedTrainingFormation1 || savedTrainingFormation2) && (
                 <div className="space-y-4">
-                  {savedFormation1 && (() => {
-                    const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedFormation1);
+                  {savedTrainingFormation1 && (() => {
+                    const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedTrainingFormation1);
                     return (
                       <div>
                         <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
@@ -605,8 +609,8 @@ export default function TeamSelectorPage() {
                       </div>
                     );
                   })()}
-                  {savedFormation2 && (() => {
-                    const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedFormation2);
+                  {savedTrainingFormation2 && (() => {
+                    const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedTrainingFormation2);
                     return (
                       <div>
                         <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
@@ -622,7 +626,7 @@ export default function TeamSelectorPage() {
               )}
 
               {/* Fallback: published team lists */}
-              {!savedFormation1 && !savedFormation2 && (
+              {!savedTrainingFormation1 && !savedTrainingFormation2 && (
                 publishedLineup ? (
                   <>
                     <div className="flex items-center gap-2 text-sm text-zinc-400">
@@ -680,14 +684,56 @@ export default function TeamSelectorPage() {
             </>
           ) : (
             <>
-              {/* Formation pitch for match (if saved) */}
-              {savedFormation1 && (() => {
-                const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedFormation1);
-                return <FormationView readOnly players={fp} teamNumber={1} initialFormation={ff} initialAssignments={fa} />;
-              })()}
-
-              {/* Starters/bench list (always show if published) */}
-              {publishedMatchLineup && (
+              {savedMatchFormation ? (() => {
+                const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedMatchFormation);
+                const pitchPlayers = savedMatchFormation.slots.filter((s) => s.is_bench === 0 && s.player_id);
+                const benchPlayers = savedMatchFormation.slots.filter((s) => s.is_bench === 1 && s.player_id);
+                return (
+                  <>
+                    <FormationView readOnly players={fp} teamNumber={1} initialFormation={ff} initialAssignments={fa} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Card className="border-blue-500/20 bg-blue-500/5">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Trophy className="h-4 w-4 text-blue-400" />
+                            Startende 7
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-1">
+                            {pitchPlayers.map((s) => (
+                              <div key={s.player_id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                                <PlayerAvatar name={s.display_name ?? "Spiller"} src={s.profile_picture} />
+                                <span className="text-zinc-200">{s.display_name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card className="border-zinc-700">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Users className="h-4 w-4 text-zinc-400" />
+                            Bænk
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-1">
+                            {benchPlayers.length > 0 ? benchPlayers.map((s) => (
+                              <div key={s.player_id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                                <PlayerAvatar name={s.display_name ?? "Spiller"} src={s.profile_picture} />
+                                <span className="text-zinc-300">{s.display_name}</span>
+                              </div>
+                            )) : (
+                              <p className="text-xs text-zinc-600 px-2">Ingen bænkspillere</p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </>
+                );
+              })() : publishedMatchLineup ? (
                 <>
                   <div className="flex items-center gap-2 text-sm text-zinc-400">
                     <Trophy className="h-4 w-4" />
@@ -732,10 +778,7 @@ export default function TeamSelectorPage() {
                     </Card>
                   </div>
                 </>
-              )}
-
-              {/* Empty state */}
-              {!savedFormation1 && !publishedMatchLineup && (
+              ) : (
                 <Card>
                   <CardContent className="py-6">
                     <p className="text-zinc-400 text-sm font-medium mb-1">Ingen kamptrup er delt endnu</p>
@@ -814,6 +857,7 @@ export default function TeamSelectorPage() {
           key={formationTeam}
           players={getFormationPlayers(formationTeam === 1 ? result.team1 : result.team2)}
           teamNumber={formationTeam}
+          context="training"
           initialAssignments={autoAssign(
             getFormationPlayers(formationTeam === 1 ? result.team1 : result.team2),
             "1-2-3-1"
@@ -833,6 +877,7 @@ export default function TeamSelectorPage() {
             positions: playerPositions[p.id] ?? [],
           }))}
           teamNumber={1}
+          context="match"
           initialAssignments={autoAssign(
             [...matchSquad.starters, ...matchSquad.bench].map((p) => ({
               id: p.id,

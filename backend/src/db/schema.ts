@@ -144,6 +144,7 @@ export const tables = [
     match_id TEXT,
     team_number INTEGER NOT NULL CHECK(team_number IN (1, 2)),
     formation TEXT NOT NULL CHECK(formation IN ('1-2-3-1','1-3-2-1','1-3-3')),
+    context TEXT NOT NULL DEFAULT 'match',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
 

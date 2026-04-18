@@ -20,6 +20,7 @@ interface FormationViewProps {
   players: PlayerInfo[];
   matchId?: string;
   teamNumber: number;
+  context?: "match" | "training";
   initialFormation?: FormationType;
   initialAssignments?: SlotAssignment[];
   formationId?: string;
@@ -31,6 +32,7 @@ export function FormationView({
   players,
   matchId,
   teamNumber,
+  context = "match",
   initialFormation = "1-2-3-1",
   initialAssignments,
   formationId: existingFormationId,
@@ -220,6 +222,7 @@ export function FormationView({
           teamNumber,
           formation,
           slots,
+          context,
         });
         setFormationId(res.id);
       }
