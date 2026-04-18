@@ -96,6 +96,28 @@ formations.put("/players/:id/positions", requireRole("admin"), async (c) => {
   return c.json({ playerId: id, positions });
 });
 
+// GET /api/formations/latest/:teamNumber — get most recently saved formation for a team
+formations.get("/latest/:teamNumber", requireRole("admin", "spiller"), async (c) => {
+  const { teamNumber } = c.req.param();
+  const [formation] = await sql`
+    SELECT * FROM lineup_formations
+    WHERE team_number = ${parseInt(teamNumber)}
+    ORDER BY created_at DESC LIMIT 1
+  ` as any[];
+
+  if (!formation) return c.json({ formation: null });
+
+  const slots = await sql`
+    SELECT ls.*, p.display_name, p.profile_picture
+    FROM lineup_slots ls
+    LEFT JOIN players p ON ls.player_id = p.id
+    WHERE ls.formation_id = ${formation.id}
+    ORDER BY ls.is_bench, ls.slot_index
+  ` as any[];
+
+  return c.json({ formation: { ...formation, slots } });
+});
+
 // --- Formation CRUD routes ---
 
 // POST /api/formations — create/save a formation (admin only)
