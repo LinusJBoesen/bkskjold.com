@@ -58,5 +58,9 @@ export async function migrate(): Promise<void> {
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`).catch(() => {});
 
+  // Fix lineup_slots primary key to include is_bench (bench slots share slot_index 0-2 with pitch slots)
+  try { await sql.unsafe(`ALTER TABLE lineup_slots DROP CONSTRAINT lineup_slots_pkey`); } catch { /* ok */ }
+  try { await sql.unsafe(`ALTER TABLE lineup_slots ADD PRIMARY KEY (formation_id, slot_index, is_bench)`); } catch { /* ok */ }
+
   console.log("Database migrated");
 }

@@ -171,6 +171,6 @@ export const tables = [
     player_id TEXT REFERENCES players(id),
     position TEXT NOT NULL CHECK(position IN ('keeper','defender','wing','midfield','attacker')),
     is_bench INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (formation_id, slot_index)
+    PRIMARY KEY (formation_id, slot_index, is_bench)
   )`,
 ];
