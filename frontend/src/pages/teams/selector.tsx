@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
-import { FormationView, autoAssign, type PlayerInfo, type Position } from "@/components/pitch";
+import { FormationView, autoAssign, type PlayerInfo, type Position, type FormationType, type SlotAssignment } from "@/components/pitch";
 import { Users, Shuffle, Save, UserPlus, ClipboardCopy, Check, ArrowRightLeft, Calendar, Trophy, LayoutGrid, List, Search, CheckSquare, Square } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -107,6 +107,43 @@ function formatDate(iso: string) {
   return `${day}. ${d.getDate()}/${d.getMonth() + 1} kl. ${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
 }
 
+interface SavedSlot {
+  slot_index: number;
+  player_id: string | null;
+  position: string;
+  is_bench: number;
+  display_name: string | null;
+  profile_picture: string | null;
+}
+
+interface SavedFormation {
+  id: string;
+  team_number: number;
+  formation: string;
+  created_at: string;
+  slots: SavedSlot[];
+}
+
+function savedFormationToProps(saved: SavedFormation): { players: PlayerInfo[]; assignments: SlotAssignment[]; formation: FormationType } {
+  const players: PlayerInfo[] = saved.slots
+    .filter((s) => s.player_id)
+    .map((s) => ({
+      id: s.player_id!,
+      displayName: s.display_name ?? "Spiller",
+      profilePicture: s.profile_picture,
+      positions: [s.position as Position],
+    }));
+  const assignments: SlotAssignment[] = saved.slots.map((s) => ({
+    slotIndex: s.slot_index,
+    playerId: s.player_id,
+    playerName: s.display_name ?? undefined,
+    profilePicture: s.profile_picture,
+    position: s.position as Position,
+    isBench: s.is_bench === 1,
+  }));
+  return { players, assignments, formation: saved.formation as FormationType };
+}
+
 type ActiveTab = "training" | "match";
 type ViewMode = "list" | "formation";
 
@@ -132,6 +169,8 @@ export default function TeamSelectorPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [formationTeam, setFormationTeam] = useState<1 | 2>(1);
   const [playerPositions, setPlayerPositions] = useState<Record<string, Position[]>>({});
+  const [savedFormation1, setSavedFormation1] = useState<SavedFormation | null>(null);
+  const [savedFormation2, setSavedFormation2] = useState<SavedFormation | null>(null);
   const [playerSearch, setPlayerSearch] = useState("");
   const { toast } = useToast();
 
@@ -181,7 +220,19 @@ export default function TeamSelectorPage() {
         setPlayerPositions(posMap);
       })
       .catch(() => {/* positions are optional */});
+
+    // Load saved formations (team 1 = match/team1, team 2 = training team 2)
+    loadSavedFormations();
   }, []);
+
+  const loadSavedFormations = () => {
+    api.get<{ formation: SavedFormation | null }>("/formations/latest/1")
+      .then((res) => setSavedFormation1(res.formation))
+      .catch(() => {});
+    api.get<{ formation: SavedFormation | null }>("/formations/latest/2")
+      .then((res) => setSavedFormation2(res.formation))
+      .catch(() => {});
+  };
 
   const switchTab = (tab: ActiveTab) => {
     if (!data) return;
@@ -533,119 +584,166 @@ export default function TeamSelectorPage() {
         </div>
       )}
 
-      {/* Player view */}
+      {/* Player view (non-admin) */}
       {!isAdmin && (
-        <div className="mt-2">
+        <div className="mt-2 space-y-6">
           {activeTab === "training" ? (
-            publishedLineup ? (
-              <>
-                <div className="mb-4 flex items-center gap-2 text-sm text-zinc-400">
-                  <Users className="h-4 w-4" />
-                  <span>Holdopstilling til <span className="text-zinc-200 font-medium">{publishedLineup.label}</span></span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Card className="border-white/20">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-xs font-bold text-zinc-900">1</div>
-                        Hold 1
-                        <span className="text-sm font-medium text-zinc-300 ml-1">— Hvide trøjer</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-1">
-                        {publishedLineup.team1.map((p) => (
-                          <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
-                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                            <span className="text-zinc-200">{p.displayName}</span>
-                          </div>
-                        ))}
+            <>
+              {/* Formation pitches for training teams (if saved) */}
+              {(savedFormation1 || savedFormation2) && (
+                <div className="space-y-4">
+                  {savedFormation1 && (() => {
+                    const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedFormation1);
+                    return (
+                      <div>
+                        <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
+                          <div className="h-5 w-5 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-[10px] font-bold text-zinc-900">1</div>
+                          <span className="font-medium text-zinc-200">Hold 1</span>
+                          <span className="text-zinc-500">— Hvide trøjer</span>
+                        </div>
+                        <FormationView readOnly players={fp} teamNumber={1} initialFormation={ff} initialAssignments={fa} />
                       </div>
+                    );
+                  })()}
+                  {savedFormation2 && (() => {
+                    const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedFormation2);
+                    return (
+                      <div>
+                        <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
+                          <div className="h-5 w-5 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-[10px] font-bold text-zinc-100">2</div>
+                          <span className="font-medium text-zinc-200">Hold 2</span>
+                          <span className="text-zinc-500">— Sorte trøjer</span>
+                        </div>
+                        <FormationView readOnly players={fp} teamNumber={2} initialFormation={ff} initialAssignments={fa} />
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Fallback: published team lists */}
+              {!savedFormation1 && !savedFormation2 && (
+                publishedLineup ? (
+                  <>
+                    <div className="flex items-center gap-2 text-sm text-zinc-400">
+                      <Users className="h-4 w-4" />
+                      <span>Holdopstilling til <span className="text-zinc-200 font-medium">{publishedLineup.label}</span></span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Card className="border-white/20">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <div className="h-6 w-6 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-xs font-bold text-zinc-900">1</div>
+                            Hold 1 <span className="text-sm font-medium text-zinc-300 ml-1">— Hvide trøjer</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-1">
+                            {publishedLineup.team1.map((p) => (
+                              <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                                <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                                <span className="text-zinc-200">{p.displayName}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card className="border-zinc-600 bg-zinc-950">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <div className="h-6 w-6 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-xs font-bold text-zinc-100">2</div>
+                            Hold 2 <span className="text-sm font-medium text-zinc-300 ml-1">— Sorte trøjer</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-1">
+                            {publishedLineup.team2.map((p) => (
+                              <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                                <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                                <span className="text-zinc-200">{p.displayName}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </>
+                ) : (
+                  <Card>
+                    <CardContent className="py-6">
+                      <p className="text-zinc-400 text-sm font-medium mb-1">Ingen holdopstilling er delt endnu</p>
+                      <p className="text-zinc-600 text-xs">Træneren gemmer holdene her inden træning</p>
                     </CardContent>
                   </Card>
-                  <Card className="border-zinc-600 bg-zinc-950">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-xs font-bold text-zinc-100">2</div>
-                        Hold 2
-                        <span className="text-sm font-medium text-zinc-300 ml-1">— Sorte trøjer</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-1">
-                        {publishedLineup.team2.map((p) => (
-                          <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
-                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                            <span className="text-zinc-200">{p.displayName}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </>
-            ) : (
-              <Card>
-                <CardContent className="py-6">
-                  <p className="text-zinc-400 text-sm font-medium mb-4">Ingen holdopstilling er delt endnu</p>
-                  <p className="text-zinc-600 text-xs">Træneren gemmer holdene her inden træning</p>
-                </CardContent>
-              </Card>
-            )
+                )
+              )}
+            </>
           ) : (
-            publishedMatchLineup ? (
-              <>
-                <div className="mb-4 flex items-center gap-2 text-sm text-zinc-400">
-                  <Trophy className="h-4 w-4" />
-                  <span>Kamptrup til <span className="text-zinc-200 font-medium">{publishedMatchLineup.label}</span></span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Card className="border-blue-500/20 bg-blue-500/5">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Trophy className="h-4 w-4 text-blue-400" />
-                        Startende 7
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-1">
-                        {publishedMatchLineup.starters.map((p) => (
-                          <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
-                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                            <span className="text-zinc-200">{p.displayName}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-zinc-700">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Users className="h-4 w-4 text-zinc-400" />
-                        Bænk
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-1">
-                        {publishedMatchLineup.bench.map((p) => (
-                          <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
-                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                            <span className="text-zinc-300">{p.displayName}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </>
-            ) : (
-              <Card>
-                <CardContent className="py-6">
-                  <p className="text-zinc-400 text-sm font-medium mb-4">Ingen kamptrup er delt endnu</p>
-                  <p className="text-zinc-600 text-xs">Træneren gemmer kamptruppen her inden kamp</p>
-                </CardContent>
-              </Card>
-            )
+            <>
+              {/* Formation pitch for match (if saved) */}
+              {savedFormation1 && (() => {
+                const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedFormation1);
+                return <FormationView readOnly players={fp} teamNumber={1} initialFormation={ff} initialAssignments={fa} />;
+              })()}
+
+              {/* Starters/bench list (always show if published) */}
+              {publishedMatchLineup && (
+                <>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Trophy className="h-4 w-4" />
+                    <span>Kamptrup til <span className="text-zinc-200 font-medium">{publishedMatchLineup.label}</span></span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Card className="border-blue-500/20 bg-blue-500/5">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Trophy className="h-4 w-4 text-blue-400" />
+                          Startende 7
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-1">
+                          {publishedMatchLineup.starters.map((p) => (
+                            <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                              <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                              <span className="text-zinc-200">{p.displayName}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-zinc-700">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Users className="h-4 w-4 text-zinc-400" />
+                          Bænk
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-1">
+                          {publishedMatchLineup.bench.map((p) => (
+                            <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                              <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                              <span className="text-zinc-300">{p.displayName}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </>
+              )}
+
+              {/* Empty state */}
+              {!savedFormation1 && !publishedMatchLineup && (
+                <Card>
+                  <CardContent className="py-6">
+                    <p className="text-zinc-400 text-sm font-medium mb-1">Ingen kamptrup er delt endnu</p>
+                    <p className="text-zinc-600 text-xs">Træneren gemmer kamptruppen her inden kamp</p>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </div>
       )}
@@ -710,7 +808,7 @@ export default function TeamSelectorPage() {
         </div>
       )}
 
-      {/* Formation View — training */}
+      {/* Formation View — training (editable) */}
       {isAdmin && activeTab === "training" && result && viewMode === "formation" && (
         <FormationView
           key={formationTeam}
@@ -720,10 +818,11 @@ export default function TeamSelectorPage() {
             getFormationPlayers(formationTeam === 1 ? result.team1 : result.team2),
             "1-2-3-1"
           )}
+          onSaved={loadSavedFormations}
         />
       )}
 
-      {/* Formation View — match (all 10 players: 7 on pitch, 3 on bench) */}
+      {/* Formation View — match (editable, all 10 players: 7 on pitch, 3 on bench) */}
       {isAdmin && activeTab === "match" && matchSquad && viewMode === "formation" && (
         <FormationView
           key="match-formation"
@@ -743,6 +842,7 @@ export default function TeamSelectorPage() {
             })),
             "1-2-3-1"
           )}
+          onSaved={loadSavedFormations}
         />
       )}
 
