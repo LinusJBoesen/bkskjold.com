@@ -1,8 +1,8 @@
 # Match Details — PROGRESS
 
 ## Current Status
-- **Round**: 4
-- **Task**: Starting — Frontend Match Detail Page + Clickable Rows
+- **Round**: 5
+- **Task**: Starting — Frontend Head-to-Head & Common Opponents Sections
 - **Last updated**: 2026-04-19
 
 ## Checklist
@@ -33,15 +33,15 @@
 - [x] Commit
 
 ### Round 4: Frontend — Match Detail Page + Clickable Rows
-- [ ] Add route /matches/:id in App.tsx
-- [ ] Create pages/matches/detail.tsx
-- [ ] Make match rows clickable (standings, analysis, dashboard)
-- [ ] Hero section: opponent, date, kickoff, venue, score
-- [ ] "Åbn i Google Maps" link
-- [ ] Loading/empty/error states
-- [ ] i18n strings + data-testid
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Add route /matches/:id in App.tsx
+- [x] Create pages/matches/detail.tsx
+- [x] Make match rows clickable (standings, analysis, dashboard)
+- [x] Hero section: opponent, date, kickoff, venue, score
+- [x] "Åbn i Google Maps" link
+- [x] Loading/empty/error states
+- [x] i18n strings + data-testid
+- [x] Run E2E tests (7 pre-existing failures, 0 new regressions)
+- [x] Commit
 
 ### Round 5: Frontend — Head-to-Head & Common Opponents Sections
 - [ ] Head-to-head list with W/L accents
@@ -83,4 +83,5 @@
 |------|------|-------------|
 | 2026-04-19 | 1c0b9f9 | feat(skjold): enrich Spond events with location and kickoff |
 | 2026-04-19 | 18abc96 | feat(skjold): scrape per-team DBU match history |
-| 2026-04-19 | TBD | feat(skjold): match details aggregation endpoint |
+| 2026-04-19 | 20a857f | feat(skjold): match details aggregation endpoint |
+| 2026-04-19 | bcee020 | feat(skjold): match detail page with clickable rows |

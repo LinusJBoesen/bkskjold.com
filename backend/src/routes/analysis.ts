@@ -24,7 +24,7 @@ analysis.get("/player-rates", requireRole("admin", "spiller"), async (c) => {
     }
     const opponent = isHome ? m.awayTeam : m.homeTeam;
     const score = `${m.homeScore ?? "?"}-${m.awayScore ?? "?"}`;
-    return { date: m.date, opponent, result, score, isHome };
+    return { date: m.date, opponent, result, score, isHome, dbuMatchId: m.dbuMatchId ?? null };
   });
 
   // Get all active players with their attendance at Spond events near match dates

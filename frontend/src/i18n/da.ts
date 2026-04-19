@@ -163,6 +163,24 @@ export const da = {
     },
   },
 
+  // Match Detail
+  matchDetail: {
+    title: "Kampdetaljer",
+    kickoff: "Kampstart",
+    venue: "Spillested",
+    homeTeam: "Hjemmehold",
+    awayTeam: "Udehold",
+    score: "Resultat",
+    upcoming: "Kommende",
+    completed: "Afsluttet",
+    openInMaps: "Åbn i Google Maps",
+    notFound: "Kamp ikke fundet",
+    errorLoading: "Kunne ikke indlæse kampdetaljer",
+    back: "Tilbage",
+    home: "Hjemme",
+    away: "Ude",
+  },
+
   // Analysis
   analysis: {
     title: "Kampanalyse",

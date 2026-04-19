@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { da } from "@/i18n/da";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ interface DbuMatch {
   result: "win" | "draw" | "loss";
   score: string;
   isHome: boolean;
+  dbuMatchId: string | null;
 }
 
 interface PlayerStat {
@@ -274,6 +276,7 @@ export default function MatchAnalysisPage() {
   const [activePostMatch, setActivePostMatch] = useState<string | null>(null);
   const { toast } = useToast();
   const { role } = useAuth();
+  const navigate = useNavigate();
 
   const loadData = () => {
     setLoading(true);
@@ -484,7 +487,9 @@ export default function MatchAnalysisPage() {
                 {data.dbuMatches.map((m) => (
                   <tr
                     key={`${m.date}-${m.opponent}`}
-                    className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors"
+                    className={`border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors ${m.dbuMatchId ? "cursor-pointer" : ""}`}
+                    onClick={() => m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
+                    data-testid={`analysis-dbu-match-${m.dbuMatchId || m.date}`}
                   >
                     <td className="px-4 py-3 text-sm tabular-nums text-zinc-300">{m.date}</td>
                     <td className="px-4 py-3 text-sm text-zinc-200">{m.opponent}</td>

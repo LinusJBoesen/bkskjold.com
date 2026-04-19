@@ -31,8 +31,8 @@ matches.get("/", requireRole("admin", "spiller"), async (c) => {
   return c.json(rows);
 });
 
-// GET /api/matches/:id/details — DBU match detail with H2H, opponent season, common opponents
-matches.get("/:id/details", requireRole("admin", "spiller"), async (c) => {
+// GET /api/matches/:id/details — DBU match detail with H2H, opponent season, common opponents (all authenticated users)
+matches.get("/:id/details", async (c) => {
   const dbuMatchId = c.req.param("id");
   const details = await getMatchDetails(dbuMatchId);
   if (!details) {
