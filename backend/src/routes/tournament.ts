@@ -19,7 +19,10 @@ tournament.get("/matches", async (c) => {
     .filter((m) => m.homeScore !== null && m.awayScore !== null)
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  return c.json({ upcoming, previous });
+  return c.json({
+    upcoming: upcoming.map((m) => ({ ...m, dbuMatchId: m.dbuMatchId ?? null })),
+    previous: previous.map((m) => ({ ...m, dbuMatchId: m.dbuMatchId ?? null })),
+  });
 });
 
 export default tournament;

@@ -54,7 +54,10 @@ export const tables = [
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     start_time TEXT NOT NULL,
+    end_time TEXT,
     event_type TEXT,
+    location_name TEXT,
+    location_address TEXT,
     synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
 
@@ -86,6 +89,35 @@ export const tables = [
     away_team TEXT NOT NULL,
     home_score INTEGER,
     away_score INTEGER,
+    synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+
+  `CREATE TABLE IF NOT EXISTS dbu_team_matches (
+    dbu_match_id TEXT PRIMARY KEY,
+    team_id TEXT NOT NULL,
+    date TEXT,
+    time TEXT,
+    home_team TEXT,
+    home_team_id TEXT,
+    away_team TEXT,
+    away_team_id TEXT,
+    home_score INTEGER,
+    away_score INTEGER,
+    venue TEXT,
+    synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+
+  `CREATE TABLE IF NOT EXISTS dbu_match_info (
+    dbu_match_id TEXT PRIMARY KEY,
+    referee TEXT,
+    venue_name TEXT,
+    venue_address TEXT,
+    pitch TEXT,
+    home_lineup TEXT,
+    away_lineup TEXT,
+    home_officials TEXT,
+    away_officials TEXT,
+    goal_scorers TEXT,
     synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
 

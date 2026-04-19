@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { sql } from "../lib/db";
 import { SpondClient } from "../services/spond";
-import { scrapeStandings, scrapeMatchHistory } from "../services/dbu";
+import { scrapeStandings, scrapeMatchHistory, scrapeTeamMatches } from "../services/dbu";
 import { requireRole } from "../middleware/auth";
 
 const sync = new Hono();
@@ -46,10 +46,13 @@ sync.post("/spond", async (c) => {
     // Upsert events and attendance
     for (const event of events) {
       await sql`
-        INSERT INTO spond_events (id, name, start_time, event_type, synced_at)
-        VALUES (${event.id}, ${event.heading}, ${event.startTimestamp}, ${event.type}, NOW())
+        INSERT INTO spond_events (id, name, start_time, end_time, event_type, location_name, location_address, synced_at)
+        VALUES (${event.id}, ${event.heading}, ${event.startTimestamp}, ${event.endTimestamp ?? null}, ${event.type}, ${event.location?.feature ?? null}, ${event.location?.address ?? null}, NOW())
         ON CONFLICT(id) DO UPDATE SET
           name = EXCLUDED.name,
+          end_time = EXCLUDED.end_time,
+          location_name = EXCLUDED.location_name,
+          location_address = EXCLUDED.location_address,
           synced_at = NOW()
       `;
 
@@ -101,9 +104,10 @@ sync.post("/dbu", async (c) => {
   }
 
   try {
-    const [standings, matches] = await Promise.all([
+    const [standings, matches, teamMatches] = await Promise.all([
       scrapeStandings(teamId),
       scrapeMatchHistory(teamId),
+      scrapeTeamMatches(teamId),
     ]);
 
     // Replace standings
@@ -115,12 +119,30 @@ sync.post("/dbu", async (c) => {
       `;
     }
 
-    // Replace matches
+    // Replace matches (with dbu_match_id from enriched scrape)
     await sql`DELETE FROM dbu_matches`;
     for (const m of matches) {
+      // Find dbu_match_id from the enriched team matches by matching date + teams
+      const enriched = teamMatches.find(
+        (tm) => tm.date === m.date && tm.homeTeam === m.homeTeam && tm.awayTeam === m.awayTeam
+      );
       await sql`
-        INSERT INTO dbu_matches (date, home_team, away_team, home_score, away_score)
-        VALUES (${m.date}, ${m.homeTeam}, ${m.awayTeam}, ${m.homeScore}, ${m.awayScore})
+        INSERT INTO dbu_matches (date, home_team, away_team, home_score, away_score, dbu_match_id)
+        VALUES (${m.date}, ${m.homeTeam}, ${m.awayTeam}, ${m.homeScore}, ${m.awayScore}, ${enriched?.dbuMatchId ?? null})
+      `;
+    }
+
+    // Persist team matches for later lookups
+    await sql`DELETE FROM dbu_team_matches WHERE team_id = ${teamId}`;
+    for (const tm of teamMatches) {
+      await sql`
+        INSERT INTO dbu_team_matches (dbu_match_id, team_id, date, time, home_team, home_team_id, away_team, away_team_id, home_score, away_score, venue)
+        VALUES (${tm.dbuMatchId}, ${teamId}, ${tm.date}, ${tm.time}, ${tm.homeTeam}, ${tm.homeTeamId}, ${tm.awayTeam}, ${tm.awayTeamId}, ${tm.homeScore}, ${tm.awayScore}, ${tm.venue})
+        ON CONFLICT (dbu_match_id) DO UPDATE SET
+          home_score = EXCLUDED.home_score,
+          away_score = EXCLUDED.away_score,
+          venue = EXCLUDED.venue,
+          synced_at = NOW()
       `;
     }
 

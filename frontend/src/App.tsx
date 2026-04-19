@@ -16,6 +16,7 @@ import TournamentStandingsPage from "@/pages/tournament/standings";
 import MatchAnalysisPage from "@/pages/analysis/match";
 import AdminSettingsPage from "@/pages/admin/settings";
 import SeasonCardPage from "@/pages/fan/seasoncard";
+import MatchDetailPage from "@/pages/matches/detail";
 
 function RoleGuard({ allowed, children }: { allowed: string[]; children: React.ReactNode }) {
   const { role } = useAuth();
@@ -135,6 +136,7 @@ export default function App() {
             <Route path="fines/:playerId" element={<RoleGuard allowed={["admin", "spiller"]}><FineDetailPage /></RoleGuard>} />
             <Route path="teams" element={<RoleGuard allowed={["admin", "spiller"]}><TeamSelectorPage /></RoleGuard>} />
             <Route path="history" element={<RoleGuard allowed={["admin", "spiller"]}><TrainingHistoryPage /></RoleGuard>} />
+            <Route path="matches/:id" element={<MatchDetailPage />} />
             <Route path="tournament" element={<TournamentStandingsPage />} />
             <Route path="analysis" element={<MatchAnalysisPage />} />
             <Route path="admin" element={<RoleGuard allowed={["admin"]}><AdminSettingsPage /></RoleGuard>} />

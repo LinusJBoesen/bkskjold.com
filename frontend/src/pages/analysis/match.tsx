@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { da } from "@/i18n/da";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ interface DbuMatch {
   result: "win" | "draw" | "loss";
   score: string;
   isHome: boolean;
+  dbuMatchId: string | null;
 }
 
 interface PlayerStat {
@@ -308,6 +310,7 @@ export default function MatchAnalysisPage() {
   const [statSort, setStatSort] = useState<{ key: StatSortKey; dir: StatSortDir }>({ key: "goals", dir: "desc" });
   const { toast } = useToast();
   const { role } = useAuth();
+  const navigate = useNavigate();
 
   const loadData = () => {
     setLoading(true);
@@ -779,10 +782,15 @@ export default function MatchAnalysisPage() {
               <tbody>
                 {data.dbuMatches.map((m) => {
                   const borderColor = m.result === "win" ? "border-l-emerald-500" : m.result === "loss" ? "border-l-red-500" : "border-l-zinc-500";
+                  const clickable = Boolean(m.dbuMatchId);
                   return (
                     <tr
                       key={`${m.date}-${m.opponent}`}
-                      className={`border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors border-l-2 ${borderColor}`}
+                      className={`border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors border-l-2 ${borderColor} ${clickable ? "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400" : ""}`}
+                      onClick={() => clickable && navigate(`/matches/${m.dbuMatchId}`)}
+                      onKeyDown={(e) => e.key === "Enter" && clickable && navigate(`/matches/${m.dbuMatchId}`)}
+                      tabIndex={clickable ? 0 : undefined}
+                      data-testid={`analysis-dbu-match-${m.dbuMatchId || m.date}`}
                     >
                       <td className="px-4 py-3 text-sm tabular-nums text-zinc-300">{m.date}</td>
                       <td className="px-4 py-3 text-sm text-zinc-200">{m.opponent}</td>

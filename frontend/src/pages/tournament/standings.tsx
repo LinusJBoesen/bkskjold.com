@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { da } from "@/i18n/da";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Trophy, Calendar, Clock } from "lucide-react";
+import { RefreshCw, Trophy, Calendar, Clock, ChevronRight } from "lucide-react";
 
 interface Standing {
   position: number;
@@ -24,6 +25,7 @@ interface DbuMatch {
   awayTeam: string;
   homeScore: number | null;
   awayScore: number | null;
+  dbuMatchId: string | null;
 }
 
 const SKJOLD = "BK Skjold";
@@ -37,6 +39,7 @@ export default function TournamentStandingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchData = async () => {
     setLoading(true);
@@ -181,7 +184,15 @@ export default function TournamentStandingsPage() {
                   const isSkjoldHome = m.homeTeam === SKJOLD_MATCH;
                   const isSkjoldAway = m.awayTeam === SKJOLD_MATCH;
                   return (
-                    <div key={`${m.date}-${m.homeTeam}-${i}`} className="flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30">
+                    <div
+                      key={`${m.date}-${m.homeTeam}-${i}`}
+                      className={`flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30 ${m.dbuMatchId ? "cursor-pointer hover:border-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400 transition-colors" : ""}`}
+                      onClick={() => m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
+                      onKeyDown={(e) => e.key === "Enter" && m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
+                      tabIndex={m.dbuMatchId ? 0 : undefined}
+                      role={m.dbuMatchId ? "link" : undefined}
+                      data-testid={`tournament-upcoming-match-${i}`}
+                    >
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-zinc-500 tabular-nums w-20">{m.date}</span>
                         <span className={isSkjoldHome ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
@@ -192,9 +203,12 @@ export default function TournamentStandingsPage() {
                           {m.awayTeam}
                         </span>
                       </div>
-                      <Badge variant="default">
-                        {isSkjoldHome ? da.tournament.home : da.tournament.away}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="default">
+                          {isSkjoldHome ? da.tournament.home : da.tournament.away}
+                        </Badge>
+                        {m.dbuMatchId && <ChevronRight className="w-4 h-4 text-zinc-600" />}
+                      </div>
                     </div>
                   );
                 })}
@@ -226,7 +240,15 @@ export default function TournamentStandingsPage() {
                   const skjoldLost = (isSkjoldHome && (m.homeScore ?? 0) < (m.awayScore ?? 0)) ||
                                      (isSkjoldAway && (m.awayScore ?? 0) < (m.homeScore ?? 0));
                   return (
-                    <div key={`${m.date}-${m.homeTeam}-${i}`} className="flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30">
+                    <div
+                      key={`${m.date}-${m.homeTeam}-${i}`}
+                      className={`flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30 ${m.dbuMatchId ? "cursor-pointer hover:border-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400 transition-colors" : ""}`}
+                      onClick={() => m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
+                      onKeyDown={(e) => e.key === "Enter" && m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
+                      tabIndex={m.dbuMatchId ? 0 : undefined}
+                      role={m.dbuMatchId ? "link" : undefined}
+                      data-testid={`tournament-previous-match-${i}`}
+                    >
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-zinc-500 tabular-nums w-20">{m.date}</span>
                         <span className={isSkjoldHome ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
@@ -239,9 +261,12 @@ export default function TournamentStandingsPage() {
                           {m.awayTeam}
                         </span>
                       </div>
-                      <Badge variant={skjoldWon ? "success" : skjoldLost ? "error" : "info"}>
-                        {skjoldWon ? "Sejr" : skjoldLost ? "Nederlag" : "Uafgjort"}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={skjoldWon ? "success" : skjoldLost ? "error" : "info"}>
+                          {skjoldWon ? "Sejr" : skjoldLost ? "Nederlag" : "Uafgjort"}
+                        </Badge>
+                        {m.dbuMatchId && <ChevronRight className="w-4 h-4 text-zinc-600" />}
+                      </div>
                     </div>
                   );
                 })}

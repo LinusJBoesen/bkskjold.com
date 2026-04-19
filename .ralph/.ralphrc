@@ -1,9 +1,9 @@
-# Safety limits — no limit, runs forever
-MAX_ITERATIONS=9999
+# Safety limits
+MAX_ITERATIONS=50
 CLAUDE_TIMEOUT_MINUTES=25
 
-# No completion promise — loop runs until manually killed
-COMPLETION_PROMISE=__NEVER_MATCH_THIS__
+# Completion promise — loop stops when this string appears in model output
+COMPLETION_PROMISE=MATCH_DETAILS_SHIPPED
 
 # Git workflow
 AUTO_COMMIT=true
