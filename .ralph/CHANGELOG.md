@@ -16,3 +16,4 @@
 | 6 | ? | 2026-04-19 20:29 | iteration 6 |
 | 7 | Round 7 | 2026-04-19 | Added "Næste kamp" dashboard card linking to match detail. Added upcoming match to test seed. Added keyboard navigation (tabIndex, onKeyDown, focus-visible) to all clickable match rows. Created E2E spec with 11 tests covering navigation, hero, H2H, common opponents, kampfakta, back nav, error state, dashboard card. All tests pass (7 pre-existing failures unchanged). |
 | 7 | ? | 2026-04-19 20:41 | iteration 7 |
+| 8 | ? | 2026-04-19 20:45 | iteration 8 |
