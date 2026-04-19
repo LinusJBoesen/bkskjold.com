@@ -16,6 +16,7 @@ import adminRoutes from "./routes/admin";
 import formationRoutes from "./routes/formations";
 import fanSignupRoutes from "./routes/fan-signup";
 import bodekasseRoutes from "./routes/bodekasse";
+import dbuRoutes from "./routes/dbu";
 import { authMiddleware } from "./middleware/auth";
 import { sql } from "./lib/db";
 
@@ -103,19 +104,37 @@ app.post("/api/test/seed", async (c) => {
     `;
   }
 
-  // DBU matches test data
+  // DBU matches test data (with dbu_match_id)
   const dbuMatches = [
-    { date: "2025-03-15", home_team: "BK Skjold", away_team: "Vanløse IF", home_score: 3, away_score: 1 },
-    { date: "2025-03-08", home_team: "Husum BK", away_team: "BK Skjold", home_score: 1, away_score: 2 },
-    { date: "2025-03-01", home_team: "BK Skjold", away_team: "FC Nordvest", home_score: 0, away_score: 1 },
-    { date: "2025-02-22", home_team: "Brønshøj BK", away_team: "BK Skjold", home_score: 0, away_score: 4 },
-    { date: "2025-02-15", home_team: "BK Skjold", away_team: "Nørrebro United", home_score: 2, away_score: 2 },
+    { date: "2025-03-15", home_team: "BK Skjold", away_team: "Vanløse IF", home_score: 3, away_score: 1, dbu_match_id: "900001_489363" },
+    { date: "2025-03-08", home_team: "Husum BK", away_team: "BK Skjold", home_score: 1, away_score: 2, dbu_match_id: "900002_489363" },
+    { date: "2025-03-01", home_team: "BK Skjold", away_team: "FC Nordvest", home_score: 0, away_score: 1, dbu_match_id: "900003_489363" },
+    { date: "2025-02-22", home_team: "Brønshøj BK", away_team: "BK Skjold", home_score: 0, away_score: 4, dbu_match_id: "900004_489363" },
+    { date: "2025-02-15", home_team: "BK Skjold", away_team: "Nørrebro United", home_score: 2, away_score: 2, dbu_match_id: "900005_489363" },
   ];
 
   for (const m of dbuMatches) {
     await sql`
-      INSERT INTO dbu_matches (date, home_team, away_team, home_score, away_score)
-      VALUES (${m.date}, ${m.home_team}, ${m.away_team}, ${m.home_score}, ${m.away_score})
+      INSERT INTO dbu_matches (date, home_team, away_team, home_score, away_score, dbu_match_id)
+      VALUES (${m.date}, ${m.home_team}, ${m.away_team}, ${m.home_score}, ${m.away_score}, ${m.dbu_match_id})
+    `;
+  }
+
+  // DBU team matches test data
+  await sql`DELETE FROM dbu_team_matches`;
+  const dbuTeamMatches = [
+    { dbu_match_id: "900001_489363", team_id: "460174_489363", date: "2025-03-15", time: "14:00", home_team: "BK Skjold", home_team_id: "460174_489363", away_team: "Vanløse IF", away_team_id: "460175_489363", home_score: 3, away_score: 1, venue: "Østerbro Stadion" },
+    { dbu_match_id: "900002_489363", team_id: "460174_489363", date: "2025-03-08", time: "15:00", home_team: "Husum BK", home_team_id: "460176_489363", away_team: "BK Skjold", away_team_id: "460174_489363", home_score: 1, away_score: 2, venue: "Husum Idrætsanlæg" },
+    { dbu_match_id: "900003_489363", team_id: "460174_489363", date: "2025-03-01", time: "13:00", home_team: "BK Skjold", home_team_id: "460174_489363", away_team: "FC Nordvest", away_team_id: "460177_489363", home_score: 0, away_score: 1, venue: "Østerbro Stadion" },
+    { dbu_match_id: "900004_489363", team_id: "460174_489363", date: "2025-02-22", time: "14:00", home_team: "Brønshøj BK", home_team_id: "460178_489363", away_team: "BK Skjold", away_team_id: "460174_489363", home_score: 0, away_score: 4, venue: "Brønshøj Stadion" },
+    { dbu_match_id: "900005_489363", team_id: "460174_489363", date: "2025-02-15", time: "11:00", home_team: "BK Skjold", home_team_id: "460174_489363", away_team: "Nørrebro United", away_team_id: "460179_489363", home_score: 2, away_score: 2, venue: "Østerbro Stadion" },
+  ];
+
+  for (const tm of dbuTeamMatches) {
+    await sql`
+      INSERT INTO dbu_team_matches (dbu_match_id, team_id, date, time, home_team, home_team_id, away_team, away_team_id, home_score, away_score, venue)
+      VALUES (${tm.dbu_match_id}, ${tm.team_id}, ${tm.date}, ${tm.time}, ${tm.home_team}, ${tm.home_team_id}, ${tm.away_team}, ${tm.away_team_id}, ${tm.home_score}, ${tm.away_score}, ${tm.venue})
+      ON CONFLICT (dbu_match_id) DO NOTHING
     `;
   }
 
@@ -143,6 +162,7 @@ app.route("/api/admin", adminRoutes);
 app.route("/api/formations", formationRoutes);
 app.route("/api/fan-signup", fanSignupRoutes);
 app.route("/api/bodekasse", bodekasseRoutes);
+app.route("/api/dbu", dbuRoutes);
 
 // Serve frontend static files in production (built into backend/static by Dockerfile)
 app.use("/*", serveStatic({ root: "./static" }));

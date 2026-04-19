@@ -63,5 +63,8 @@ export async function migrate(): Promise<void> {
   try { await sql`ALTER TABLE spond_events ADD COLUMN location_name TEXT`; } catch { /* exists */ }
   try { await sql`ALTER TABLE spond_events ADD COLUMN location_address TEXT`; } catch { /* exists */ }
 
+  // Add dbu_match_id column to dbu_matches for linking to per-match detail pages
+  try { await sql`ALTER TABLE dbu_matches ADD COLUMN dbu_match_id TEXT`; } catch { /* exists */ }
+
   console.log("Database migrated");
 }

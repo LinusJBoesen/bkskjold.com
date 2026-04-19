@@ -92,6 +92,21 @@ export const tables = [
     synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
 
+  `CREATE TABLE IF NOT EXISTS dbu_team_matches (
+    dbu_match_id TEXT PRIMARY KEY,
+    team_id TEXT NOT NULL,
+    date TEXT,
+    time TEXT,
+    home_team TEXT,
+    home_team_id TEXT,
+    away_team TEXT,
+    away_team_id TEXT,
+    home_score INTEGER,
+    away_score INTEGER,
+    venue TEXT,
+    synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+
   `CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,

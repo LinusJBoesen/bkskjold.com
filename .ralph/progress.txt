@@ -1,8 +1,8 @@
 # Match Details — PROGRESS
 
 ## Current Status
-- **Round**: 2
-- **Task**: Starting — DBU per-team match history scraper
+- **Round**: 3
+- **Task**: Starting — Head-to-Head + Common Opponents Aggregation
 - **Last updated**: 2026-04-19
 
 ## Checklist
@@ -16,14 +16,14 @@
 - [x] Commit
 
 ### Round 2: DBU — Per-Team Match History Scraper
-- [ ] Extend scraper to capture time, venue, opponent team_id (from anchor href), and dbu_match_id (from icon-link href)
-- [ ] Add scrapeTeamMatches(teamId) with 1h cache
-- [ ] Add dbu_team_matches table (with dbu_match_id PK)
-- [ ] Backfill dbu_match_id on existing dbu_matches table
-- [ ] Expose GET /api/dbu/teams/:teamId/matches
-- [ ] Add getOpponentTeamId helper
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Extend scraper to capture time, venue, opponent team_id (from anchor href), and dbu_match_id (from icon-link href)
+- [x] Add scrapeTeamMatches(teamId) with 1h cache
+- [x] Add dbu_team_matches table (with dbu_match_id PK)
+- [x] Backfill dbu_match_id on existing dbu_matches table
+- [x] Expose GET /api/dbu/teams/:teamId/matches
+- [x] Add getOpponentTeamId helper
+- [x] Run E2E tests (7 pre-existing failures, 0 new regressions)
+- [x] Commit
 
 ### Round 3: Head-to-Head + Common Opponents Aggregation
 - [ ] Add GET /api/matches/:id/details endpoint
@@ -75,10 +75,11 @@
 (none)
 
 ## Notes
-- 7 pre-existing E2E test failures (admin fine-types, admin settings, admin users, pending-matches x2, full-flow, team-save) — not caused by Round 1 changes
+- 7 pre-existing E2E test failures (admin fine-types, admin settings, admin users, pending-matches x2, full-flow, team-save) — not caused by Round 1 or Round 2 changes
 
 ## Commit Log
 
 | Date | Hash | Description |
 |------|------|-------------|
-| 2026-04-19 | TBD | feat(skjold): enrich Spond events with location and kickoff |
+| 2026-04-19 | 1c0b9f9 | feat(skjold): enrich Spond events with location and kickoff |
+| 2026-04-19 | pending | feat(skjold): scrape per-team DBU match history |

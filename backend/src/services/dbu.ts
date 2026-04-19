@@ -24,8 +24,22 @@ interface DbuMatch {
   awayScore: number | null;
 }
 
+export interface DbuTeamMatch {
+  dbuMatchId: string;
+  date: string;
+  time: string;
+  homeTeam: string;
+  homeTeamId: string;
+  awayTeam: string;
+  awayTeamId: string;
+  venue: string;
+  homeScore: number | null;
+  awayScore: number | null;
+}
+
 let standingsCache: { data: Standing[]; timestamp: number } | null = null;
 let matchesCache: { data: DbuMatch[]; timestamp: number } | null = null;
+const teamMatchesCache = new Map<string, { data: DbuTeamMatch[]; timestamp: number }>();
 const CACHE_TTL = 3600_000; // 1 hour
 
 export async function scrapeStandings(teamId: string): Promise<Standing[]> {
@@ -137,6 +151,118 @@ export async function scrapeMatchHistory(teamId: string): Promise<DbuMatch[]> {
   return matches;
 }
 
+export async function scrapeTeamMatches(teamId: string): Promise<DbuTeamMatch[]> {
+  const cached = teamMatchesCache.get(teamId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+
+  const url = `${DBU_BASE}/${teamId}/kampprogram`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": USER_AGENT },
+  });
+
+  if (!res.ok) {
+    throw new Error(`DBU team matches fetch failed: ${res.status}`);
+  }
+
+  const html = await res.text();
+  const root = parse(html);
+
+  const table = root.querySelector("table");
+  if (!table) {
+    throw new Error("Could not find match table on DBU page");
+  }
+
+  const rows = table.querySelectorAll("tr");
+  const matches: DbuTeamMatch[] = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i]!;
+    const cells = row.querySelectorAll("td, th");
+    if (cells.length < 7) continue;
+
+    // cells[0] = icon with link to /resultater/kamp/{matchId}/kampinfo
+    // cells[2] = date, cells[3] = time, cells[4] = home, cells[5] = away
+    // cells[6] = venue, cells[7] = result
+
+    // Extract dbu_match_id from icon link in cells[0]
+    const iconLink = cells[0]?.querySelector("a");
+    const iconHref = iconLink?.getAttribute("href") ?? "";
+    // href like "/resultater/kamp/913776_489363/kampinfo"
+    const matchIdMatch = iconHref.match(/\/resultater\/kamp\/([^/]+)/);
+    const dbuMatchId = matchIdMatch?.[1] ?? "";
+
+    const dateStr = cells[2]?.text.trim() ?? "";
+    const time = cells[3]?.text.trim() ?? "";
+
+    // Extract team names and team IDs from anchor hrefs
+    const homeAnchor = cells[4]?.querySelector("a");
+    const awayAnchor = cells[5]?.querySelector("a");
+    const homeTeam = cells[4]?.text.trim() ?? "";
+    const awayTeam = cells[5]?.text.trim() ?? "";
+
+    // href like "/resultater/hold/460174_489363"
+    const homeHref = homeAnchor?.getAttribute("href") ?? "";
+    const awayHref = awayAnchor?.getAttribute("href") ?? "";
+    const homeTeamId = homeHref.match(/\/resultater\/hold\/([^/]+)/)?.[1] ?? "";
+    const awayTeamId = awayHref.match(/\/resultater\/hold\/([^/]+)/)?.[1] ?? "";
+
+    const venue = cells[6]?.text.trim() ?? "";
+    const resultStr = cells[7]?.text.trim() ?? "";
+
+    if (!dateStr || !homeTeam || !awayTeam) continue;
+
+    const isoDate = parseDbuDate(dateStr);
+
+    let homeScore: number | null = null;
+    let awayScore: number | null = null;
+    if (resultStr && resultStr.includes("-")) {
+      const cleaned = resultStr.replace(/\s/g, "");
+      const parts = cleaned.split("-");
+      if (parts.length === 2) {
+        const h = parseInt(parts[0]!, 10);
+        const a = parseInt(parts[1]!, 10);
+        if (!isNaN(h) && !isNaN(a)) {
+          homeScore = h;
+          awayScore = a;
+        }
+      }
+    }
+
+    matches.push({
+      dbuMatchId: dbuMatchId,
+      date: isoDate ?? dateStr,
+      time,
+      homeTeam,
+      homeTeamId,
+      awayTeam,
+      awayTeamId,
+      venue,
+      homeScore,
+      awayScore,
+    });
+  }
+
+  teamMatchesCache.set(teamId, { data: matches, timestamp: Date.now() });
+  return matches;
+}
+
+/**
+ * Derive opponent team_id from our own cached kampprogram rows.
+ * Looks up a match where opponentName appears as home or away team.
+ */
+export function getOpponentTeamId(
+  ourMatches: DbuTeamMatch[],
+  opponentName: string
+): string | null {
+  for (const m of ourMatches) {
+    if (m.homeTeam === opponentName) return m.homeTeamId;
+    if (m.awayTeam === opponentName) return m.awayTeamId;
+  }
+  return null;
+}
+
 function parseDbuDate(dateStr: string): string | null {
   // Format: "fre.22-08 2025" -> "2025-08-22"
   try {
@@ -180,7 +306,7 @@ export async function fetchStandings(): Promise<Standing[]> {
   return standings;
 }
 
-export async function fetchMatchResults(): Promise<DbuMatch[]> {
+export async function fetchMatchResults(): Promise<(DbuMatch & { dbuMatchId?: string })[]> {
   if (matchesCache && Date.now() - matchesCache.timestamp < CACHE_TTL) {
     return matchesCache.data;
   }
@@ -193,6 +319,7 @@ export async function fetchMatchResults(): Promise<DbuMatch[]> {
     awayTeam: r.away_team,
     homeScore: r.home_score,
     awayScore: r.away_score,
+    dbuMatchId: r.dbu_match_id ?? undefined,
   }));
 
   matchesCache = { data: matches, timestamp: Date.now() };
@@ -202,4 +329,5 @@ export async function fetchMatchResults(): Promise<DbuMatch[]> {
 export function clearCache() {
   standingsCache = null;
   matchesCache = null;
+  teamMatchesCache.clear();
 }
