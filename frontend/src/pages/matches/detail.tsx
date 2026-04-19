@@ -12,7 +12,7 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { ArrowLeft, MapPin, Clock, Calendar, Shield, ExternalLink, Swords, BarChart3, Users } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Calendar, Shield, ExternalLink, Swords, BarChart3, Users, Info, ChevronDown, ChevronUp } from "lucide-react";
 
 interface MatchInfo {
   dbuMatchId: string;
@@ -54,6 +54,17 @@ interface MatchDetailsResponse {
     theirResult: string;
     theirScore: string;
   }[];
+  matchInfo: {
+    referee: string | null;
+    venueName: string | null;
+    venueAddress: string | null;
+    pitch: string | null;
+    homeLineup: string[];
+    awayLineup: string[];
+    homeOfficials: string[];
+    awayOfficials: string[];
+    goalScorers: { name: string; team: string; goals: number }[];
+  } | null;
 }
 
 const isCompleted = (m: MatchInfo) => m.homeScore !== null && m.awayScore !== null;
@@ -64,6 +75,8 @@ export default function MatchDetailPage() {
   const [data, setData] = useState<MatchDetailsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showHomeLineup, setShowHomeLineup] = useState(false);
+  const [showAwayLineup, setShowAwayLineup] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -380,6 +393,127 @@ export default function MatchDetailPage() {
                 ))}
               </TableBody>
             </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Kampfakta */}
+      <Card className="bg-zinc-900/50 border-zinc-800 mb-6" data-testid="match-detail-kampfakta">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="w-4 h-4 text-red-400" />
+            <h3 className="text-sm font-semibold text-zinc-200">
+              {da.matchDetail.kampfakta}
+            </h3>
+          </div>
+          {!data.matchInfo ? (
+            <p className="text-sm text-zinc-500">{da.matchDetail.noKampfakta}</p>
+          ) : (
+            <div className="space-y-4">
+              {/* Referee & Pitch */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                {data.matchInfo.referee && (
+                  <div data-testid="match-detail-referee">
+                    <span className="text-zinc-500 text-xs">{da.matchDetail.dommer}</span>
+                    <p className="text-zinc-200">{data.matchInfo.referee}</p>
+                  </div>
+                )}
+                {data.matchInfo.pitch && (
+                  <div data-testid="match-detail-pitch">
+                    <span className="text-zinc-500 text-xs">{da.matchDetail.bane}</span>
+                    <p className="text-zinc-200">{data.matchInfo.pitch}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Goal Scorers */}
+              {data.matchInfo.goalScorers.length > 0 && (
+                <div data-testid="match-detail-scorers">
+                  <span className="text-zinc-500 text-xs">{da.matchDetail.maalscorere}</span>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {data.matchInfo.goalScorers.map((gs, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-200 text-xs border border-zinc-700"
+                      >
+                        {gs.name}
+                        {gs.goals > 1 && (
+                          <span className="text-red-400 font-bold">×{gs.goals}</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Officials */}
+              {(data.matchInfo.homeOfficials.length > 0 || data.matchInfo.awayOfficials.length > 0) && (
+                <div>
+                  <span className="text-zinc-500 text-xs">{da.matchDetail.holdleder}</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                    {data.matchInfo.homeOfficials.length > 0 && (
+                      <div className="text-xs text-zinc-300">
+                        <span className="text-zinc-500">{match.homeTeam}:</span>{" "}
+                        {data.matchInfo.homeOfficials.join(", ")}
+                      </div>
+                    )}
+                    {data.matchInfo.awayOfficials.length > 0 && (
+                      <div className="text-xs text-zinc-300">
+                        <span className="text-zinc-500">{match.awayTeam}:</span>{" "}
+                        {data.matchInfo.awayOfficials.join(", ")}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Home Lineup (collapsible) */}
+              {data.matchInfo.homeLineup.length > 0 && (
+                <div data-testid="match-detail-lineup-home">
+                  <button
+                    onClick={() => setShowHomeLineup(!showHomeLineup)}
+                    className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                    data-testid="match-detail-lineup-home-toggle"
+                  >
+                    {showHomeLineup ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    {da.matchDetail.opstillingHjemme} ({match.homeTeam})
+                  </button>
+                  {showHomeLineup && (
+                    <div className="mt-1.5 grid grid-cols-2 sm:grid-cols-3 gap-1">
+                      {data.matchInfo.homeLineup.map((p, i) => (
+                        <span key={i} className="text-xs text-zinc-300 py-0.5">{p}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Away Lineup (collapsible) */}
+              {data.matchInfo.awayLineup.length > 0 && (
+                <div data-testid="match-detail-lineup-away">
+                  <button
+                    onClick={() => setShowAwayLineup(!showAwayLineup)}
+                    className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                    data-testid="match-detail-lineup-away-toggle"
+                  >
+                    {showAwayLineup ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    {da.matchDetail.opstillingUde} ({match.awayTeam})
+                  </button>
+                  {showAwayLineup && (
+                    <div className="mt-1.5 grid grid-cols-2 sm:grid-cols-3 gap-1">
+                      {data.matchInfo.awayLineup.map((p, i) => (
+                        <span key={i} className="text-xs text-zinc-300 py-0.5">{p}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* If no data at all in matchInfo fields */}
+              {!data.matchInfo.referee && !data.matchInfo.pitch && data.matchInfo.goalScorers.length === 0 && data.matchInfo.homeLineup.length === 0 && data.matchInfo.awayLineup.length === 0 && (
+                <p className="text-sm text-zinc-500">{da.matchDetail.noData}</p>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

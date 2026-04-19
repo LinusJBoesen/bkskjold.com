@@ -11,3 +11,5 @@
 | 4 | Round 4 | 2026-04-19 | Added match detail page at /matches/:id with hero section (teams, score, date, kickoff, venue, Google Maps link). Made DBU match rows clickable in tournament standings and analysis pages. Added dbuMatchId to tournament and analysis API responses. Added i18n strings. |
 | 4 | ? | 2026-04-19 20:16 | iteration 4 |
 | 5 | Round 5 | 2026-04-19 | Added head-to-head section with W/D/L result badges, opponent season snapshot (W/D/L pills, goals, recent form chips), common opponents comparison table. Skeleton loaders for loading state. Mobile-responsive grid layout (stacks below lg). Added i18n strings for all new sections. |
+| 5 | ? | 2026-04-19 20:21 | iteration 5 |
+| 6 | Round 6 | 2026-04-19 | Added scrapeMatchInfo scraper for DBU kampinfo pages (referee, lineups, officials, scorers). Added dbu_match_info table. Added GET /api/dbu/matches/:dbuMatchId/info endpoint with lazy-fetch. Extended /api/matches/:id/details to include matchInfo. Added Kampfakta section to frontend detail page with referee, pitch, goal scorer pills, collapsible lineups, officials. Added i18n strings. |

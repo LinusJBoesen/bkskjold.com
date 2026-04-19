@@ -195,6 +195,16 @@ export const da = {
     them: "Dem",
     date: "Dato",
     noData: "Ingen data",
+    kampfakta: "Kampfakta",
+    dommer: "Dommer",
+    bane: "Bane",
+    maalscorere: "Målscorere",
+    opstillingHjemme: "Opstilling (hjemme)",
+    opstillingUde: "Opstilling (ude)",
+    holdleder: "Holdleder",
+    noKampfakta: "Ingen kampfakta tilgængelig",
+    showLineup: "Vis opstilling",
+    hideLineup: "Skjul opstilling",
   },
 
   // Analysis

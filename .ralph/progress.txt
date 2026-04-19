@@ -1,8 +1,8 @@
 # Match Details — PROGRESS
 
 ## Current Status
-- **Round**: 6
-- **Task**: Starting — DBU Kampinfo — Referee, Lineups, Goal Scorers
+- **Round**: 7
+- **Task**: Starting — Polish, Dashboard Integration, E2E Coverage
 - **Last updated**: 2026-04-19
 
 ## Checklist
@@ -53,15 +53,15 @@
 - [x] Commit
 
 ### Round 6: DBU Kampinfo — Referee, Lineups, Goal Scorers
-- [ ] scrapeMatchInfo(dbu_match_id) — referee, venue, pitch, lineups, officials, goal scorers
-- [ ] Add dbu_match_info table (lineups + scorers stored as JSON)
-- [ ] Expose GET /api/dbu/matches/:dbuMatchId/info (lazy fetch)
-- [ ] Extend /api/matches/:id/details to include match_info
-- [ ] Frontend "Kampfakta" section: referee, pitch, scorers, collapsible lineups
-- [ ] i18n strings for kampfakta, dommer, bane, maalscorere, opstilling, holdleder
-- [ ] Handle missing/empty data gracefully
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] scrapeMatchInfo(dbu_match_id) — referee, venue, pitch, lineups, officials, goal scorers
+- [x] Add dbu_match_info table (lineups + scorers stored as JSON)
+- [x] Expose GET /api/dbu/matches/:dbuMatchId/info (lazy fetch)
+- [x] Extend /api/matches/:id/details to include match_info
+- [x] Frontend "Kampfakta" section: referee, pitch, scorers, collapsible lineups
+- [x] i18n strings for kampfakta, dommer, bane, maalscorere, opstilling, holdleder
+- [x] Handle missing/empty data gracefully
+- [x] Run E2E tests (6 pre-existing failures, 0 new regressions)
+- [x] Commit
 
 ### Round 7: Polish, Dashboard Integration, E2E Coverage
 - [ ] "Næste kamp" dashboard card → match detail
@@ -85,3 +85,4 @@
 | 2026-04-19 | 18abc96 | feat(skjold): scrape per-team DBU match history |
 | 2026-04-19 | 20a857f | feat(skjold): match details aggregation endpoint |
 | 2026-04-19 | bcee020 | feat(skjold): match detail page with clickable rows |
+| 2026-04-19 | 12267e8 | feat(skjold): head-to-head and common opponents on match detail |

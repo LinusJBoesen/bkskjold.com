@@ -1,5 +1,5 @@
 import { sql } from "../lib/db";
-import { scrapeTeamMatches, type DbuTeamMatch } from "./dbu";
+import { scrapeTeamMatches, scrapeMatchInfo, type DbuTeamMatch, type DbuMatchInfo } from "./dbu";
 
 const OUR_TEAM_NAME = "BK Skjold";
 
@@ -41,6 +41,7 @@ interface MatchDetails {
     theirResult: string;
     theirScore: string;
   }[];
+  matchInfo: DbuMatchInfo | null;
 }
 
 export async function getMatchDetails(dbuMatchId: string): Promise<MatchDetails | null> {
@@ -59,6 +60,7 @@ export async function getMatchDetails(dbuMatchId: string): Promise<MatchDetails 
     // Minimal match info from dbu_matches
     const isHome = dbuMatch.home_team === OUR_TEAM_NAME;
     const opponent = isHome ? dbuMatch.away_team : dbuMatch.home_team;
+    const matchInfoFallback = await fetchMatchInfo(dbuMatchId);
     return {
       match: {
         dbuMatchId,
@@ -77,6 +79,7 @@ export async function getMatchDetails(dbuMatchId: string): Promise<MatchDetails 
       headToHead: await getHeadToHead(opponent),
       opponentSeason: null,
       commonOpponents: [],
+      matchInfo: matchInfoFallback,
     };
   }
 
@@ -100,6 +103,9 @@ export async function getMatchDetails(dbuMatchId: string): Promise<MatchDetails 
     ? await getCommonOpponents(opponentTeamId, opponent)
     : [];
 
+  // 5. Match info (kampfakta)
+  const matchInfo = await fetchMatchInfo(dbuMatchId);
+
   return {
     match: {
       dbuMatchId,
@@ -118,6 +124,7 @@ export async function getMatchDetails(dbuMatchId: string): Promise<MatchDetails 
     headToHead: h2h,
     opponentSeason,
     commonOpponents,
+    matchInfo,
   };
 }
 
@@ -325,4 +332,51 @@ async function findSpondEvent(matchDate: string) {
     LIMIT 1
   `) as any[];
   return rows[0] || null;
+}
+
+async function fetchMatchInfo(dbuMatchId: string): Promise<DbuMatchInfo | null> {
+  // Check DB first
+  const [row] = (await sql`
+    SELECT * FROM dbu_match_info WHERE dbu_match_id = ${dbuMatchId}
+  `) as any[];
+
+  if (row) {
+    return {
+      referee: row.referee,
+      venueName: row.venue_name,
+      venueAddress: row.venue_address,
+      pitch: row.pitch,
+      homeLineup: JSON.parse(row.home_lineup || "[]"),
+      awayLineup: JSON.parse(row.away_lineup || "[]"),
+      homeOfficials: JSON.parse(row.home_officials || "[]"),
+      awayOfficials: JSON.parse(row.away_officials || "[]"),
+      goalScorers: JSON.parse(row.goal_scorers || "[]"),
+    };
+  }
+
+  // Lazy-fetch from DBU
+  try {
+    const info = await scrapeMatchInfo(dbuMatchId);
+
+    // Persist to DB
+    await sql`
+      INSERT INTO dbu_match_info (dbu_match_id, referee, venue_name, venue_address, pitch, home_lineup, away_lineup, home_officials, away_officials, goal_scorers)
+      VALUES (${dbuMatchId}, ${info.referee}, ${info.venueName}, ${info.venueAddress}, ${info.pitch}, ${JSON.stringify(info.homeLineup)}, ${JSON.stringify(info.awayLineup)}, ${JSON.stringify(info.homeOfficials)}, ${JSON.stringify(info.awayOfficials)}, ${JSON.stringify(info.goalScorers)})
+      ON CONFLICT (dbu_match_id) DO UPDATE SET
+        referee = EXCLUDED.referee,
+        venue_name = EXCLUDED.venue_name,
+        venue_address = EXCLUDED.venue_address,
+        pitch = EXCLUDED.pitch,
+        home_lineup = EXCLUDED.home_lineup,
+        away_lineup = EXCLUDED.away_lineup,
+        home_officials = EXCLUDED.home_officials,
+        away_officials = EXCLUDED.away_officials,
+        goal_scorers = EXCLUDED.goal_scorers,
+        synced_at = NOW()
+    `;
+
+    return info;
+  } catch {
+    return null;
+  }
 }
