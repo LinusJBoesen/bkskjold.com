@@ -46,10 +46,13 @@ sync.post("/spond", async (c) => {
     // Upsert events and attendance
     for (const event of events) {
       await sql`
-        INSERT INTO spond_events (id, name, start_time, event_type, synced_at)
-        VALUES (${event.id}, ${event.heading}, ${event.startTimestamp}, ${event.type}, NOW())
+        INSERT INTO spond_events (id, name, start_time, end_time, event_type, location_name, location_address, synced_at)
+        VALUES (${event.id}, ${event.heading}, ${event.startTimestamp}, ${event.endTimestamp ?? null}, ${event.type}, ${event.location?.feature ?? null}, ${event.location?.address ?? null}, NOW())
         ON CONFLICT(id) DO UPDATE SET
           name = EXCLUDED.name,
+          end_time = EXCLUDED.end_time,
+          location_name = EXCLUDED.location_name,
+          location_address = EXCLUDED.location_address,
           synced_at = NOW()
       `;
 

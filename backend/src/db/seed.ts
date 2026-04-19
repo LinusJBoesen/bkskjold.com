@@ -31,5 +31,44 @@ export async function seed(): Promise<void> {
     `;
   }
 
+  // Seed Spond events with location data for development
+  const spondEvents = [
+    {
+      id: "spond-evt-1",
+      name: "Træning",
+      start_time: "2026-04-15T18:00:00.000Z",
+      end_time: "2026-04-15T19:30:00.000Z",
+      event_type: "RECURRING",
+      location_name: "Østerbro Stadion",
+      location_address: "Gunnar Nu Hansens Plads 7, 2100 København Ø",
+    },
+    {
+      id: "spond-evt-2",
+      name: "Kamp vs. Frem",
+      start_time: "2026-04-20T14:00:00.000Z",
+      end_time: "2026-04-20T16:00:00.000Z",
+      event_type: "EVENT",
+      location_name: "Valby Idrætspark",
+      location_address: "Hammelstrupvej 38, 2450 København SV",
+    },
+    {
+      id: "spond-evt-3",
+      name: "Kamp vs. AB",
+      start_time: "2026-04-27T11:00:00.000Z",
+      end_time: "2026-04-27T13:00:00.000Z",
+      event_type: "EVENT",
+      location_name: "Østerbro Stadion",
+      location_address: "Gunnar Nu Hansens Plads 7, 2100 København Ø",
+    },
+  ];
+
+  for (const evt of spondEvents) {
+    await sql`
+      INSERT INTO spond_events (id, name, start_time, end_time, event_type, location_name, location_address, synced_at)
+      VALUES (${evt.id}, ${evt.name}, ${evt.start_time}, ${evt.end_time}, ${evt.event_type}, ${evt.location_name}, ${evt.location_address}, NOW())
+      ON CONFLICT (id) DO NOTHING
+    `;
+  }
+
   console.log("✓ Database initialized");
 }

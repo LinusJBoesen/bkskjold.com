@@ -54,7 +54,10 @@ export const tables = [
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     start_time TEXT NOT NULL,
+    end_time TEXT,
     event_type TEXT,
+    location_name TEXT,
+    location_address TEXT,
     synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
 

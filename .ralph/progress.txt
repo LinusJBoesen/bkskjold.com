@@ -1,0 +1,84 @@
+# Match Details — PROGRESS
+
+## Current Status
+- **Round**: 2
+- **Task**: Starting — DBU per-team match history scraper
+- **Last updated**: 2026-04-19
+
+## Checklist
+
+### Round 1: Spond — Location & Kickoff Enrichment
+- [x] Add columns to `spond_events`: location_name, location_address, end_time
+- [x] Update `spond.ts` to extract location + endTimestamp from payload
+- [x] Update seed.ts with plausible location data
+- [x] Expose enriched fields in match endpoints
+- [x] Run E2E tests (7 pre-existing failures, 0 new regressions)
+- [x] Commit
+
+### Round 2: DBU — Per-Team Match History Scraper
+- [ ] Extend scraper to capture time, venue, opponent team_id (from anchor href), and dbu_match_id (from icon-link href)
+- [ ] Add scrapeTeamMatches(teamId) with 1h cache
+- [ ] Add dbu_team_matches table (with dbu_match_id PK)
+- [ ] Backfill dbu_match_id on existing dbu_matches table
+- [ ] Expose GET /api/dbu/teams/:teamId/matches
+- [ ] Add getOpponentTeamId helper
+- [ ] Run E2E tests
+- [ ] Commit
+
+### Round 3: Head-to-Head + Common Opponents Aggregation
+- [ ] Add GET /api/matches/:id/details endpoint
+- [ ] Write aggregation in services/match-details.ts
+- [ ] Sanity-test common-opponents logic
+- [ ] Run E2E tests
+- [ ] Commit
+
+### Round 4: Frontend — Match Detail Page + Clickable Rows
+- [ ] Add route /matches/:id in App.tsx
+- [ ] Create pages/matches/detail.tsx
+- [ ] Make match rows clickable (standings, analysis, dashboard)
+- [ ] Hero section: opponent, date, kickoff, venue, score
+- [ ] "Åbn i Google Maps" link
+- [ ] Loading/empty/error states
+- [ ] i18n strings + data-testid
+- [ ] Run E2E tests
+- [ ] Commit
+
+### Round 5: Frontend — Head-to-Head & Common Opponents Sections
+- [ ] Head-to-head list with W/L accents
+- [ ] Opponent season snapshot (W/D/L, GF/GA, recent form)
+- [ ] Common opponents comparison table
+- [ ] Mobile-responsive stacking
+- [ ] Skeleton loaders
+- [ ] Run E2E tests
+- [ ] Commit
+
+### Round 6: DBU Kampinfo — Referee, Lineups, Goal Scorers
+- [ ] scrapeMatchInfo(dbu_match_id) — referee, venue, pitch, lineups, officials, goal scorers
+- [ ] Add dbu_match_info table (lineups + scorers stored as JSON)
+- [ ] Expose GET /api/dbu/matches/:dbuMatchId/info (lazy fetch)
+- [ ] Extend /api/matches/:id/details to include match_info
+- [ ] Frontend "Kampfakta" section: referee, pitch, scorers, collapsible lineups
+- [ ] i18n strings for kampfakta, dommer, bane, maalscorere, opstilling, holdleder
+- [ ] Handle missing/empty data gracefully
+- [ ] Run E2E tests
+- [ ] Commit
+
+### Round 7: Polish, Dashboard Integration, E2E Coverage
+- [ ] "Næste kamp" dashboard card → match detail
+- [ ] Verify all edge cases (upcoming, completed, missing location, no DBU history, no kampinfo)
+- [ ] Add e2e/specs/matches/detail.spec.ts (hero, H2H, common opponents, kampfakta)
+- [ ] Dark theme + a11y keyboard nav verification
+- [ ] Run full E2E suite
+- [ ] Commit
+
+## Blockers
+(none)
+
+## Notes
+- 7 pre-existing E2E test failures (admin fine-types, admin settings, admin users, pending-matches x2, full-flow, team-save) — not caused by Round 1 changes
+
+## Commit Log
+
+| Date | Hash | Description |
+|------|------|-------------|
+| 2026-04-19 | TBD | feat(skjold): enrich Spond events with location and kickoff |

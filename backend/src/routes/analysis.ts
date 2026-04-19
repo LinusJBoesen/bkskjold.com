@@ -34,7 +34,7 @@ analysis.get("/player-rates", requireRole("admin", "spiller"), async (c) => {
 
   // Get spond events (which may correspond to match days)
   const spondEvents = await sql`
-    SELECT id, name, start_time FROM spond_events ORDER BY start_time DESC
+    SELECT id, name, start_time, end_time, location_name, location_address FROM spond_events ORDER BY start_time DESC
   ` as { id: string; name: string; start_time: string }[];
 
   // Build player attendance map from spond_attendance

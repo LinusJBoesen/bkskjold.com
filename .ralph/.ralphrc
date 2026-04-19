@@ -1,0 +1,22 @@
+# Safety limits
+MAX_ITERATIONS=50
+CLAUDE_TIMEOUT_MINUTES=25
+
+# Completion promise — loop stops when this string appears in model output
+COMPLETION_PROMISE=MATCH_DETAILS_SHIPPED
+
+# Git workflow
+AUTO_COMMIT=true
+COMMIT_PREFIX="feat(skjold):"
+
+# Permissions — runs headless with full access
+DANGEROUSLY_SKIP_PERMISSIONS=true
+
+# Test requirements
+MIN_COVERAGE=0
+RUN_INTEGRATION_TESTS=true
+
+# Resume behavior
+PERSIST_PROGRESS=true
+PROGRESS_FILE=.ralph/progress.txt
+CHANGELOG_FILE=.ralph/CHANGELOG.md

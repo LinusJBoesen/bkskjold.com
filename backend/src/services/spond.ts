@@ -109,7 +109,12 @@ export class SpondClient {
         id: string;
         heading: string;
         startTimestamp: string;
+        endTimestamp?: string;
         type: string;
+        location?: {
+          feature?: string;
+          address?: string;
+        };
         responses?: {
           acceptedIds?: string[];
           declinedIds?: string[];
@@ -123,8 +128,8 @@ export class SpondClient {
   }
 
   async getNextEvents(groupId: string): Promise<{
-    training: { heading: string; startTimestamp: string; acceptedIds: string[] } | null;
-    match: { heading: string; startTimestamp: string; acceptedIds: string[] } | null;
+    training: { heading: string; startTimestamp: string; acceptedIds: string[]; locationName?: string; locationAddress?: string } | null;
+    match: { heading: string; startTimestamp: string; acceptedIds: string[]; locationName?: string; locationAddress?: string } | null;
   }> {
     const now = new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
     const params = new URLSearchParams({
@@ -139,6 +144,10 @@ export class SpondClient {
         heading: string;
         startTimestamp: string;
         type: string;
+        location?: {
+          feature?: string;
+          address?: string;
+        };
         responses?: {
           acceptedIds?: string[];
         };
@@ -158,10 +167,10 @@ export class SpondClient {
 
     return {
       training: nextTraining
-        ? { heading: nextTraining.heading, startTimestamp: nextTraining.startTimestamp, acceptedIds: nextTraining.responses?.acceptedIds ?? [] }
+        ? { heading: nextTraining.heading, startTimestamp: nextTraining.startTimestamp, acceptedIds: nextTraining.responses?.acceptedIds ?? [], locationName: nextTraining.location?.feature, locationAddress: nextTraining.location?.address }
         : null,
       match: nextMatch
-        ? { heading: nextMatch.heading, startTimestamp: nextMatch.startTimestamp, acceptedIds: nextMatch.responses?.acceptedIds ?? [] }
+        ? { heading: nextMatch.heading, startTimestamp: nextMatch.startTimestamp, acceptedIds: nextMatch.responses?.acceptedIds ?? [], locationName: nextMatch.location?.feature, locationAddress: nextMatch.location?.address }
         : null,
     };
   }

@@ -78,6 +78,10 @@ app.post("/api/test/seed", async (c) => {
     `;
   }
 
+  // Clear previous DBU test data to avoid duplicates
+  await sql`DELETE FROM dbu_standings`;
+  await sql`DELETE FROM dbu_matches`;
+
   // DBU standings test data
   const standings = [
     { position: 1, team_name: "FC Nordvest", matches_played: 14, wins: 11, draws: 2, losses: 1, goal_diff: "+28", points: 35 },

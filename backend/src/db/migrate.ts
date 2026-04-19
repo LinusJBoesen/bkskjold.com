@@ -58,5 +58,10 @@ export async function migrate(): Promise<void> {
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`).catch(() => {});
 
+  // Add location and end_time columns to spond_events
+  try { await sql`ALTER TABLE spond_events ADD COLUMN end_time TEXT`; } catch { /* exists */ }
+  try { await sql`ALTER TABLE spond_events ADD COLUMN location_name TEXT`; } catch { /* exists */ }
+  try { await sql`ALTER TABLE spond_events ADD COLUMN location_address TEXT`; } catch { /* exists */ }
+
   console.log("Database migrated");
 }

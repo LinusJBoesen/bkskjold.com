@@ -47,11 +47,11 @@ async function getPlayersById(ids: string[], stats: Awaited<ReturnType<typeof ca
 }
 
 async function getNextEventsFromDb(): Promise<{
-  training: { heading: string; startTimestamp: string; acceptedIds: string[] } | null;
-  match: { heading: string; startTimestamp: string; acceptedIds: string[] } | null;
+  training: { heading: string; startTimestamp: string; acceptedIds: string[]; locationName?: string; locationAddress?: string } | null;
+  match: { heading: string; startTimestamp: string; acceptedIds: string[]; locationName?: string; locationAddress?: string } | null;
 }> {
   const eventRows = await sql`
-    SELECT id, name, start_time, event_type
+    SELECT id, name, start_time, event_type, location_name, location_address
     FROM spond_events
     WHERE start_time::timestamptz > NOW()
     ORDER BY start_time ASC
@@ -71,10 +71,10 @@ async function getNextEventsFromDb(): Promise<{
 
   return {
     training: nextTraining
-      ? { heading: nextTraining.name, startTimestamp: nextTraining.start_time, acceptedIds: await getAcceptedIds(nextTraining.id) }
+      ? { heading: nextTraining.name, startTimestamp: nextTraining.start_time, acceptedIds: await getAcceptedIds(nextTraining.id), locationName: nextTraining.location_name ?? undefined, locationAddress: nextTraining.location_address ?? undefined }
       : null,
     match: nextMatch
-      ? { heading: nextMatch.name, startTimestamp: nextMatch.start_time, acceptedIds: await getAcceptedIds(nextMatch.id) }
+      ? { heading: nextMatch.name, startTimestamp: nextMatch.start_time, acceptedIds: await getAcceptedIds(nextMatch.id), locationName: nextMatch.location_name ?? undefined, locationAddress: nextMatch.location_address ?? undefined }
       : null,
   };
 }
