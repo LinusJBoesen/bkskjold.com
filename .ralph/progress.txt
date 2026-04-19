@@ -1,8 +1,8 @@
 # Match Details — PROGRESS
 
 ## Current Status
-- **Round**: 5
-- **Task**: Starting — Frontend Head-to-Head & Common Opponents Sections
+- **Round**: 6
+- **Task**: Starting — DBU Kampinfo — Referee, Lineups, Goal Scorers
 - **Last updated**: 2026-04-19
 
 ## Checklist
@@ -44,13 +44,13 @@
 - [x] Commit
 
 ### Round 5: Frontend — Head-to-Head & Common Opponents Sections
-- [ ] Head-to-head list with W/L accents
-- [ ] Opponent season snapshot (W/D/L, GF/GA, recent form)
-- [ ] Common opponents comparison table
-- [ ] Mobile-responsive stacking
-- [ ] Skeleton loaders
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Head-to-head list with W/L accents
+- [x] Opponent season snapshot (W/D/L, GF/GA, recent form)
+- [x] Common opponents comparison table
+- [x] Mobile-responsive stacking
+- [x] Skeleton loaders
+- [x] Run E2E tests (6 pre-existing failures, 0 new regressions)
+- [x] Commit
 
 ### Round 6: DBU Kampinfo — Referee, Lineups, Goal Scorers
 - [ ] scrapeMatchInfo(dbu_match_id) — referee, venue, pitch, lineups, officials, goal scorers

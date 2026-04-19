@@ -9,3 +9,5 @@
 | 3 | Round 3 | 2026-04-19 | Added match-details aggregation service with H2H, opponent season, common opponents. Added GET /api/matches/:id/details endpoint. Seeded opponent (Vanløse IF) team matches for common opponents testing. Unit test for common-opponents logic passes. |
 | 3 | ? | 2026-04-19 20:09 | iteration 3 |
 | 4 | Round 4 | 2026-04-19 | Added match detail page at /matches/:id with hero section (teams, score, date, kickoff, venue, Google Maps link). Made DBU match rows clickable in tournament standings and analysis pages. Added dbuMatchId to tournament and analysis API responses. Added i18n strings. |
+| 4 | ? | 2026-04-19 20:16 | iteration 4 |
+| 5 | Round 5 | 2026-04-19 | Added head-to-head section with W/D/L result badges, opponent season snapshot (W/D/L pills, goals, recent form chips), common opponents comparison table. Skeleton loaders for loading state. Mobile-responsive grid layout (stacks below lg). Added i18n strings for all new sections. |
