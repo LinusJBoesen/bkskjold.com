@@ -1,8 +1,8 @@
 # Match Details — PROGRESS
 
 ## Current Status
-- **Round**: 7
-- **Task**: Starting — Polish, Dashboard Integration, E2E Coverage
+- **Round**: 7 (COMPLETE — ALL ROUNDS DONE)
+- **Task**: Complete — All 7 rounds finished
 - **Last updated**: 2026-04-19
 
 ## Checklist
@@ -64,12 +64,12 @@
 - [x] Commit
 
 ### Round 7: Polish, Dashboard Integration, E2E Coverage
-- [ ] "Næste kamp" dashboard card → match detail
-- [ ] Verify all edge cases (upcoming, completed, missing location, no DBU history, no kampinfo)
-- [ ] Add e2e/specs/matches/detail.spec.ts (hero, H2H, common opponents, kampfakta)
-- [ ] Dark theme + a11y keyboard nav verification
-- [ ] Run full E2E suite
-- [ ] Commit
+- [x] "Næste kamp" dashboard card → match detail
+- [x] Verify all edge cases (upcoming, completed, missing location, no DBU history, no kampinfo)
+- [x] Add e2e/specs/matches/detail.spec.ts (hero, H2H, common opponents, kampfakta)
+- [x] Dark theme + a11y keyboard nav verification
+- [x] Run full E2E suite
+- [x] Commit
 
 ## Blockers
 (none)
@@ -86,3 +86,4 @@
 | 2026-04-19 | 20a857f | feat(skjold): match details aggregation endpoint |
 | 2026-04-19 | bcee020 | feat(skjold): match detail page with clickable rows |
 | 2026-04-19 | 12267e8 | feat(skjold): head-to-head and common opponents on match detail |
+| 2026-04-19 | 0de2160 | feat(skjold): match detail polish and E2E coverage |

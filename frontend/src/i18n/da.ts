@@ -163,6 +163,12 @@ export const da = {
     },
   },
 
+  // Dashboard
+  dashboard: {
+    nextMatch: "Næste kamp",
+    noUpcoming: "Ingen kommende kampe",
+  },
+
   // Match Detail
   matchDetail: {
     title: "Kampdetaljer",

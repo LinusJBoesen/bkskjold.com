@@ -487,8 +487,10 @@ export default function MatchAnalysisPage() {
                 {data.dbuMatches.map((m) => (
                   <tr
                     key={`${m.date}-${m.opponent}`}
-                    className={`border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors ${m.dbuMatchId ? "cursor-pointer" : ""}`}
+                    className={`border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors ${m.dbuMatchId ? "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400" : ""}`}
                     onClick={() => m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
+                    onKeyDown={(e) => e.key === "Enter" && m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
+                    tabIndex={m.dbuMatchId ? 0 : undefined}
                     data-testid={`analysis-dbu-match-${m.dbuMatchId || m.date}`}
                   >
                     <td className="px-4 py-3 text-sm tabular-nums text-zinc-300">{m.date}</td>

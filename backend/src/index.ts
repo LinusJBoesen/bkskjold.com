@@ -111,6 +111,7 @@ app.post("/api/test/seed", async (c) => {
     { date: "2025-03-01", home_team: "BK Skjold", away_team: "FC Nordvest", home_score: 0, away_score: 1, dbu_match_id: "900003_489363" },
     { date: "2025-02-22", home_team: "Brønshøj BK", away_team: "BK Skjold", home_score: 0, away_score: 4, dbu_match_id: "900004_489363" },
     { date: "2025-02-15", home_team: "BK Skjold", away_team: "Nørrebro United", home_score: 2, away_score: 2, dbu_match_id: "900005_489363" },
+    { date: "2026-05-10", home_team: "BK Skjold", away_team: "Husum BK", home_score: null, away_score: null, dbu_match_id: "900006_489363" },
   ];
 
   for (const m of dbuMatches) {
@@ -128,6 +129,7 @@ app.post("/api/test/seed", async (c) => {
     { dbu_match_id: "900003_489363", team_id: "460174_489363", date: "2025-03-01", time: "13:00", home_team: "BK Skjold", home_team_id: "460174_489363", away_team: "FC Nordvest", away_team_id: "460177_489363", home_score: 0, away_score: 1, venue: "Østerbro Stadion" },
     { dbu_match_id: "900004_489363", team_id: "460174_489363", date: "2025-02-22", time: "14:00", home_team: "Brønshøj BK", home_team_id: "460178_489363", away_team: "BK Skjold", away_team_id: "460174_489363", home_score: 0, away_score: 4, venue: "Brønshøj Stadion" },
     { dbu_match_id: "900005_489363", team_id: "460174_489363", date: "2025-02-15", time: "11:00", home_team: "BK Skjold", home_team_id: "460174_489363", away_team: "Nørrebro United", away_team_id: "460179_489363", home_score: 2, away_score: 2, venue: "Østerbro Stadion" },
+    { dbu_match_id: "900006_489363", team_id: "460174_489363", date: "2026-05-10", time: "14:00", home_team: "BK Skjold", home_team_id: "460174_489363", away_team: "Husum BK", away_team_id: "460176_489363", home_score: null, away_score: null, venue: "Østerbro Stadion" },
   ];
 
   for (const tm of dbuTeamMatches) {

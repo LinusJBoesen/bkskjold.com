@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
-import { RefreshCw, Users, Banknote, CheckCircle, Trophy, TrendingUp, AlertTriangle, Heart } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { RefreshCw, Users, Banknote, CheckCircle, Trophy, TrendingUp, AlertTriangle, Heart, Calendar, Clock, MapPin, ChevronRight } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer,
@@ -39,6 +40,15 @@ interface SyncResult {
   message: string;
   players: number;
   events: number;
+}
+
+interface DbuMatch {
+  date: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  dbuMatchId: string | null;
 }
 
 
@@ -137,13 +147,20 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [nextMatch, setNextMatch] = useState<DbuMatch | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.get<DashboardData>("/stats/dashboard")
       .then(setData)
       .catch(() => setError("Kunne ikke indlæse dashboard-data"))
       .finally(() => setLoading(false));
+    api.get<{ upcoming: DbuMatch[] }>("/tournament/matches")
+      .then((res) => {
+        if (res.upcoming.length > 0) setNextMatch(res.upcoming[0]);
+      })
+      .catch(() => {});
   }, []);
 
   const handleSync = async () => {
@@ -208,6 +225,41 @@ export default function DashboardPage() {
         <StatCard icon={Banknote} label="Total bøder" value={`${data?.totals.totalFines ?? 0} kr`} color="text-red-400" testId="dashboard-total-fines" />
         <StatCard icon={CheckCircle} label="Betalt" value={`${data?.totals.paidFines ?? 0} kr`} color="text-emerald-400" testId="dashboard-paid-fines" />
       </div>
+
+      {/* Næste kamp */}
+      {nextMatch && (
+        <Card
+          className={`mb-6 ${nextMatch.dbuMatchId ? "cursor-pointer hover:border-zinc-600 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400" : ""}`}
+          onClick={() => nextMatch.dbuMatchId && navigate(`/matches/${nextMatch.dbuMatchId}`)}
+          onKeyDown={(e) => e.key === "Enter" && nextMatch.dbuMatchId && navigate(`/matches/${nextMatch.dbuMatchId}`)}
+          tabIndex={nextMatch.dbuMatchId ? 0 : undefined}
+          role={nextMatch.dbuMatchId ? "link" : undefined}
+          data-testid="dashboard-next-match"
+        >
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/10 border border-red-500/20">
+                  <Calendar className="h-5 w-5 text-red-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-0.5">{da.dashboard.nextMatch}</p>
+                  <p className="text-sm font-bold text-zinc-100">
+                    {nextMatch.homeTeam} vs {nextMatch.awayTeam}
+                  </p>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {nextMatch.date}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {nextMatch.dbuMatchId && <ChevronRight className="w-5 h-5 text-zinc-600" />}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Top 3 */}
       {data && (

@@ -186,8 +186,11 @@ export default function TournamentStandingsPage() {
                   return (
                     <div
                       key={`${m.date}-${m.homeTeam}-${i}`}
-                      className={`flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30 ${m.dbuMatchId ? "cursor-pointer hover:border-zinc-600 transition-colors" : ""}`}
+                      className={`flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30 ${m.dbuMatchId ? "cursor-pointer hover:border-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400 transition-colors" : ""}`}
                       onClick={() => m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
+                      onKeyDown={(e) => e.key === "Enter" && m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
+                      tabIndex={m.dbuMatchId ? 0 : undefined}
+                      role={m.dbuMatchId ? "link" : undefined}
                       data-testid={`tournament-upcoming-match-${i}`}
                     >
                       <div className="flex items-center gap-3">
@@ -239,8 +242,11 @@ export default function TournamentStandingsPage() {
                   return (
                     <div
                       key={`${m.date}-${m.homeTeam}-${i}`}
-                      className={`flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30 ${m.dbuMatchId ? "cursor-pointer hover:border-zinc-600 transition-colors" : ""}`}
+                      className={`flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/30 ${m.dbuMatchId ? "cursor-pointer hover:border-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400 transition-colors" : ""}`}
                       onClick={() => m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
+                      onKeyDown={(e) => e.key === "Enter" && m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
+                      tabIndex={m.dbuMatchId ? 0 : undefined}
+                      role={m.dbuMatchId ? "link" : undefined}
                       data-testid={`tournament-previous-match-${i}`}
                     >
                       <div className="flex items-center gap-3">
