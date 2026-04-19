@@ -71,7 +71,33 @@ function getTeamBalance(team1: PlayerStats[], team2: PlayerStats[]) {
   };
 }
 
-function greedy(players: PlayerStats[]): TeamResult {
+function getPositionCounts(team: PlayerStats[], positions: Record<string, string[]>): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const p of team) {
+    for (const pos of (positions[p.id] ?? [])) {
+      counts[pos] = (counts[pos] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
+function positionImbalancePenalty(
+  team1: PlayerStats[],
+  team2: PlayerStats[],
+  positions: Record<string, string[]>
+): number {
+  const c1 = getPositionCounts(team1, positions);
+  const c2 = getPositionCounts(team2, positions);
+  const allPositions = new Set([...Object.keys(c1), ...Object.keys(c2)]);
+  let penalty = 0;
+  for (const pos of allPositions) {
+    penalty += Math.abs((c1[pos] ?? 0) - (c2[pos] ?? 0));
+  }
+  return penalty;
+}
+
+function greedy(players: PlayerStats[], positions: Record<string, string[]> = {}): TeamResult {
+  const hasPositions = Object.keys(positions).length > 0;
   const sorted = [...players].sort((a, b) => b.winRate - a.winRate);
   const team1: PlayerStats[] = [];
   const team2: PlayerStats[] = [];
@@ -80,10 +106,30 @@ function greedy(players: PlayerStats[]): TeamResult {
     const t1Sum = team1.reduce((s, p) => s + p.winRate, 0);
     const t2Sum = team2.reduce((s, p) => s + p.winRate, 0);
 
-    if (t1Sum <= t2Sum && team1.length <= team2.length) {
-      team1.push(player);
+    if (hasPositions) {
+      // Try both placements and pick the one with lower position imbalance,
+      // breaking ties by win rate balance
+      const pen1 = positionImbalancePenalty([...team1, player], team2, positions);
+      const pen2 = positionImbalancePenalty(team1, [...team2, player], positions);
+
+      if (pen1 < pen2) {
+        team1.push(player);
+      } else if (pen2 < pen1) {
+        team2.push(player);
+      } else {
+        // Equal position balance — fall back to win rate balance
+        if (t1Sum <= t2Sum && team1.length <= team2.length) {
+          team1.push(player);
+        } else {
+          team2.push(player);
+        }
+      }
     } else {
-      team2.push(player);
+      if (t1Sum <= t2Sum && team1.length <= team2.length) {
+        team1.push(player);
+      } else {
+        team2.push(player);
+      }
     }
   }
 
@@ -121,7 +167,8 @@ function optimal(players: PlayerStats[]): TeamResult {
 
 export async function generateBalancedTeams(
   playerIds: string[],
-  algorithm: "greedy" | "optimal" = "greedy"
+  algorithm: "greedy" | "optimal" = "greedy",
+  positions: Record<string, string[]> = {}
 ): Promise<TeamResult> {
   const allStats = await calculatePlayerStats();
   const players = playerIds
@@ -142,7 +189,7 @@ export async function generateBalancedTeams(
     }
   }
 
-  return algorithm === "greedy" ? greedy(players) : optimal(players);
+  return algorithm === "greedy" ? greedy(players, positions) : optimal(players);
 }
 
 export function swapPlayers(

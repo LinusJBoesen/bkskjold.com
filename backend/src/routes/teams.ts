@@ -9,13 +9,13 @@ const teams = new Hono();
 // POST /api/teams/generate — generate balanced teams (admin only)
 teams.post("/generate", requireRole("admin"), async (c) => {
   const body = await c.req.json();
-  const { playerIds, algorithm = "greedy" } = body;
+  const { playerIds, algorithm = "greedy", positions = {} } = body;
 
   if (!playerIds || !Array.isArray(playerIds) || playerIds.length < 2) {
     return c.json({ error: "Mindst 2 spillere kræves" }, 400);
   }
 
-  const result = await generateBalancedTeams(playerIds, algorithm);
+  const result = await generateBalancedTeams(playerIds, algorithm, positions);
   return c.json(result);
 });
 

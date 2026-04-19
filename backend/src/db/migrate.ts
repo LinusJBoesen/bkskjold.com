@@ -66,5 +66,12 @@ export async function migrate(): Promise<void> {
   // Add dbu_match_id column to dbu_matches for linking to per-match detail pages
   try { await sql`ALTER TABLE dbu_matches ADD COLUMN dbu_match_id TEXT`; } catch { /* exists */ }
 
+  // Add context column to lineup_formations to distinguish training vs match formations
+  await sql.unsafe(`ALTER TABLE lineup_formations ADD COLUMN IF NOT EXISTS context TEXT DEFAULT 'match'`).catch(() => {});
+
+  // Fix lineup_slots primary key to include is_bench (bench slots share slot_index 0-2 with pitch slots)
+  try { await sql.unsafe(`ALTER TABLE lineup_slots DROP CONSTRAINT lineup_slots_pkey`); } catch { /* ok */ }
+  try { await sql.unsafe(`ALTER TABLE lineup_slots ADD PRIMARY KEY (formation_id, slot_index, is_bench)`); } catch { /* ok */ }
+
   console.log("Database migrated");
 }

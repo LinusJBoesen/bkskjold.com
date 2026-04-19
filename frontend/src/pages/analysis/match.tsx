@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { da } from "@/i18n/da";
 import { api } from "@/lib/api";
@@ -8,7 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/toast";
 import { useAuth } from "@/hooks/use-auth";
-import { BarChart3, Swords, Users, Trophy, XCircle, Clock, Plus, X, ClipboardList, Trash2 } from "lucide-react";
+import { BarChart3, Swords, Users, Trophy, XCircle, Clock, Plus, X, ClipboardList, Trash2, Target, TrendingUp, ChevronUp, ChevronDown } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  AreaChart, Area, CartesianGrid,
+} from "recharts";
 
 interface DbuMatch {
   date: string;
@@ -70,17 +74,6 @@ function PlayerAvatar({ name, src }: { name: string; src?: string | null }) {
     </div>
   );
 }
-
-const eventTypeIcon = (type: string) => {
-  switch (type) {
-    case "goal": return "⚽";
-    case "assist": return "🅰️";
-    case "clean_sheet": return "🛡️";
-    case "yellow_card": return "🟡";
-    case "red_card": return "🔴";
-    default: return "";
-  }
-};
 
 interface MatchPlayer {
   player_id: string;
@@ -268,12 +261,53 @@ function PostMatchCard({
   );
 }
 
+/* ── Custom Tooltip for Bar Chart ── */
+function GoalAssistTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-xs shadow-xl">
+      <p className="font-semibold text-zinc-100 mb-1">{d.name}</p>
+      <p className="text-emerald-400 tabular-nums">{da.analysis.goals}: {d.goals}</p>
+      <p className="text-blue-400 tabular-nums">{da.analysis.assists}: {d.assists}</p>
+    </div>
+  );
+}
+
+type StatSortKey = "name" | "goals" | "assists" | "cleanSheets" | "yellowCards" | "redCards";
+type StatSortDir = "asc" | "desc";
+
+function StatSortIcon({ active, dir }: { active: boolean; dir: StatSortDir }) {
+  if (!active) return <ChevronDown className="w-3 h-3 text-zinc-600 inline ml-0.5" />;
+  return dir === "asc"
+    ? <ChevronUp className="w-3 h-3 text-red-400 inline ml-0.5" />
+    : <ChevronDown className="w-3 h-3 text-red-400 inline ml-0.5" />;
+}
+
+/* ── Form Dot for timeline ── */
+function FormDot({ result }: { result: "win" | "draw" | "loss" }) {
+  const colors = {
+    win: "bg-emerald-500",
+    draw: "bg-zinc-500",
+    loss: "bg-red-500",
+  };
+  const labels = { win: "S", draw: "U", loss: "T" };
+  return (
+    <span
+      className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold text-white ${colors[result]}`}
+    >
+      {labels[result]}
+    </span>
+  );
+}
+
 export default function MatchAnalysisPage() {
   const [data, setData] = useState<AnalysisData | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activePostMatch, setActivePostMatch] = useState<string | null>(null);
+  const [statSort, setStatSort] = useState<{ key: StatSortKey; dir: StatSortDir }>({ key: "goals", dir: "desc" });
   const { toast } = useToast();
   const { role } = useAuth();
   const navigate = useNavigate();
@@ -297,6 +331,104 @@ export default function MatchAnalysisPage() {
   }, []);
 
   const pendingMatches = matches.filter((m) => m.status === "pending");
+
+  // Computed chart data
+  const goalAssistChart = useMemo(() => {
+    if (!data) return [];
+    return [...data.playerStats]
+      .filter((p) => p.goals > 0 || p.assists > 0)
+      .sort((a, b) => (b.goals + b.assists) - (a.goals + a.assists))
+      .slice(0, 12)
+      .map((p) => ({
+        name: p.displayName.split(" ")[0],
+        fullName: p.displayName,
+        goals: p.goals,
+        assists: p.assists,
+      }));
+  }, [data]);
+
+  const seasonOverview = useMemo(() => {
+    if (!data) return null;
+    // Parse goals from DBU match scores
+    let goalsScored = 0;
+    let goalsConceded = 0;
+    let cleanSheets = 0;
+    for (const m of data.dbuMatches) {
+      const [home, away] = m.score.split("-").map((s) => parseInt(s));
+      if (isNaN(home) || isNaN(away)) continue;
+      if (m.isHome) {
+        goalsScored += home;
+        goalsConceded += away;
+        if (away === 0) cleanSheets++;
+      } else {
+        goalsScored += away;
+        goalsConceded += home;
+        if (home === 0) cleanSheets++;
+      }
+    }
+    const winPct = data.dbuSummary.total > 0
+      ? Math.round((data.dbuSummary.wins / data.dbuSummary.total) * 100)
+      : 0;
+    return { goalsScored, goalsConceded, cleanSheets, winPct };
+  }, [data]);
+
+  // Cumulative goal difference trend across DBU matches
+  const goalDiffTrend = useMemo(() => {
+    if (!data || data.dbuMatches.length === 0) return [];
+    let cumDiff = 0;
+    return [...data.dbuMatches].reverse().map((m) => {
+      const [home, away] = m.score.split("-").map((s) => parseInt(s));
+      if (isNaN(home) || isNaN(away)) return null;
+      const scored = m.isHome ? home : away;
+      const conceded = m.isHome ? away : home;
+      cumDiff += scored - conceded;
+      return {
+        opponent: m.opponent.split(" ").pop() || m.opponent,
+        fullOpponent: m.opponent,
+        date: m.date,
+        goalDiff: cumDiff,
+        matchDiff: scored - conceded,
+        score: m.score,
+        result: m.result,
+      };
+    }).filter(Boolean);
+  }, [data]);
+
+  const sortedPlayerStats = useMemo(() => {
+    if (!data) return [];
+    return [...data.playerStats].sort((a, b) => {
+      let cmp = 0;
+      switch (statSort.key) {
+        case "name":
+          cmp = a.displayName.localeCompare(b.displayName);
+          break;
+        case "goals":
+          cmp = a.goals - b.goals;
+          break;
+        case "assists":
+          cmp = a.assists - b.assists;
+          break;
+        case "cleanSheets":
+          cmp = a.cleanSheets - b.cleanSheets;
+          break;
+        case "yellowCards":
+          cmp = a.yellowCards - b.yellowCards;
+          break;
+        case "redCards":
+          cmp = a.redCards - b.redCards;
+          break;
+      }
+      return statSort.dir === "asc" ? cmp : -cmp;
+    });
+  }, [data, statSort]);
+
+  const toggleStatSort = (key: StatSortKey) => {
+    setStatSort((prev) =>
+      prev.key === key
+        ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { key, dir: "desc" }
+    );
+  };
 
   const registerResult = async (matchId: string, winningTeam: number) => {
     try {
@@ -322,12 +454,12 @@ export default function MatchAnalysisPage() {
   if (loading) {
     return (
       <div data-testid="page-analysis">
-        <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4">
+            <Card key={i}><CardContent className="py-4">
               <div className="h-8 bg-zinc-800 rounded animate-pulse" />
-            </div>
+            </CardContent></Card>
           ))}
         </div>
       </div>
@@ -337,7 +469,7 @@ export default function MatchAnalysisPage() {
   if (error) {
     return (
       <div data-testid="page-analysis">
-        <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
         <Card><CardContent className="py-8 text-center">
           <p className="text-red-400 mb-4">{error}</p>
           <Button onClick={() => window.location.reload()}>Prøv igen</Button>
@@ -357,7 +489,7 @@ export default function MatchAnalysisPage() {
 
   return (
     <div data-testid="page-analysis" className="animate-fade-in-up">
-      <h1 className="text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-zinc-50 tracking-tight mb-6">{da.analysis.title}</h1>
 
       {/* Pending Matches - Post Match Card */}
       {pendingMatches.length > 0 && role === "admin" && (
@@ -389,7 +521,7 @@ export default function MatchAnalysisPage() {
                   <div key={m.id} className="border border-zinc-800 rounded-lg p-4 bg-zinc-900/50 transition-all duration-200 hover:border-zinc-700" data-testid={`pending-match-${m.id}`}>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
                       <span className="text-sm text-zinc-400">{m.date}</span>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
                           onClick={() => setActivePostMatch(m.id)}
@@ -452,26 +584,190 @@ export default function MatchAnalysisPage() {
       )}
 
       {/* DBU Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 animate-stagger" data-testid="analysis-summary">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 animate-stagger" data-testid="analysis-summary">
         {summaryCards.map((card) => (
-          <div key={card.label} className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 text-center">
-            <card.icon className={`w-5 h-5 ${card.color} mx-auto mb-2 opacity-60`} />
-            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{card.label}</p>
-            <p className={`text-2xl font-bold tabular-nums mt-1 ${card.color}`}>{card.value}</p>
-          </div>
+          <Card key={card.label}>
+            <CardContent className="pt-4 pb-4 text-center">
+              <card.icon className={`w-5 h-5 ${card.color} mx-auto mb-2 opacity-60`} />
+              <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{card.label}</p>
+              <p className={`text-2xl font-bold tabular-nums mt-1 ${card.color}`}>{card.value}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* DBU Matches */}
+      {/* Season Overview */}
+      {seasonOverview && data.dbuSummary.total > 0 && (
+        <Card className="mb-6" data-testid="analysis-season-overview">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-red-400" />
+              {da.analysis.seasonOverview}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-stagger">
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.winRatePct}</p>
+                <p className="text-xl font-bold text-emerald-400 tabular-nums">{seasonOverview.winPct}%</p>
+              </div>
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.goalsScored}</p>
+                <p className="text-xl font-bold text-emerald-400 tabular-nums">{seasonOverview.goalsScored}</p>
+              </div>
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.goalsConceded}</p>
+                <p className="text-xl font-bold text-red-400 tabular-nums">{seasonOverview.goalsConceded}</p>
+              </div>
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{da.analysis.cleanSheetsTotal}</p>
+                <p className="text-xl font-bold text-sky-400 tabular-nums">{seasonOverview.cleanSheets}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Goal Difference Trend */}
+      {goalDiffTrend.length > 1 && (
+        <Card className="mb-6" data-testid="analysis-goal-diff-trend">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-emerald-400" />
+              {da.analysis.goalDiffTrend}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={goalDiffTrend} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="goalDiffGradientPos" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="goalDiffGradientNeg" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
+                <XAxis
+                  dataKey="opponent"
+                  tick={{ fontSize: 10, fill: "#A1A1AA" }}
+                  stroke="#3F3F46"
+                  interval={0}
+                  angle={-30}
+                  textAnchor="end"
+                  height={50}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: "#A1A1AA" }}
+                  stroke="#3F3F46"
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#27272A",
+                    border: "1px solid #3F3F46",
+                    borderRadius: "8px",
+                    color: "#FAFAFA",
+                    fontSize: "12px",
+                  }}
+                  formatter={(value: number) => [
+                    `${value >= 0 ? "+" : ""}${value}`,
+                    da.analysis.goalDiffCumulative,
+                  ]}
+                  labelFormatter={(label: string, payload: any[]) => {
+                    const d = payload?.[0]?.payload;
+                    if (!d) return label;
+                    return `${d.fullOpponent} (${d.score})`;
+                  }}
+                />
+                {/* Reference line at 0 */}
+                <Area
+                  type="monotone"
+                  dataKey="goalDiff"
+                  stroke={goalDiffTrend[goalDiffTrend.length - 1]?.goalDiff >= 0 ? "#10b981" : "#ef4444"}
+                  strokeWidth={2}
+                  fill={goalDiffTrend[goalDiffTrend.length - 1]?.goalDiff >= 0 ? "url(#goalDiffGradientPos)" : "url(#goalDiffGradientNeg)"}
+                  dot={(props: any) => {
+                    const { cx, cy, payload } = props;
+                    const color = payload.goalDiff >= 0 ? "#10b981" : "#ef4444";
+                    return <circle key={`dot-${props.index}`} cx={cx} cy={cy} r={4} fill={color} stroke="#18181b" strokeWidth={2} />;
+                  }}
+                  activeDot={{ strokeWidth: 2, stroke: "#fff", r: 5 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+            <div className="flex items-center justify-between mt-2 text-xs text-zinc-500">
+              <span>{da.analysis.goalDiffDesc}</span>
+              <span className={`font-medium tabular-nums ${goalDiffTrend[goalDiffTrend.length - 1]?.goalDiff >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {goalDiffTrend[goalDiffTrend.length - 1]?.goalDiff >= 0 ? "+" : ""}{goalDiffTrend[goalDiffTrend.length - 1]?.goalDiff ?? 0}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Goals + Assists Bar Chart */}
+      {goalAssistChart.length > 0 && (
+        <Card className="mb-6" data-testid="analysis-goals-assists-chart">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Target className="w-5 h-5 text-emerald-400" />
+              {da.analysis.topScorers}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={Math.max(200, goalAssistChart.length * 36)}>
+              <BarChart data={goalAssistChart} layout="vertical" margin={{ left: 0, right: 16, top: 0, bottom: 0 }}>
+                <XAxis type="number" tick={{ fill: "#a1a1aa", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={80}
+                  tick={{ fill: "#d4d4d8", fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip content={<GoalAssistTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                <Bar dataKey="goals" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} name={da.analysis.goals} />
+                <Bar dataKey="assists" stackId="a" fill="#3b82f6" radius={[0, 4, 4, 0]} name={da.analysis.assists} />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="flex items-center gap-4 mt-3 text-xs text-zinc-400">
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" /> {da.analysis.goals}</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-500 inline-block" /> {da.analysis.assists}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* DBU Matches with integrated Form Timeline */}
       {data.dbuMatches.length === 0 ? (
         <Card className="mb-6"><CardContent className="py-8 text-center">
           <p className="text-zinc-500">Ingen DBU-kampe endnu</p>
         </CardContent></Card>
       ) : (
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden mb-6">
-          <div className="px-4 py-3 border-b border-zinc-800">
-            <h2 className="text-lg font-semibold text-zinc-50">{da.analysis.dbuMatches}</h2>
-          </div>
+        <Card className="mb-6 overflow-hidden">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Swords className="w-5 h-5 text-zinc-400" />
+              {da.analysis.dbuMatches}
+            </CardTitle>
+            {/* Compact form strip */}
+            <div className="flex flex-wrap gap-1.5 items-center mt-2" data-testid="analysis-form-timeline">
+              {[...data.dbuMatches].reverse().map((m, i) => (
+                <FormDot key={i} result={m.result} />
+              ))}
+              <div className="flex items-center gap-2 ml-2 text-[10px] text-zinc-500">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> {da.analysis.win}</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-zinc-500 inline-block" /> {da.analysis.draw}</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> {da.analysis.loss}</span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full" data-testid="analysis-dbu-matches-table">
               <thead>
@@ -484,53 +780,79 @@ export default function MatchAnalysisPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.dbuMatches.map((m) => (
-                  <tr
-                    key={`${m.date}-${m.opponent}`}
-                    className={`border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors ${m.dbuMatchId ? "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400" : ""}`}
-                    onClick={() => m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
-                    onKeyDown={(e) => e.key === "Enter" && m.dbuMatchId && navigate(`/matches/${m.dbuMatchId}`)}
-                    tabIndex={m.dbuMatchId ? 0 : undefined}
-                    data-testid={`analysis-dbu-match-${m.dbuMatchId || m.date}`}
-                  >
-                    <td className="px-4 py-3 text-sm tabular-nums text-zinc-300">{m.date}</td>
-                    <td className="px-4 py-3 text-sm text-zinc-200">{m.opponent}</td>
-                    <td className="px-4 py-3 text-center text-sm font-medium tabular-nums text-zinc-100">{m.score}</td>
-                    <td className="px-4 py-3 text-center text-sm text-zinc-400">{m.isHome ? da.analysis.home : da.analysis.away}</td>
-                    <td className="px-4 py-3 text-center">{resultBadge(m.result)}</td>
-                  </tr>
-                ))}
+                {data.dbuMatches.map((m) => {
+                  const borderColor = m.result === "win" ? "border-l-emerald-500" : m.result === "loss" ? "border-l-red-500" : "border-l-zinc-500";
+                  const clickable = Boolean(m.dbuMatchId);
+                  return (
+                    <tr
+                      key={`${m.date}-${m.opponent}`}
+                      className={`border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors border-l-2 ${borderColor} ${clickable ? "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400" : ""}`}
+                      onClick={() => clickable && navigate(`/matches/${m.dbuMatchId}`)}
+                      onKeyDown={(e) => e.key === "Enter" && clickable && navigate(`/matches/${m.dbuMatchId}`)}
+                      tabIndex={clickable ? 0 : undefined}
+                      data-testid={`analysis-dbu-match-${m.dbuMatchId || m.date}`}
+                    >
+                      <td className="px-4 py-3 text-sm tabular-nums text-zinc-300">{m.date}</td>
+                      <td className="px-4 py-3 text-sm text-zinc-200">{m.opponent}</td>
+                      <td className="px-4 py-3 text-center text-sm font-medium tabular-nums text-zinc-100">{m.score}</td>
+                      <td className="px-4 py-3 text-center text-sm text-zinc-400">{m.isHome ? da.analysis.home : da.analysis.away}</td>
+                      <td className="px-4 py-3 text-center">{resultBadge(m.result)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Player Match Stats */}
+      {/* Player Match Stats Table */}
       {data.playerStats.length === 0 ? (
         <Card><CardContent className="py-8 text-center">
           <p className="text-zinc-500" data-testid="analysis-no-stats">Ingen spillerstatistik endnu</p>
         </CardContent></Card>
       ) : (
-        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden">
-          <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
-            <Users className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-semibold text-zinc-50">{da.analysis.playerStats}</h2>
-          </div>
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="w-5 h-5 text-zinc-400" />
+              {da.analysis.playerStats}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full" data-testid="analysis-player-rates-table">
               <thead>
                 <tr className="bg-zinc-900 text-zinc-400 text-xs font-medium uppercase tracking-wider">
-                  <th className="px-4 py-3 text-left">Navn</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.goals}</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.assists}</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.cleanSheets}</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.yellowCards}</th>
-                  <th className="px-4 py-3 text-center">{da.analysis.redCards}</th>
+                  <th className="px-4 py-3 text-left cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("name")}>
+                    Navn
+                    <StatSortIcon active={statSort.key === "name"} dir={statSort.dir} />
+                  </th>
+                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("goals")}>
+                    {da.analysis.goals}
+                    <StatSortIcon active={statSort.key === "goals"} dir={statSort.dir} />
+                  </th>
+                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("assists")}>
+                    {da.analysis.assists}
+                    <StatSortIcon active={statSort.key === "assists"} dir={statSort.dir} />
+                  </th>
+                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("cleanSheets")}>
+                    {da.analysis.cleanSheets}
+                    <StatSortIcon active={statSort.key === "cleanSheets"} dir={statSort.dir} />
+                  </th>
+                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("yellowCards")}>
+                    {da.analysis.yellowCards}
+                    <StatSortIcon active={statSort.key === "yellowCards"} dir={statSort.dir} />
+                  </th>
+                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("redCards")}>
+                    {da.analysis.redCards}
+                    <StatSortIcon active={statSort.key === "redCards"} dir={statSort.dir} />
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {data.playerStats.map((p) => (
+                {sortedPlayerStats.map((p) => (
                   <tr
                     key={p.id}
                     className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors"
@@ -555,7 +877,8 @@ export default function MatchAnalysisPage() {
               </tbody>
             </table>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -20,18 +20,24 @@ interface FormationViewProps {
   players: PlayerInfo[];
   matchId?: string;
   teamNumber: number;
+  context?: "match" | "training";
   initialFormation?: FormationType;
   initialAssignments?: SlotAssignment[];
   formationId?: string;
+  readOnly?: boolean;
+  onSaved?: () => void;
 }
 
 export function FormationView({
   players,
   matchId,
   teamNumber,
+  context = "match",
   initialFormation = "1-2-3-1",
   initialAssignments,
   formationId: existingFormationId,
+  readOnly = false,
+  onSaved,
 }: FormationViewProps) {
   const [formation, setFormation] = useState<FormationType>(initialFormation);
   const [assignments, setAssignments] = useState<SlotAssignment[]>(initialAssignments ?? []);
@@ -216,10 +222,12 @@ export function FormationView({
           teamNumber,
           formation,
           slots,
+          context,
         });
         setFormationId(res.id);
       }
-      toast("Opstilling gemt", "success");
+      toast("Opstilling gemt — spillere kan nu se opstillingen", "success");
+      onSaved?.();
     } catch {
       toast("Kunne ikke gemme opstilling", "error");
     } finally {
@@ -231,31 +239,33 @@ export function FormationView({
     <div data-testid="formation-view" className="space-y-4">
       {/* Header with formation selector + actions */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <FormationSelector value={formation} onChange={handleFormationChange} />
-        <div className="flex gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleReset}
-            data-testid="formation-reset"
-          >
-            <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-            Nulstil
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={saving}
-            data-testid="formation-save"
-          >
-            <Save className="h-3.5 w-3.5 mr-1.5" />
-            {saving ? "Gemmer..." : "Gem opstilling"}
-          </Button>
-        </div>
+        <FormationSelector value={formation} onChange={readOnly ? () => {} : handleFormationChange} />
+        {!readOnly && (
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleReset}
+              data-testid="formation-reset"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+              Nulstil
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving}
+              data-testid="formation-save"
+            >
+              <Save className="h-3.5 w-3.5 mr-1.5" />
+              {saving ? "Gemmer..." : "Gem opstilling"}
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Selected player indicator (mobile tap-to-assign) */}
-      {selectedPlayer && (
+      {/* Selected player indicator (mobile tap-to-assign) — only in edit mode */}
+      {!readOnly && selectedPlayer && (
         <div
           data-testid="selected-player-indicator"
           className="flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-sm text-emerald-300 lg:hidden"
@@ -267,29 +277,31 @@ export function FormationView({
         </div>
       )}
 
-      {/* Pitch + Player Panel side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
+      {/* Pitch + Player Panel side by side (panel hidden in readOnly) */}
+      <div className={readOnly ? "space-y-3" : "grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4"}>
         <div className="space-y-3">
           <Pitch
             formation={formation}
             assignments={pitchAssignments}
-            onSlotDrop={handleSlotDrop}
-            onSlotClick={selectedPlayer ? handleSlotClick : undefined}
-            onRemovePlayer={handleRemovePlayer}
-            highlightSlots={!!selectedPlayer}
+            onSlotDrop={readOnly ? undefined : handleSlotDrop}
+            onSlotClick={!readOnly && selectedPlayer ? handleSlotClick : undefined}
+            onRemovePlayer={readOnly ? undefined : handleRemovePlayer}
+            highlightSlots={!readOnly && !!selectedPlayer}
           />
           <BenchArea
             slots={benchAssignments}
-            onDrop={handleBenchDrop}
+            onDrop={readOnly ? undefined : handleBenchDrop}
           />
         </div>
-        <PlayerPanel
-          players={players}
-          assignedPlayerIds={assignedPlayerIds}
-          onRemovePlayer={handleRemovePlayer}
-          onPlayerTap={handlePlayerTap}
-          selectedPlayerId={selectedPlayer?.id}
-        />
+        {!readOnly && (
+          <PlayerPanel
+            players={players}
+            assignedPlayerIds={assignedPlayerIds}
+            onRemovePlayer={handleRemovePlayer}
+            onPlayerTap={handlePlayerTap}
+            selectedPlayerId={selectedPlayer?.id}
+          />
+        )}
       </div>
     </div>
   );

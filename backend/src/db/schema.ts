@@ -176,6 +176,7 @@ export const tables = [
     match_id TEXT,
     team_number INTEGER NOT NULL CHECK(team_number IN (1, 2)),
     formation TEXT NOT NULL CHECK(formation IN ('1-2-3-1','1-3-2-1','1-3-3')),
+    context TEXT NOT NULL DEFAULT 'match',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
 
@@ -203,6 +204,6 @@ export const tables = [
     player_id TEXT REFERENCES players(id),
     position TEXT NOT NULL CHECK(position IN ('keeper','defender','wing','midfield','attacker')),
     is_bench INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (formation_id, slot_index)
+    PRIMARY KEY (formation_id, slot_index, is_bench)
   )`,
 ];
