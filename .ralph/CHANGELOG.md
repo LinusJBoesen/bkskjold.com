@@ -15,3 +15,4 @@
 | 6 | Round 6 | 2026-04-19 | Added scrapeMatchInfo scraper for DBU kampinfo pages (referee, lineups, officials, scorers). Added dbu_match_info table. Added GET /api/dbu/matches/:dbuMatchId/info endpoint with lazy-fetch. Extended /api/matches/:id/details to include matchInfo. Added Kampfakta section to frontend detail page with referee, pitch, goal scorer pills, collapsible lineups, officials. Added i18n strings. |
 | 6 | ? | 2026-04-19 20:29 | iteration 6 |
 | 7 | Round 7 | 2026-04-19 | Added "Næste kamp" dashboard card linking to match detail. Added upcoming match to test seed. Added keyboard navigation (tabIndex, onKeyDown, focus-visible) to all clickable match rows. Created E2E spec with 11 tests covering navigation, hero, H2H, common opponents, kampfakta, back nav, error state, dashboard card. All tests pass (7 pre-existing failures unchanged). |
+| 7 | ? | 2026-04-19 20:41 | iteration 7 |
