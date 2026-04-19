@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { sql } from "../lib/db";
 import { randomUUID } from "crypto";
 import { requireRole } from "../middleware/auth";
+import { getMatchDetails } from "../services/match-details";
 
 const matches = new Hono();
 
@@ -28,6 +29,16 @@ matches.get("/", requireRole("admin", "spiller"), async (c) => {
       );
 
   return c.json(rows);
+});
+
+// GET /api/matches/:id/details — DBU match detail with H2H, opponent season, common opponents
+matches.get("/:id/details", requireRole("admin", "spiller"), async (c) => {
+  const dbuMatchId = c.req.param("id");
+  const details = await getMatchDetails(dbuMatchId);
+  if (!details) {
+    return c.json({ error: "Kamp ikke fundet" }, 404);
+  }
+  return c.json(details);
 });
 
 // GET /api/matches/:id (admin + spiller)

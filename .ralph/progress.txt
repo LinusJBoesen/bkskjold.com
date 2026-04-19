@@ -1,8 +1,8 @@
 # Match Details — PROGRESS
 
 ## Current Status
-- **Round**: 3
-- **Task**: Starting — Head-to-Head + Common Opponents Aggregation
+- **Round**: 4
+- **Task**: Starting — Frontend Match Detail Page + Clickable Rows
 - **Last updated**: 2026-04-19
 
 ## Checklist
@@ -26,11 +26,11 @@
 - [x] Commit
 
 ### Round 3: Head-to-Head + Common Opponents Aggregation
-- [ ] Add GET /api/matches/:id/details endpoint
-- [ ] Write aggregation in services/match-details.ts
-- [ ] Sanity-test common-opponents logic
-- [ ] Run E2E tests
-- [ ] Commit
+- [x] Add GET /api/matches/:id/details endpoint
+- [x] Write aggregation in services/match-details.ts
+- [x] Sanity-test common-opponents logic
+- [x] Run E2E tests (7 pre-existing failures, 0 new regressions)
+- [x] Commit
 
 ### Round 4: Frontend — Match Detail Page + Clickable Rows
 - [ ] Add route /matches/:id in App.tsx
@@ -82,4 +82,5 @@
 | Date | Hash | Description |
 |------|------|-------------|
 | 2026-04-19 | 1c0b9f9 | feat(skjold): enrich Spond events with location and kickoff |
-| 2026-04-19 | pending | feat(skjold): scrape per-team DBU match history |
+| 2026-04-19 | 18abc96 | feat(skjold): scrape per-team DBU match history |
+| 2026-04-19 | TBD | feat(skjold): match details aggregation endpoint |
