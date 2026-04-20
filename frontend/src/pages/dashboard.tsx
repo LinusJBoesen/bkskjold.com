@@ -81,6 +81,8 @@ interface DbuMatch {
   awayTeam: string;
   homeScore: number | null;
   awayScore: number | null;
+  time: string | null;
+  venue: string | null;
   dbuMatchId: string | null;
 }
 
@@ -318,8 +320,14 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {nextMatch.date}
+                      {nextMatch.date}{nextMatch.time ? ` kl. ${nextMatch.time}` : ""}
                     </span>
+                    {nextMatch.venue && (
+                      <span className="flex items-center gap-1 truncate">
+                        <span>·</span>
+                        {nextMatch.venue}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

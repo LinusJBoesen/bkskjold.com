@@ -66,6 +66,10 @@ export async function migrate(): Promise<void> {
   // Add dbu_match_id column to dbu_matches for linking to per-match detail pages
   try { await sql`ALTER TABLE dbu_matches ADD COLUMN dbu_match_id TEXT`; } catch { /* exists */ }
 
+  // Add time and venue columns to dbu_matches
+  try { await sql`ALTER TABLE dbu_matches ADD COLUMN time TEXT`; } catch { /* exists */ }
+  try { await sql`ALTER TABLE dbu_matches ADD COLUMN venue TEXT`; } catch { /* exists */ }
+
   // Add context column to lineup_formations to distinguish training vs match formations
   await sql.unsafe(`ALTER TABLE lineup_formations ADD COLUMN IF NOT EXISTS context TEXT DEFAULT 'match'`).catch(() => {});
 

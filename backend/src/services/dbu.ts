@@ -19,10 +19,12 @@ interface Standing {
 
 interface DbuMatch {
   date: string;
+  time: string | null;
   homeTeam: string;
   awayTeam: string;
   homeScore: number | null;
   awayScore: number | null;
+  venue: string | null;
 }
 
 export interface DbuTeamMatch {
@@ -96,73 +98,6 @@ export async function scrapeStandings(teamId: string): Promise<Standing[]> {
   }
 
   return standings;
-}
-
-export async function scrapeMatchHistory(teamId: string): Promise<DbuMatch[]> {
-  const url = `${DBU_BASE}/${teamId}/kampprogram`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT },
-  });
-
-  if (!res.ok) {
-    throw new Error(`DBU match history fetch failed: ${res.status}`);
-  }
-
-  const html = await res.text();
-  const root = parse(html);
-
-  const table = root.querySelector("table");
-  if (!table) {
-    throw new Error("Could not find match table on DBU page");
-  }
-
-  const rows = table.querySelectorAll("tr");
-  const matches: DbuMatch[] = [];
-
-  // Skip header row
-  // Expected columns: [empty, Kampnr, Dato, Tid, Hjemme, Ude, Spillested, Resultat]
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i]!;
-    const cells = row.querySelectorAll("td, th");
-    if (cells.length < 7) continue;
-
-    const dateStr = cells[2]?.text.trim() ?? "";
-    const homeTeam = cells[4]?.text.trim() ?? "";
-    const awayTeam = cells[5]?.text.trim() ?? "";
-    const resultStr = cells[7]?.text.trim() ?? "";
-
-    if (!dateStr || !homeTeam || !awayTeam) continue;
-
-    // Parse date: DBU format "fre.22-08 2025" -> "2025-08-22"
-    const isoDate = parseDbuDate(dateStr);
-
-    // Parse result: "2-1" or "2 - 1" or empty (upcoming match)
-    let homeScore: number | null = null;
-    let awayScore: number | null = null;
-
-    if (resultStr && resultStr.includes("-")) {
-      const cleaned = resultStr.replace(/\s/g, "");
-      const parts = cleaned.split("-");
-      if (parts.length === 2) {
-        const h = parseInt(parts[0]!, 10);
-        const a = parseInt(parts[1]!, 10);
-        if (!isNaN(h) && !isNaN(a)) {
-          homeScore = h;
-          awayScore = a;
-        }
-      }
-    }
-
-    matches.push({
-      date: isoDate ?? dateStr,
-      homeTeam,
-      awayTeam,
-      homeScore,
-      awayScore,
-    });
-  }
-
-  return matches;
 }
 
 export async function scrapeTeamMatches(teamId: string): Promise<DbuTeamMatch[]> {
@@ -325,16 +260,41 @@ export async function fetchMatchResults(): Promise<(DbuMatch & { dbuMatchId?: st
     return matchesCache.data;
   }
 
-  const rows = await sql`SELECT * FROM dbu_matches ORDER BY date DESC` as any[];
+  const teamId = process.env.DBU_TEAM_ID;
 
-  const matches = rows.map((r) => ({
+  // Prefer dbu_team_matches (single source of truth, includes time + venue).
+  // Fall back to dbu_matches for legacy/test data.
+  const rows = teamId
+    ? (await sql`SELECT * FROM dbu_team_matches WHERE team_id = ${teamId} ORDER BY date DESC` as any[])
+    : [];
+
+  const fromTeamMatches = rows.map((r) => ({
     date: r.date,
+    time: r.time ?? null,
     homeTeam: r.home_team,
     awayTeam: r.away_team,
     homeScore: r.home_score,
     awayScore: r.away_score,
-    dbuMatchId: r.dbu_match_id ?? undefined,
+    venue: r.venue ?? null,
+    // Synthetic "pending_…" keys (assigned in sync for matches DBU hasn't
+    // published yet) are an internal detail — don't leak them to clients.
+    dbuMatchId: r.dbu_match_id?.startsWith("pending_") ? undefined : (r.dbu_match_id ?? undefined),
   }));
+
+  let matches = fromTeamMatches;
+  if (matches.length === 0) {
+    const legacy = await sql`SELECT * FROM dbu_matches ORDER BY date DESC` as any[];
+    matches = legacy.map((r) => ({
+      date: r.date,
+      time: r.time ?? null,
+      homeTeam: r.home_team,
+      awayTeam: r.away_team,
+      homeScore: r.home_score,
+      awayScore: r.away_score,
+      venue: r.venue ?? null,
+      dbuMatchId: r.dbu_match_id ?? undefined,
+    }));
+  }
 
   matchesCache = { data: matches, timestamp: Date.now() };
   return matches;

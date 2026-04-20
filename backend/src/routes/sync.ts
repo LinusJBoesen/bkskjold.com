@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { sql } from "../lib/db";
 import { SpondClient } from "../services/spond";
-import { scrapeStandings, scrapeMatchHistory, scrapeTeamMatches } from "../services/dbu";
+import { scrapeStandings, scrapeTeamMatches } from "../services/dbu";
 import { requireRole } from "../middleware/auth";
 
 const sync = new Hono();
@@ -104,47 +104,41 @@ sync.post("/dbu", async (c) => {
   }
 
   try {
-    const [standings, matches, teamMatches] = await Promise.all([
+    const [standings, teamMatches] = await Promise.all([
       scrapeStandings(teamId),
-      scrapeMatchHistory(teamId),
       scrapeTeamMatches(teamId),
     ]);
 
-    // Replace standings
-    await sql`DELETE FROM dbu_standings`;
-    for (const s of standings) {
-      await sql`
-        INSERT INTO dbu_standings (position, team_name, matches_played, wins, draws, losses, goal_diff, points)
-        VALUES (${s.position}, ${s.teamName}, ${s.matchesPlayed}, ${s.wins}, ${s.draws}, ${s.losses}, ${s.goalDiff}, ${s.points})
-      `;
-    }
+    // Batch writes in a single transaction so Postgres commits once
+    await sql.begin(async (tx) => {
+      await tx`DELETE FROM dbu_standings`;
+      for (const s of standings) {
+        await tx`
+          INSERT INTO dbu_standings (position, team_name, matches_played, wins, draws, losses, goal_diff, points)
+          VALUES (${s.position}, ${s.teamName}, ${s.matchesPlayed}, ${s.wins}, ${s.draws}, ${s.losses}, ${s.goalDiff}, ${s.points})
+        `;
+      }
 
-    // Replace matches (with dbu_match_id from enriched scrape)
-    await sql`DELETE FROM dbu_matches`;
-    for (const m of matches) {
-      // Find dbu_match_id from the enriched team matches by matching date + teams
-      const enriched = teamMatches.find(
-        (tm) => tm.date === m.date && tm.homeTeam === m.homeTeam && tm.awayTeam === m.awayTeam
-      );
-      await sql`
-        INSERT INTO dbu_matches (date, home_team, away_team, home_score, away_score, dbu_match_id)
-        VALUES (${m.date}, ${m.homeTeam}, ${m.awayTeam}, ${m.homeScore}, ${m.awayScore}, ${enriched?.dbuMatchId ?? null})
-      `;
-    }
-
-    // Persist team matches for later lookups
-    await sql`DELETE FROM dbu_team_matches WHERE team_id = ${teamId}`;
-    for (const tm of teamMatches) {
-      await sql`
-        INSERT INTO dbu_team_matches (dbu_match_id, team_id, date, time, home_team, home_team_id, away_team, away_team_id, home_score, away_score, venue)
-        VALUES (${tm.dbuMatchId}, ${teamId}, ${tm.date}, ${tm.time}, ${tm.homeTeam}, ${tm.homeTeamId}, ${tm.awayTeam}, ${tm.awayTeamId}, ${tm.homeScore}, ${tm.awayScore}, ${tm.venue})
-        ON CONFLICT (dbu_match_id) DO UPDATE SET
-          home_score = EXCLUDED.home_score,
-          away_score = EXCLUDED.away_score,
-          venue = EXCLUDED.venue,
-          synced_at = NOW()
-      `;
-    }
+      // dbu_team_matches is the single source of truth for match data.
+      // Tournament + match-details both read from here (filtered by team_id).
+      // DBU assigns dbu_match_id only after a match is played — upcoming
+      // matches and bye weeks scrape as "". Synthesize a stable key for those
+      // so they don't collide on the PK.
+      await tx`DELETE FROM dbu_team_matches WHERE team_id = ${teamId}`;
+      for (const tm of teamMatches) {
+        const matchKey = tm.dbuMatchId || `pending_${teamId}_${tm.date}_${tm.homeTeam}_${tm.awayTeam}`;
+        await tx`
+          INSERT INTO dbu_team_matches (dbu_match_id, team_id, date, time, home_team, home_team_id, away_team, away_team_id, home_score, away_score, venue)
+          VALUES (${matchKey}, ${teamId}, ${tm.date}, ${tm.time}, ${tm.homeTeam}, ${tm.homeTeamId}, ${tm.awayTeam}, ${tm.awayTeamId}, ${tm.homeScore}, ${tm.awayScore}, ${tm.venue})
+          ON CONFLICT (dbu_match_id) DO UPDATE SET
+            home_score = EXCLUDED.home_score,
+            away_score = EXCLUDED.away_score,
+            venue = EXCLUDED.venue,
+            time = EXCLUDED.time,
+            synced_at = NOW()
+        `;
+      }
+    });
 
     // Clear cache so next read gets fresh data
     const { clearCache } = await import("../services/dbu");
@@ -154,7 +148,7 @@ sync.post("/dbu", async (c) => {
       success: true,
       message: "DBU data hentet fra dbu.dk",
       standings: standings.length,
-      matches: matches.length,
+      matches: teamMatches.length,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Ukendt fejl";
