@@ -192,6 +192,7 @@ const port = parseInt(process.env.PORT || "3000");
 
 export default {
   port,
+  idleTimeout: 60,
   fetch: app.fetch,
 };
 

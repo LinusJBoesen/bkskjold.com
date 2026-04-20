@@ -21,10 +21,12 @@ interface Standing {
 
 interface DbuMatch {
   date: string;
+  time: string | null;
   homeTeam: string;
   awayTeam: string;
   homeScore: number | null;
   awayScore: number | null;
+  venue: string | null;
   dbuMatchId: string | null;
 }
 
@@ -193,17 +195,25 @@ export default function TournamentStandingsPage() {
                       role={m.dbuMatchId ? "link" : undefined}
                       data-testid={`tournament-upcoming-match-${i}`}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-zinc-500 tabular-nums w-20">{m.date}</span>
-                        <span className={isSkjoldHome ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
-                          {m.homeTeam}
-                        </span>
-                        <span className="text-zinc-600 text-xs">{da.tournament.vs}</span>
-                        <span className={isSkjoldAway ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
-                          {m.awayTeam}
-                        </span>
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col tabular-nums shrink-0">
+                            <span className="text-xs text-zinc-400">{m.date}</span>
+                            {m.time && <span className="text-xs text-zinc-500">{m.time}</span>}
+                          </div>
+                          <span className={isSkjoldHome ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
+                            {m.homeTeam}
+                          </span>
+                          <span className="text-zinc-600 text-xs">{da.tournament.vs}</span>
+                          <span className={isSkjoldAway ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
+                            {m.awayTeam}
+                          </span>
+                        </div>
+                        {m.venue && (
+                          <span className="text-xs text-zinc-500 truncate">{m.venue}</span>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         <Badge variant="default">
                           {isSkjoldHome ? da.tournament.home : da.tournament.away}
                         </Badge>
@@ -250,7 +260,10 @@ export default function TournamentStandingsPage() {
                       data-testid={`tournament-previous-match-${i}`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-zinc-500 tabular-nums w-20">{m.date}</span>
+                        <div className="flex flex-col tabular-nums shrink-0">
+                          <span className="text-xs text-zinc-500">{m.date}</span>
+                          {m.time && <span className="text-xs text-zinc-600">{m.time}</span>}
+                        </div>
                         <span className={isSkjoldHome ? "text-red-400 font-semibold text-sm" : "text-zinc-200 text-sm"}>
                           {m.homeTeam}
                         </span>
