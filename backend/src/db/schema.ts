@@ -118,6 +118,7 @@ export const tables = [
     home_officials TEXT,
     away_officials TEXT,
     goal_scorers TEXT,
+    goal_events TEXT,
     synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
 

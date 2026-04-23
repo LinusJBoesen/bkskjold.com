@@ -12,7 +12,10 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { ArrowLeft, MapPin, Clock, Calendar, Shield, ExternalLink, Swords, BarChart3, Users, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Calendar, Shield, ExternalLink, Swords, BarChart3, Users, Info, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/components/toast";
 
 interface MatchInfo {
   dbuMatchId: string;
@@ -40,11 +43,14 @@ interface MatchDetailsResponse {
     result: "W" | "D" | "L" | null;
   }[];
   opponentSeason: {
+    played: number;
     wins: number;
     draws: number;
     losses: number;
     goalsFor: number;
     goalsAgainst: number;
+    avgGoalsFor: number;
+    avgGoalsAgainst: number;
     recentForm: ("W" | "D" | "L")[];
   } | null;
   commonOpponents: {
@@ -64,6 +70,12 @@ interface MatchDetailsResponse {
     homeOfficials: string[];
     awayOfficials: string[];
     goalScorers: { name: string; team: string; goals: number }[];
+    goalEvents: {
+      scorer: string;
+      assist: string | null;
+      team: "home" | "away";
+      minute: string | null;
+    }[];
   } | null;
 }
 
@@ -77,6 +89,24 @@ export default function MatchDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [showHomeLineup, setShowHomeLineup] = useState(false);
   const [showAwayLineup, setShowAwayLineup] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const { role } = useAuth();
+  const { toast } = useToast();
+
+  const refreshFromDbu = async () => {
+    if (!id) return;
+    setRefreshing(true);
+    try {
+      await api.post(`/dbu/matches/${id}/info/refresh`, {});
+      const fresh = await api.get<MatchDetailsResponse>(`/matches/${id}/details`);
+      setData(fresh);
+      toast(da.matchDetail.refreshed, "success");
+    } catch {
+      toast(da.matchDetail.refreshError, "error");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -325,12 +355,21 @@ export default function MatchDetailPage() {
                 </div>
 
                 {/* Goals */}
-                <div className="flex gap-4 mb-3 text-xs text-zinc-400">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-xs text-zinc-400">
+                  <span>
+                    {da.matchDetail.played}: <span className="text-zinc-200 font-medium">{data.opponentSeason.played}</span>
+                  </span>
                   <span>
                     {da.matchDetail.goalsFor}: <span className="text-zinc-200 font-medium">{data.opponentSeason.goalsFor}</span>
                   </span>
                   <span>
                     {da.matchDetail.goalsAgainst}: <span className="text-zinc-200 font-medium">{data.opponentSeason.goalsAgainst}</span>
+                  </span>
+                  <span>
+                    {da.matchDetail.avgGoalsFor}: <span className="text-zinc-200 font-medium">{data.opponentSeason.avgGoalsFor.toFixed(2)}</span>
+                  </span>
+                  <span>
+                    {da.matchDetail.avgGoalsAgainst}: <span className="text-zinc-200 font-medium">{data.opponentSeason.avgGoalsAgainst.toFixed(2)}</span>
                   </span>
                 </div>
 
@@ -400,11 +439,25 @@ export default function MatchDetailPage() {
       {/* Kampfakta */}
       <Card className="bg-zinc-900/50 border-zinc-800 mb-6" data-testid="match-detail-kampfakta">
         <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Info className="w-4 h-4 text-red-400" />
-            <h3 className="text-sm font-semibold text-zinc-200">
-              {da.matchDetail.kampfakta}
-            </h3>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Info className="w-4 h-4 text-red-400" />
+              <h3 className="text-sm font-semibold text-zinc-200">
+                {da.matchDetail.kampfakta}
+              </h3>
+            </div>
+            {role === "admin" && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={refreshFromDbu}
+                disabled={refreshing}
+                data-testid="match-detail-refresh-dbu"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 mr-1 ${refreshing ? "animate-spin" : ""}`} />
+                {da.matchDetail.refreshFromDbu}
+              </Button>
+            )}
           </div>
           {!data.matchInfo ? (
             <p className="text-sm text-zinc-500">{da.matchDetail.noKampfakta}</p>
@@ -426,8 +479,35 @@ export default function MatchDetailPage() {
                 )}
               </div>
 
-              {/* Goal Scorers */}
-              {data.matchInfo.goalScorers.length > 0 && (
+              {/* Goal events (scorer + assist, per-event) — falls back to the flat
+                  scorer tally for rows where we only have aggregated data. */}
+              {data.matchInfo.goalEvents && data.matchInfo.goalEvents.length > 0 ? (
+                <div data-testid="match-detail-goal-events">
+                  <span className="text-zinc-500 text-xs">{da.matchDetail.goalEvents}</span>
+                  <ul className="mt-1 space-y-1">
+                    {data.matchInfo.goalEvents.map((ev, i) => {
+                      const teamName = ev.team === "home" ? match.homeTeam : match.awayTeam;
+                      return (
+                        <li
+                          key={i}
+                          className="flex items-center gap-2 text-xs text-zinc-300"
+                          data-testid="match-detail-goal-event"
+                        >
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">⚽</span>
+                          <span className="text-zinc-500 w-24 truncate shrink-0">{teamName}</span>
+                          <span className="font-medium text-zinc-200">{ev.scorer}</span>
+                          {ev.assist && (
+                            <span className="text-zinc-500">
+                              ({da.matchDetail.assist}: <span className="text-zinc-300">{ev.assist}</span>)
+                            </span>
+                          )}
+                          {ev.minute && <span className="ml-auto text-zinc-500 tabular-nums">{ev.minute}</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ) : data.matchInfo.goalScorers.length > 0 && (
                 <div data-testid="match-detail-scorers">
                   <span className="text-zinc-500 text-xs">{da.matchDetail.maalscorere}</span>
                   <div className="flex flex-wrap gap-1.5 mt-1">
@@ -510,7 +590,7 @@ export default function MatchDetailPage() {
               )}
 
               {/* If no data at all in matchInfo fields */}
-              {!data.matchInfo.referee && !data.matchInfo.pitch && data.matchInfo.goalScorers.length === 0 && data.matchInfo.homeLineup.length === 0 && data.matchInfo.awayLineup.length === 0 && (
+              {!data.matchInfo.referee && !data.matchInfo.pitch && data.matchInfo.goalScorers.length === 0 && (!data.matchInfo.goalEvents || data.matchInfo.goalEvents.length === 0) && data.matchInfo.homeLineup.length === 0 && data.matchInfo.awayLineup.length === 0 && (
                 <p className="text-sm text-zinc-500">{da.matchDetail.noData}</p>
               )}
             </div>

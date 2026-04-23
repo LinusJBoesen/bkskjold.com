@@ -1,7 +1,30 @@
 import { sql } from "../lib/db";
 import { scrapeTeamMatches, scrapeMatchInfo, type DbuTeamMatch, type DbuMatchInfo } from "./dbu";
 
-const OUR_TEAM_NAME = "BK Skjold";
+const FALLBACK_TEAM_NAME = "BK Skjold";
+let cachedTeamName: string | null = null;
+
+/**
+ * Resolve our team's display name as it appears in DBU data. Derived from a
+ * kampprogram row where home/away team_id matches DBU_TEAM_ID — the real name
+ * varies by season ("Skjold 10", "BK Skjold" legacy dev-seed, etc.), so
+ * hardcoding was wrong.
+ */
+async function getOurTeamName(): Promise<string> {
+  if (cachedTeamName) return cachedTeamName;
+  const ourTeamId = process.env.DBU_TEAM_ID;
+  if (!ourTeamId) return FALLBACK_TEAM_NAME;
+  const [row] = (await sql`
+    SELECT home_team, home_team_id, away_team, away_team_id
+    FROM dbu_team_matches
+    WHERE team_id = ${ourTeamId}
+      AND (home_team_id = ${ourTeamId} OR away_team_id = ${ourTeamId})
+    LIMIT 1
+  `) as { home_team: string; home_team_id: string; away_team: string; away_team_id: string }[];
+  if (!row) return FALLBACK_TEAM_NAME;
+  cachedTeamName = row.home_team_id === ourTeamId ? row.home_team : row.away_team;
+  return cachedTeamName;
+}
 
 interface MatchDetails {
   match: {
@@ -27,11 +50,14 @@ interface MatchDetails {
     result: "W" | "D" | "L" | null;
   }[];
   opponentSeason: {
+    played: number;
     wins: number;
     draws: number;
     losses: number;
     goalsFor: number;
     goalsAgainst: number;
+    avgGoalsFor: number;
+    avgGoalsAgainst: number;
     recentForm: ("W" | "D" | "L")[];
   } | null;
   commonOpponents: {
@@ -45,6 +71,7 @@ interface MatchDetails {
 }
 
 export async function getMatchDetails(dbuMatchId: string): Promise<MatchDetails | null> {
+  const OUR_TEAM_NAME = await getOurTeamName();
   // 1. Find the match in dbu_team_matches
   const [matchRow] = (await sql`
     SELECT * FROM dbu_team_matches WHERE dbu_match_id = ${dbuMatchId}
@@ -76,7 +103,7 @@ export async function getMatchDetails(dbuMatchId: string): Promise<MatchDetails 
         isHome,
         opponent,
       },
-      headToHead: await getHeadToHead(opponent),
+      headToHead: await getHeadToHead(opponent, OUR_TEAM_NAME),
       opponentSeason: null,
       commonOpponents: [],
       matchInfo: matchInfoFallback,
@@ -91,17 +118,13 @@ export async function getMatchDetails(dbuMatchId: string): Promise<MatchDetails 
   const spondData = await findSpondEvent(matchRow.date);
 
   // 2. Head-to-head from our team matches
-  const h2h = await getHeadToHead(opponent);
+  const h2h = await getHeadToHead(opponent, OUR_TEAM_NAME);
 
   // 3. Opponent season record
-  const opponentSeason = opponentTeamId
-    ? await getOpponentSeason(opponentTeamId, opponent)
-    : null;
+  const opponentSeason = await getOpponentSeason(opponentTeamId, opponent);
 
   // 4. Common opponents
-  const commonOpponents = opponentTeamId
-    ? await getCommonOpponents(opponentTeamId, opponent)
-    : [];
+  const commonOpponents = await getCommonOpponents(opponentTeamId, opponent, OUR_TEAM_NAME);
 
   // 5. Match info (kampfakta)
   const matchInfo = await fetchMatchInfo(dbuMatchId);
@@ -128,20 +151,20 @@ export async function getMatchDetails(dbuMatchId: string): Promise<MatchDetails 
   };
 }
 
-async function getHeadToHead(opponent: string) {
+async function getHeadToHead(opponent: string, ourName: string) {
   // Get all matches between us and this opponent
   const rows = (await sql`
     SELECT date, home_team, away_team, home_score, away_score
     FROM dbu_team_matches
-    WHERE (home_team = ${OUR_TEAM_NAME} AND away_team = ${opponent})
-       OR (away_team = ${OUR_TEAM_NAME} AND home_team = ${opponent})
+    WHERE (home_team = ${ourName} AND away_team = ${opponent})
+       OR (away_team = ${ourName} AND home_team = ${opponent})
     ORDER BY date DESC
   `) as any[];
 
   return rows.map((r: any) => {
     let result: "W" | "D" | "L" | null = null;
     if (r.home_score !== null && r.away_score !== null) {
-      const weAreHome = r.home_team === OUR_TEAM_NAME;
+      const weAreHome = r.home_team === ourName;
       const ourGoals = weAreHome ? r.home_score : r.away_score;
       const theirGoals = weAreHome ? r.away_score : r.home_score;
       if (ourGoals > theirGoals) result = "W";
@@ -163,18 +186,21 @@ async function getOpponentSeason(
   opponentTeamId: string,
   opponentName: string,
 ): Promise<MatchDetails["opponentSeason"]> {
-  // Try DB first, then scrape
+  // Query by team name, not team_id: dbu_team_matches uses dbu_match_id as PK
+  // so every physical match has exactly one row, owned by whichever team_id
+  // scraped it first. Filtering on team_id would miss the match between us
+  // and the opponent (owned under our team_id). Name-based lookup catches
+  // every match involving this opponent regardless of which team_id scraped it.
   let matches = (await sql`
     SELECT * FROM dbu_team_matches
-    WHERE team_id = ${opponentTeamId}
+    WHERE home_team = ${opponentName} OR away_team = ${opponentName}
     ORDER BY date DESC
   `) as any[];
 
-  if (matches.length === 0) {
-    // Try scraping
+  if (matches.length === 0 && opponentTeamId) {
+    // Nothing in DB yet — pull the opponent's full kampprogram and retry.
     try {
       const scraped = await scrapeTeamMatches(opponentTeamId);
-      // Persist
       for (const tm of scraped) {
         await sql`
           INSERT INTO dbu_team_matches (dbu_match_id, team_id, date, time, home_team, home_team_id, away_team, away_team_id, home_score, away_score, venue)
@@ -186,13 +212,11 @@ async function getOpponentSeason(
             synced_at = NOW()
         `;
       }
-      matches = scraped.map((tm) => ({
-        home_team: tm.homeTeam,
-        away_team: tm.awayTeam,
-        home_score: tm.homeScore,
-        away_score: tm.awayScore,
-        date: tm.date,
-      }));
+      matches = (await sql`
+        SELECT * FROM dbu_team_matches
+        WHERE home_team = ${opponentName} OR away_team = ${opponentName}
+        ORDER BY date DESC
+      `) as any[];
     } catch {
       return null;
     }
@@ -216,12 +240,17 @@ async function getOpponentSeason(
     else { draws++; recentForm.push("D"); }
   }
 
+  const played = completed.length;
+  const round = (n: number) => Math.round(n * 100) / 100;
   return {
+    played,
     wins,
     draws,
     losses,
     goalsFor,
     goalsAgainst,
+    avgGoalsFor: played > 0 ? round(goalsFor / played) : 0,
+    avgGoalsAgainst: played > 0 ? round(goalsAgainst / played) : 0,
     recentForm: recentForm.slice(0, 5), // last 5 already sorted by date DESC
   };
 }
@@ -229,6 +258,7 @@ async function getOpponentSeason(
 async function getCommonOpponents(
   opponentTeamId: string,
   opponentName: string,
+  ourName: string,
 ) {
   // Get our matches
   const ourTeamId = process.env.DBU_TEAM_ID;
@@ -239,16 +269,16 @@ async function getCommonOpponents(
       AND home_score IS NOT NULL AND away_score IS NOT NULL
   `) as any[];
 
-  // Get opponent matches
+  // Query by opponent name (see note in getOpponentSeason for why team_id
+  // filtering would miss matches owned by another team's scrape).
   let opponentMatches = (await sql`
     SELECT home_team, away_team, home_score, away_score
     FROM dbu_team_matches
-    WHERE team_id = ${opponentTeamId}
+    WHERE (home_team = ${opponentName} OR away_team = ${opponentName})
       AND home_score IS NOT NULL AND away_score IS NOT NULL
   `) as any[];
 
-  if (opponentMatches.length === 0) {
-    // Try scraping
+  if (opponentMatches.length === 0 && opponentTeamId) {
     try {
       const scraped = await scrapeTeamMatches(opponentTeamId);
       for (const tm of scraped) {
@@ -262,14 +292,12 @@ async function getCommonOpponents(
             synced_at = NOW()
         `;
       }
-      opponentMatches = scraped
-        .filter((tm) => tm.homeScore !== null && tm.awayScore !== null)
-        .map((tm) => ({
-          home_team: tm.homeTeam,
-          away_team: tm.awayTeam,
-          home_score: tm.homeScore,
-          away_score: tm.awayScore,
-        }));
+      opponentMatches = (await sql`
+        SELECT home_team, away_team, home_score, away_score
+        FROM dbu_team_matches
+        WHERE (home_team = ${opponentName} OR away_team = ${opponentName})
+          AND home_score IS NOT NULL AND away_score IS NOT NULL
+      `) as any[];
     } catch {
       return [];
     }
@@ -278,7 +306,7 @@ async function getCommonOpponents(
   // Build sets of opponents each team has faced
   const ourOpponents = new Map<string, { result: "W" | "D" | "L"; score: string }>();
   for (const m of ourMatches) {
-    const weAreHome = m.home_team === OUR_TEAM_NAME;
+    const weAreHome = m.home_team === ourName;
     const opp = weAreHome ? m.away_team : m.home_team;
     const ourGoals = weAreHome ? m.home_score : m.away_score;
     const theirGoals = weAreHome ? m.away_score : m.home_score;
@@ -297,7 +325,7 @@ async function getCommonOpponents(
     const opp = theyAreHome ? m.away_team : m.home_team;
     const theirGoals = theyAreHome ? m.home_score : m.away_score;
     const oppGoals = theyAreHome ? m.away_score : m.home_score;
-    if (opp === OUR_TEAM_NAME) continue; // skip us
+    if (opp === ourName) continue; // skip us
 
     const result = theirGoals > oppGoals ? "W" : theirGoals < oppGoals ? "L" : "D";
     if (!theirOpponents.has(opp)) {
@@ -351,6 +379,7 @@ async function fetchMatchInfo(dbuMatchId: string): Promise<DbuMatchInfo | null> 
       homeOfficials: JSON.parse(row.home_officials || "[]"),
       awayOfficials: JSON.parse(row.away_officials || "[]"),
       goalScorers: JSON.parse(row.goal_scorers || "[]"),
+      goalEvents: JSON.parse(row.goal_events || "[]"),
     };
   }
 
