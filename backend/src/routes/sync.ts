@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { sql } from "../lib/db";
 import { SpondClient } from "../services/spond";
-import { scrapeStandings, scrapeTeamMatches } from "../services/dbu";
+import { scrapeStandings, scrapeTeamMatches, scrapeAllTournamentMatches, pendingMatchKey } from "../services/dbu";
 import { requireRole } from "../middleware/auth";
 
 const sync = new Hono();
@@ -126,7 +126,7 @@ sync.post("/dbu", async (c) => {
       // so they don't collide on the PK.
       await tx`DELETE FROM dbu_team_matches WHERE team_id = ${teamId}`;
       for (const tm of teamMatches) {
-        const matchKey = tm.dbuMatchId || `pending_${teamId}_${tm.date}_${tm.homeTeam}_${tm.awayTeam}`;
+        const matchKey = tm.dbuMatchId || pendingMatchKey(tm);
         await tx`
           INSERT INTO dbu_team_matches (dbu_match_id, team_id, date, time, home_team, home_team_id, away_team, away_team_id, home_score, away_score, venue)
           VALUES (${matchKey}, ${teamId}, ${tm.date}, ${tm.time}, ${tm.homeTeam}, ${tm.homeTeamId}, ${tm.awayTeam}, ${tm.awayTeamId}, ${tm.homeScore}, ${tm.awayScore}, ${tm.venue})
@@ -140,6 +140,14 @@ sync.post("/dbu", async (c) => {
       }
     });
 
+    // Our kampprogram is now fresh. Use it to discover every opponent team_id
+    // and pull their full fixture lists too — powers per-opponent stats on the
+    // match-detail page without waiting for a lazy scrape at click time.
+    const tournament = await scrapeAllTournamentMatches(teamId).catch((err) => {
+      console.error("[sync/dbu] tournament-wide scrape failed:", err);
+      return { teams: 0, matches: 0, errors: [String(err)] };
+    });
+
     // Clear cache so next read gets fresh data
     const { clearCache } = await import("../services/dbu");
     clearCache();
@@ -149,6 +157,9 @@ sync.post("/dbu", async (c) => {
       message: "DBU data hentet fra dbu.dk",
       standings: standings.length,
       matches: teamMatches.length,
+      tournamentTeams: tournament.teams,
+      tournamentMatches: tournament.matches,
+      tournamentErrors: tournament.errors,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Ukendt fejl";

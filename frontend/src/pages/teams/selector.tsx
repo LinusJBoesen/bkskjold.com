@@ -165,7 +165,7 @@ export default function TeamSelectorPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [publishedLineup, setPublishedLineup] = useState<{ id: string; label: string; team1: { id: string; displayName: string; profilePicture?: string | null }[]; team2: { id: string; displayName: string; profilePicture?: string | null }[]; createdAt: string } | null>(null);
+  const [publishedLineup, setPublishedLineup] = useState<{ id: string; label: string; team1: { id: string; displayName: string; profilePicture?: string | null }[]; team2: { id: string; displayName: string; profilePicture?: string | null }[]; winner?: 1 | 2 | null; createdAt: string } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [formationTeam, setFormationTeam] = useState<1 | 2>(1);
   const [playerPositions, setPlayerPositions] = useState<Record<string, Position[]>>({});
@@ -203,7 +203,16 @@ export default function TeamSelectorPage() {
 
     // Load the latest published training lineup
     api.get<{ lineup: typeof publishedLineup }>("/teams/lineup")
-      .then((res) => setPublishedLineup(res.lineup))
+      .then((res) => {
+        setPublishedLineup(res.lineup);
+        if (res.lineup) {
+          setSavedLineupId(res.lineup.id);
+          setSavedLineup(true);
+          if (res.lineup.winner === 1 || res.lineup.winner === 2) {
+            setWinnerDone(true);
+          }
+        }
+      })
       .catch(() => {/* optional */});
 
     // Load the latest published match lineup
@@ -433,13 +442,11 @@ export default function TeamSelectorPage() {
   const copyTeams = async () => {
     if (!result) return;
     const text = [
-      "⚽ Hold 1",
-      ...result.team1.map(p => `  ${p.displayName} (${Math.round(p.winRate * 100)}%)`),
+      "⚽ Hold 1 — Hvide trøjer",
+      ...result.team1.map(p => `  ${p.displayName}`),
       "",
-      "⚽ Hold 2",
-      ...result.team2.map(p => `  ${p.displayName} (${Math.round(p.winRate * 100)}%)`),
-      "",
-      `Balance: ${result.balance.balancePercent}%`,
+      "⚽ Hold 2 — Sorte trøjer",
+      ...result.team2.map(p => `  ${p.displayName}`),
     ].join("\n");
 
     try {
@@ -593,93 +600,91 @@ export default function TeamSelectorPage() {
         <div className="mt-2 space-y-6">
           {activeTab === "training" ? (
             <>
-              {/* Formation pitches for training teams (if saved) */}
-              {(savedTrainingFormation1 || savedTrainingFormation2) && (
-                <div className="space-y-4">
-                  {savedTrainingFormation1 && (() => {
-                    const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedTrainingFormation1);
-                    return (
-                      <div>
-                        <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
-                          <div className="h-5 w-5 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-[10px] font-bold text-zinc-900">1</div>
-                          <span className="font-medium text-zinc-200">Hold 1</span>
-                          <span className="text-zinc-500">— Hvide trøjer</span>
+              {publishedLineup ? (
+                <>
+                  {/* Team rosters first — always shown */}
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Users className="h-4 w-4" />
+                    <span>Holdopstilling til <span className="text-zinc-200 font-medium">{publishedLineup.label}</span></span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Card className="border-white/20">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-xs font-bold text-zinc-900">1</div>
+                          Hold 1 <span className="text-sm font-medium text-zinc-300 ml-1">— Hvide trøjer</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-1">
+                          {publishedLineup.team1.map((p) => (
+                            <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                              <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                              <span className="text-zinc-200">{p.displayName}</span>
+                            </div>
+                          ))}
                         </div>
-                        <FormationView readOnly players={fp} teamNumber={1} initialFormation={ff} initialAssignments={fa} />
-                      </div>
-                    );
-                  })()}
-                  {savedTrainingFormation2 && (() => {
-                    const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedTrainingFormation2);
-                    return (
-                      <div>
-                        <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
-                          <div className="h-5 w-5 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-[10px] font-bold text-zinc-100">2</div>
-                          <span className="font-medium text-zinc-200">Hold 2</span>
-                          <span className="text-zinc-500">— Sorte trøjer</span>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-zinc-600 bg-zinc-950">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-xs font-bold text-zinc-100">2</div>
+                          Hold 2 <span className="text-sm font-medium text-zinc-300 ml-1">— Sorte trøjer</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-1">
+                          {publishedLineup.team2.map((p) => (
+                            <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                              <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                              <span className="text-zinc-200">{p.displayName}</span>
+                            </div>
+                          ))}
                         </div>
-                        <FormationView readOnly players={fp} teamNumber={2} initialFormation={ff} initialAssignments={fa} />
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
+                      </CardContent>
+                    </Card>
+                  </div>
 
-              {/* Fallback: published team lists */}
-              {!savedTrainingFormation1 && !savedTrainingFormation2 && (
-                publishedLineup ? (
-                  <>
-                    <div className="flex items-center gap-2 text-sm text-zinc-400">
-                      <Users className="h-4 w-4" />
-                      <span>Holdopstilling til <span className="text-zinc-200 font-medium">{publishedLineup.label}</span></span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Card className="border-white/20">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-base flex items-center gap-2">
-                            <div className="h-6 w-6 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-xs font-bold text-zinc-900">1</div>
-                            Hold 1 <span className="text-sm font-medium text-zinc-300 ml-1">— Hvide trøjer</span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-1">
-                            {publishedLineup.team1.map((p) => (
-                              <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
-                                <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                                <span className="text-zinc-200">{p.displayName}</span>
-                              </div>
-                            ))}
+                  {/* Formation pitches below if saved */}
+                  {(savedTrainingFormation1 || savedTrainingFormation2) && (
+                    <div className="space-y-4 pt-2">
+                      {savedTrainingFormation1 && (() => {
+                        const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedTrainingFormation1);
+                        return (
+                          <div>
+                            <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
+                              <div className="h-5 w-5 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-[10px] font-bold text-zinc-900">1</div>
+                              <span className="font-medium text-zinc-200">Hold 1</span>
+                              <span className="text-zinc-500">— Hvide trøjer</span>
+                            </div>
+                            <FormationView readOnly players={fp} teamNumber={1} initialFormation={ff} initialAssignments={fa} />
                           </div>
-                        </CardContent>
-                      </Card>
-                      <Card className="border-zinc-600 bg-zinc-950">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-base flex items-center gap-2">
-                            <div className="h-6 w-6 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-xs font-bold text-zinc-100">2</div>
-                            Hold 2 <span className="text-sm font-medium text-zinc-300 ml-1">— Sorte trøjer</span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-1">
-                            {publishedLineup.team2.map((p) => (
-                              <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
-                                <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                                <span className="text-zinc-200">{p.displayName}</span>
-                              </div>
-                            ))}
+                        );
+                      })()}
+                      {savedTrainingFormation2 && (() => {
+                        const { players: fp, assignments: fa, formation: ff } = savedFormationToProps(savedTrainingFormation2);
+                        return (
+                          <div>
+                            <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
+                              <div className="h-5 w-5 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-[10px] font-bold text-zinc-100">2</div>
+                              <span className="font-medium text-zinc-200">Hold 2</span>
+                              <span className="text-zinc-500">— Sorte trøjer</span>
+                            </div>
+                            <FormationView readOnly players={fp} teamNumber={2} initialFormation={ff} initialAssignments={fa} />
                           </div>
-                        </CardContent>
-                      </Card>
+                        );
+                      })()}
                     </div>
-                  </>
-                ) : (
-                  <Card>
-                    <CardContent className="py-6">
-                      <p className="text-zinc-400 text-sm font-medium mb-1">Ingen holdopstilling er delt endnu</p>
-                      <p className="text-zinc-600 text-xs">Træneren gemmer holdene her inden træning</p>
-                    </CardContent>
-                  </Card>
-                )
+                  )}
+                </>
+              ) : (
+                <Card>
+                  <CardContent className="py-6">
+                    <p className="text-zinc-400 text-sm font-medium mb-1">Ingen holdopstilling er delt endnu</p>
+                    <p className="text-zinc-600 text-xs">Træneren gemmer holdene her inden træning</p>
+                  </CardContent>
+                </Card>
               )}
             </>
           ) : (
@@ -889,6 +894,87 @@ export default function TeamSelectorPage() {
           )}
           onSaved={loadSavedFormations}
         />
+      )}
+
+      {/* Admin: saved training lineup summary (visible after reload so winner can still be set) */}
+      {isAdmin && activeTab === "training" && publishedLineup && !result && (
+        <div className="mb-6 space-y-4">
+          <div className="flex items-center gap-2 text-sm text-zinc-400">
+            <Users className="h-4 w-4" />
+            <span>Gemt holdopstilling til <span className="text-zinc-200 font-medium">{publishedLineup.label}</span></span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card className="border-white/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-xs font-bold text-zinc-900">1</div>
+                  Hold 1 <span className="text-sm font-medium text-zinc-300 ml-1">— Hvide trøjer</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1">
+                  {publishedLineup.team1.map((p) => (
+                    <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                      <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                      <span className="text-zinc-200">{p.displayName}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-zinc-600 bg-zinc-950">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-xs font-bold text-zinc-100">2</div>
+                  Hold 2 <span className="text-sm font-medium text-zinc-300 ml-1">— Sorte trøjer</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1">
+                  {publishedLineup.team2.map((p) => (
+                    <div key={p.id} className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg">
+                      <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                      <span className="text-zinc-200">{p.displayName}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {!winnerDone ? (
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+              <p className="text-sm text-zinc-400 mb-3">Hvem vandt træningskampen?</p>
+              <div className="flex gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => submitWinner(1)}
+                  disabled={winnerSubmitting}
+                  data-testid="winner-team-1"
+                  className="flex-1 border-white/20 hover:border-white/40 hover:bg-white/5"
+                >
+                  <div className="h-5 w-5 rounded-full bg-white border border-zinc-300 flex items-center justify-center text-[10px] font-bold text-zinc-900 mr-2">1</div>
+                  Hold 1 vandt
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => submitWinner(2)}
+                  disabled={winnerSubmitting}
+                  data-testid="winner-team-2"
+                  className="flex-1 border-zinc-600 hover:border-zinc-400"
+                >
+                  <div className="h-5 w-5 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-[10px] font-bold text-zinc-100 mr-2">2</div>
+                  Hold 2 vandt
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex items-center gap-2 text-sm text-emerald-400">
+              <Check className="h-4 w-4" />
+              Resultat gemt — bøder tildelt automatisk
+            </div>
+          )}
+        </div>
       )}
 
       {/* List View (admin only) */}

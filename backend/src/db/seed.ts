@@ -70,38 +70,5 @@ export async function seed(): Promise<void> {
     `;
   }
 
-  // Seed dbu_team_matches for development (our team + opponents)
-  const dbuTeamMatches = [
-    { dbu_match_id: "900001_489363", team_id: "460174_489363", date: "2025-03-15", time: "14:00", home_team: "BK Skjold", home_team_id: "460174_489363", away_team: "Vanløse IF", away_team_id: "460175_489363", home_score: 3, away_score: 1, venue: "Østerbro Stadion" },
-    { dbu_match_id: "900002_489363", team_id: "460174_489363", date: "2025-03-08", time: "15:00", home_team: "Husum BK", home_team_id: "460176_489363", away_team: "BK Skjold", away_team_id: "460174_489363", home_score: 1, away_score: 2, venue: "Husum Idrætsanlæg" },
-    { dbu_match_id: "900003_489363", team_id: "460174_489363", date: "2025-03-01", time: "13:00", home_team: "BK Skjold", home_team_id: "460174_489363", away_team: "FC Nordvest", away_team_id: "460177_489363", home_score: 0, away_score: 1, venue: "Østerbro Stadion" },
-    { dbu_match_id: "900004_489363", team_id: "460174_489363", date: "2025-02-22", time: "14:00", home_team: "Brønshøj BK", home_team_id: "460178_489363", away_team: "BK Skjold", away_team_id: "460174_489363", home_score: 0, away_score: 4, venue: "Brønshøj Stadion" },
-    { dbu_match_id: "900005_489363", team_id: "460174_489363", date: "2025-02-15", time: "11:00", home_team: "BK Skjold", home_team_id: "460174_489363", away_team: "Nørrebro United", away_team_id: "460179_489363", home_score: 2, away_score: 2, venue: "Østerbro Stadion" },
-  ];
-
-  for (const tm of dbuTeamMatches) {
-    await sql`
-      INSERT INTO dbu_team_matches (dbu_match_id, team_id, date, time, home_team, home_team_id, away_team, away_team_id, home_score, away_score, venue)
-      VALUES (${tm.dbu_match_id}, ${tm.team_id}, ${tm.date}, ${tm.time}, ${tm.home_team}, ${tm.home_team_id}, ${tm.away_team}, ${tm.away_team_id}, ${tm.home_score}, ${tm.away_score}, ${tm.venue})
-      ON CONFLICT (dbu_match_id) DO NOTHING
-    `;
-  }
-
-  // Seed opponent team matches (Vanløse IF) for common opponents testing
-  const vanlosMatches = [
-    { dbu_match_id: "900101_489363", team_id: "460175_489363", date: "2025-03-12", time: "19:00", home_team: "Vanløse IF", home_team_id: "460175_489363", away_team: "FC Nordvest", away_team_id: "460177_489363", home_score: 1, away_score: 2, venue: "Vanløse Idrætspark" },
-    { dbu_match_id: "900102_489363", team_id: "460175_489363", date: "2025-03-05", time: "18:00", home_team: "Husum BK", home_team_id: "460176_489363", away_team: "Vanløse IF", away_team_id: "460175_489363", home_score: 0, away_score: 1, venue: "Husum Idrætsanlæg" },
-    { dbu_match_id: "900103_489363", team_id: "460175_489363", date: "2025-02-26", time: "14:00", home_team: "Vanløse IF", home_team_id: "460175_489363", away_team: "Brønshøj BK", away_team_id: "460178_489363", home_score: 3, away_score: 0, venue: "Vanløse Idrætspark" },
-    { dbu_match_id: "900104_489363", team_id: "460175_489363", date: "2025-02-19", time: "15:00", home_team: "Nørrebro United", home_team_id: "460179_489363", away_team: "Vanløse IF", away_team_id: "460175_489363", home_score: 1, away_score: 1, venue: "Nørrebro Park" },
-  ];
-
-  for (const tm of vanlosMatches) {
-    await sql`
-      INSERT INTO dbu_team_matches (dbu_match_id, team_id, date, time, home_team, home_team_id, away_team, away_team_id, home_score, away_score, venue)
-      VALUES (${tm.dbu_match_id}, ${tm.team_id}, ${tm.date}, ${tm.time}, ${tm.home_team}, ${tm.home_team_id}, ${tm.away_team}, ${tm.away_team_id}, ${tm.home_score}, ${tm.away_score}, ${tm.venue})
-      ON CONFLICT (dbu_match_id) DO NOTHING
-    `;
-  }
-
   console.log("✓ Database initialized");
 }

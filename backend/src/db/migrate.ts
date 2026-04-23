@@ -77,5 +77,12 @@ export async function migrate(): Promise<void> {
   try { await sql.unsafe(`ALTER TABLE lineup_slots DROP CONSTRAINT lineup_slots_pkey`); } catch { /* ok */ }
   try { await sql.unsafe(`ALTER TABLE lineup_slots ADD PRIMARY KEY (formation_id, slot_index, is_bench)`); } catch { /* ok */ }
 
+  // Drop legacy fake "BK Skjold" / Vanløse IF dev-seed matches (dbu_match_id 900001-900104).
+  // The DBU sync replaces real rows by team_id, but never these 9000xx ids.
+  await sql`DELETE FROM dbu_team_matches WHERE dbu_match_id LIKE '9000%' OR dbu_match_id LIKE '9001%'`.catch(() => {});
+
+  // Add goal_events column to dbu_match_info for per-event goal detail (scorer + assist).
+  await sql.unsafe(`ALTER TABLE dbu_match_info ADD COLUMN IF NOT EXISTS goal_events TEXT`).catch(() => {});
+
   console.log("Database migrated");
 }

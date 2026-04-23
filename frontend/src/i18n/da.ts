@@ -218,6 +218,9 @@ export const da = {
     losses: "T",
     goalsFor: "Mål for",
     goalsAgainst: "Mål imod",
+    avgGoalsFor: "Snit mål for",
+    avgGoalsAgainst: "Snit mål imod",
+    played: "Kampe",
     recentForm: "Seneste form",
     commonOpponents: "Fælles modstandere",
     noCommonOpponents: "Ingen fælles modstandere",
@@ -236,6 +239,11 @@ export const da = {
     noKampfakta: "Ingen kampfakta tilgængelig",
     showLineup: "Vis opstilling",
     hideLineup: "Skjul opstilling",
+    goalEvents: "Målhændelser",
+    assist: "Assist",
+    refreshFromDbu: "Opdater fra DBU",
+    refreshed: "Kampdata opdateret fra DBU",
+    refreshError: "Kunne ikke hente fra DBU",
   },
 
   // History
@@ -294,6 +302,8 @@ export const da = {
     goalDiffTrend: "Målforskel over sæsonen",
     goalDiffCumulative: "Kumulativ målforskel",
     goalDiffDesc: "Kumulativ målforskel fra kamp til kamp",
+    dbuPlayerStats: "Spillere i DBU-kampe",
+    dbuUnmappedHint: "Kunne ikke matche disse DBU-navne til spillere",
   },
   // Post Match
   postMatch: {

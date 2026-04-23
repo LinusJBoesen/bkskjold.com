@@ -40,6 +40,13 @@ export interface DbuTeamMatch {
   awayScore: number | null;
 }
 
+export interface DbuGoalEvent {
+  scorer: string;
+  assist: string | null;
+  team: "home" | "away";
+  minute: string | null;
+}
+
 export interface DbuMatchInfo {
   referee: string | null;
   venueName: string | null;
@@ -50,6 +57,7 @@ export interface DbuMatchInfo {
   homeOfficials: string[];
   awayOfficials: string[];
   goalScorers: { name: string; team: string; goals: number }[];
+  goalEvents: DbuGoalEvent[];
 }
 
 let standingsCache: { data: Standing[]; timestamp: number } | null = null;
@@ -198,6 +206,79 @@ export async function scrapeTeamMatches(teamId: string): Promise<DbuTeamMatch[]>
 }
 
 /**
+ * Stable synthetic key for an unplayed DBU fixture. DBU assigns a real
+ * dbu_match_id only after kickoff, so upcoming matches need a deterministic
+ * key that is identical regardless of which team's kampprogram produced the
+ * row — otherwise we'd insert the same physical fixture once per scraped team.
+ */
+export function pendingMatchKey(tm: {
+  date: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  homeTeam: string;
+  awayTeam: string;
+}): string {
+  const home = tm.homeTeamId || tm.homeTeam;
+  const away = tm.awayTeamId || tm.awayTeam;
+  return `pending_${home}_${away}_${tm.date}`;
+}
+
+/**
+ * Scrape and persist every tournament team's kampprogram. Round-robin groups
+ * mean our own `dbu_team_matches` rows already contain every opponent's
+ * team_id, so we discover the pool without a second standings round-trip.
+ * Each opponent's full fixture list is upserted under its own team_id.
+ */
+export async function scrapeAllTournamentMatches(
+  ourTeamId: string
+): Promise<{ teams: number; matches: number; errors: string[] }> {
+  // Discover opponent team_ids from our own kampprogram rows.
+  const rows = (await sql`
+    SELECT DISTINCT home_team_id, away_team_id
+    FROM dbu_team_matches
+    WHERE team_id = ${ourTeamId}
+  `) as { home_team_id: string | null; away_team_id: string | null }[];
+
+  const teamIds = new Set<string>();
+  for (const r of rows) {
+    if (r.home_team_id && r.home_team_id !== ourTeamId) teamIds.add(r.home_team_id);
+    if (r.away_team_id && r.away_team_id !== ourTeamId) teamIds.add(r.away_team_id);
+  }
+
+  let matchCount = 0;
+  const errors: string[] = [];
+
+  for (const teamId of teamIds) {
+    try {
+      const teamMatches = await scrapeTeamMatches(teamId);
+      await sql.begin(async (tx) => {
+        // Replace-on-key: refresh this team's entire kampprogram in one shot.
+        await tx`DELETE FROM dbu_team_matches WHERE team_id = ${teamId}`;
+        for (const tm of teamMatches) {
+          const key = tm.dbuMatchId || pendingMatchKey(tm);
+          await tx`
+            INSERT INTO dbu_team_matches (dbu_match_id, team_id, date, time, home_team, home_team_id, away_team, away_team_id, home_score, away_score, venue)
+            VALUES (${key}, ${teamId}, ${tm.date}, ${tm.time}, ${tm.homeTeam}, ${tm.homeTeamId}, ${tm.awayTeam}, ${tm.awayTeamId}, ${tm.homeScore}, ${tm.awayScore}, ${tm.venue})
+            ON CONFLICT (dbu_match_id) DO UPDATE SET
+              home_score = EXCLUDED.home_score,
+              away_score = EXCLUDED.away_score,
+              venue = EXCLUDED.venue,
+              time = EXCLUDED.time,
+              synced_at = NOW()
+          `;
+        }
+      });
+      matchCount += teamMatches.length;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`${teamId}: ${msg}`);
+    }
+  }
+
+  return { teams: teamIds.size, matches: matchCount, errors };
+}
+
+/**
  * Derive opponent team_id from our own cached kampprogram rows.
  * Looks up a match where opponentName appears as home or away team.
  */
@@ -255,7 +336,7 @@ export async function fetchStandings(): Promise<Standing[]> {
   return standings;
 }
 
-export async function fetchMatchResults(): Promise<(DbuMatch & { dbuMatchId?: string })[]> {
+export async function fetchMatchResults(): Promise<(DbuMatch & { dbuMatchId?: string; homeTeamId?: string; awayTeamId?: string })[]> {
   if (matchesCache && Date.now() - matchesCache.timestamp < CACHE_TTL) {
     return matchesCache.data;
   }
@@ -273,12 +354,15 @@ export async function fetchMatchResults(): Promise<(DbuMatch & { dbuMatchId?: st
     time: r.time ?? null,
     homeTeam: r.home_team,
     awayTeam: r.away_team,
+    homeTeamId: r.home_team_id ?? undefined,
+    awayTeamId: r.away_team_id ?? undefined,
     homeScore: r.home_score,
     awayScore: r.away_score,
     venue: r.venue ?? null,
-    // Synthetic "pending_…" keys (assigned in sync for matches DBU hasn't
-    // published yet) are an internal detail — don't leak them to clients.
-    dbuMatchId: r.dbu_match_id?.startsWith("pending_") ? undefined : (r.dbu_match_id ?? undefined),
+    // Expose synthetic "pending_…" keys too — they let the frontend link into
+    // the match-detail page for upcoming matches (no DBU id yet). The detail
+    // route reads the same key from dbu_team_matches.
+    dbuMatchId: r.dbu_match_id ?? undefined,
   }));
 
   let matches = fromTeamMatches;
@@ -289,6 +373,8 @@ export async function fetchMatchResults(): Promise<(DbuMatch & { dbuMatchId?: st
       time: r.time ?? null,
       homeTeam: r.home_team,
       awayTeam: r.away_team,
+      homeTeamId: undefined,
+      awayTeamId: undefined,
       homeScore: r.home_score,
       awayScore: r.away_score,
       venue: r.venue ?? null,
@@ -300,10 +386,15 @@ export async function fetchMatchResults(): Promise<(DbuMatch & { dbuMatchId?: st
   return matches;
 }
 
-export async function scrapeMatchInfo(dbuMatchId: string): Promise<DbuMatchInfo> {
-  const cached = matchInfoCache.get(dbuMatchId);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data;
+export async function scrapeMatchInfo(
+  dbuMatchId: string,
+  options: { forceRefresh?: boolean } = {}
+): Promise<DbuMatchInfo> {
+  if (!options.forceRefresh) {
+    const cached = matchInfoCache.get(dbuMatchId);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return cached.data;
+    }
   }
 
   const url = `${DBU_MATCH_BASE}/${dbuMatchId}/kampinfo`;
@@ -318,121 +409,129 @@ export async function scrapeMatchInfo(dbuMatchId: string): Promise<DbuMatchInfo>
   const html = await res.text();
   const root = parse(html);
 
-  // Extract match info from the page
+  // Header info (.col-pad blocks with <label>Label</label><span|div>Value</span|div>)
   let referee: string | null = null;
   let venueName: string | null = null;
   let venueAddress: string | null = null;
-  let pitch: string | null = null;
+  const pitch: string | null = null;
 
-  // The kampinfo page has info sections with labels and values
-  // Look for text content that identifies referee, venue, pitch
-  const allText = root.text;
+  for (const block of root.querySelectorAll(".col-pad")) {
+    const label = block.querySelector("label")?.text.trim().toLowerCase() ?? "";
+    if (!label) continue;
 
-  // Try to find referee from common patterns
-  const infoItems = root.querySelectorAll(".sr--match-info__item, .sr--match-info__value, dt, dd, li, p, span, div");
-  for (let i = 0; i < infoItems.length; i++) {
-    const el = infoItems[i]!;
-    const text = el.text.trim();
-
-    // Look for label-value patterns
-    if (text.toLowerCase().includes("dommer")) {
-      // The next sibling or child might have the referee name
-      const nextEl = infoItems[i + 1];
-      if (nextEl) {
-        const val = nextEl.text.trim();
-        if (val && !val.toLowerCase().includes("dommer") && val.length < 100) {
-          referee = val;
-        }
+    if (label === "dommer") {
+      const val = block.querySelector("span")?.text.trim();
+      referee = val && val.length ? val : null;
+    } else if (label === "spillested") {
+      // venue name lives inside a link; address is the following sibling divs
+      const divs = block.querySelectorAll("div");
+      const nameLink = block.querySelector("a");
+      venueName = nameLink?.text.trim() || null;
+      const addressLines: string[] = [];
+      for (const d of divs) {
+        // Skip the div containing the link (venue name)
+        if (d.querySelector("a")) continue;
+        const t = d.text.trim();
+        if (t) addressLines.push(t);
       }
-    }
-    if (text.toLowerCase() === "bane" || text.toLowerCase().includes("bane:")) {
-      const nextEl = infoItems[i + 1];
-      if (nextEl) {
-        const val = nextEl.text.trim();
-        if (val && val !== "Bane" && val.length < 100) {
-          pitch = val;
-        }
-      }
+      venueAddress = addressLines.join(", ") || null;
     }
   }
 
-  // Try to find venue from the page
-  const venueEl = root.querySelector(".sr--match-info__venue, .sr--venue, [class*='venue']");
-  if (venueEl) {
-    venueName = venueEl.text.trim() || null;
-  }
-
-  // Look for structured match info tables/sections
-  const matchInfoSections = root.querySelectorAll("table, .sr--match-info, [class*='match-info']");
-
-  // Extract lineups - look for player lists in home/away sections
+  // Lineups: .sr--match--team-card_home / _away, each with a <table> of <tr><td><span>Name</span></td></tr>
   const homeLineup: string[] = [];
   const awayLineup: string[] = [];
   const homeOfficials: string[] = [];
   const awayOfficials: string[] = [];
+
+  const extractLineup = (
+    card: ReturnType<typeof root.querySelector>,
+    lineup: string[],
+    officials: string[]
+  ) => {
+    if (!card) return;
+    const tables = card.querySelectorAll("table");
+    for (const table of tables) {
+      const isOfficials = !!table.querySelector("tr.official-tr");
+      if (isOfficials) {
+        for (const row of table.querySelectorAll("tr.official-tr")) {
+          const role = row.querySelector(".p-role")?.text.trim() ?? "";
+          const name = row.querySelector(".p-name")?.text.trim() ?? "";
+          if (name) {
+            officials.push(role ? `${role}: ${name}` : name);
+          }
+        }
+      } else {
+        // Skip header row (<thead>), then read each <tr>'s player name span
+        for (const row of table.querySelectorAll("tbody tr, tr")) {
+          // Skip rows that sit inside <thead>
+          if (row.parentNode?.rawTagName === "thead") continue;
+          if (row.classList.contains("official-tr")) continue;
+          const span = row.querySelector("td:not(.shirt-number) span");
+          const name = span?.text.trim();
+          if (name) lineup.push(name);
+        }
+      }
+    }
+  };
+
+  extractLineup(root.querySelector(".sr--match--team-card_home"), homeLineup, homeOfficials);
+  extractLineup(root.querySelector(".sr--match--team-card_away"), awayLineup, awayOfficials);
+
+  // Events: .sr--match--live-score--eventlist > .sr--match--live-score--event
+  //   child .sr--match--live-score--event--home | _--event--away tells us the team
+  //   <img src="..icon_sr_goal.svg"> indicates goal type
+  //   .event--player contains scorer text; optional .event--sub > .event--player2 has assist
+  const goalEvents: DbuGoalEvent[] = [];
+  const eventNodes = root.querySelectorAll(".sr--match--live-score--event");
+  for (const ev of eventNodes) {
+    const homeSide = ev.querySelector(".sr--match--live-score--event--home");
+    const awaySide = ev.querySelector(".sr--match--live-score--event--away");
+    const side = homeSide ?? awaySide;
+    if (!side) continue;
+
+    const iconSrc = side.querySelector(".sr--match--live-score--event--icon img")?.getAttribute("src") ?? "";
+    // Only keep goal events (the eventlist may later include cards, subs, etc.)
+    if (!iconSrc.toLowerCase().includes("goal")) continue;
+
+    const playerWrap = side.querySelector(".sr--match--live-score--event--player");
+    if (!playerWrap) continue;
+
+    const assist = playerWrap.querySelector(".sr--match--live-score--event--player2")?.text.trim() || null;
+
+    // Scorer: raw text of the player wrap, with any assist sub-text stripped off the end.
+    let scorerText = playerWrap.text.replace(/\s+/g, " ").trim();
+    if (assist) {
+      // Strip the assist name from the tail (it follows the scorer inside .event--sub)
+      const idx = scorerText.lastIndexOf(assist);
+      if (idx >= 0) scorerText = scorerText.slice(0, idx).trim();
+    }
+    const scorer = scorerText;
+    if (!scorer) continue;
+
+    const minuteRaw = ev.querySelector(".sr--match--live-score--event--minute")?.text.trim() ?? "";
+    const minute = minuteRaw.length ? minuteRaw : null;
+
+    goalEvents.push({
+      scorer,
+      assist,
+      team: homeSide ? "home" : "away",
+      minute,
+    });
+  }
+
+  // Aggregated per-scorer counts for backwards compatibility.
+  const tally = new Map<string, { team: "home" | "away"; goals: number }>();
+  for (const ev of goalEvents) {
+    const key = `${ev.team}|${ev.scorer}`;
+    const prev = tally.get(key);
+    if (prev) prev.goals += 1;
+    else tally.set(key, { team: ev.team, goals: 1 });
+  }
   const goalScorers: DbuMatchInfo["goalScorers"] = [];
-
-  // DBU typically has lineup tables or lists
-  // Look for sections that contain player names
-  const lineupSections = root.querySelectorAll(".sr--lineup, .sr--team-lineup, [class*='lineup'], [class*='roster']");
-
-  if (lineupSections.length >= 2) {
-    // First section is home, second is away
-    const homePlayers = lineupSections[0]!.querySelectorAll("li, tr, .sr--player");
-    const awayPlayers = lineupSections[1]!.querySelectorAll("li, tr, .sr--player");
-    for (const p of homePlayers) {
-      const name = p.text.trim();
-      if (name) homeLineup.push(name);
-    }
-    for (const p of awayPlayers) {
-      const name = p.text.trim();
-      if (name) awayLineup.push(name);
-    }
-  }
-
-  // Try broader approach: look for all tables on the page
-  const tables = root.querySelectorAll("table");
-  for (const table of tables) {
-    const rows = table.querySelectorAll("tr");
-    for (const row of rows) {
-      const cells = row.querySelectorAll("td, th");
-      if (cells.length >= 2) {
-        const label = cells[0]!.text.trim().toLowerCase();
-        const value = cells[1]!.text.trim();
-
-        if (label.includes("dommer") && !referee) {
-          referee = value || null;
-        }
-        if (label.includes("stadion") || label.includes("spillested")) {
-          venueName = value || null;
-        }
-        if (label.includes("adresse")) {
-          venueAddress = value || null;
-        }
-        if (label === "bane" && !pitch) {
-          pitch = value || null;
-        }
-      }
-    }
-  }
-
-  // Look for goal scorers in structured data
-  const scorerElements = root.querySelectorAll(".sr--goal-scorer, [class*='scorer'], [class*='goal']");
-  for (const el of scorerElements) {
-    const text = el.text.trim();
-    if (text) {
-      // Try to parse "PlayerName (N)" or "PlayerName N mål"
-      const goalMatch = text.match(/^(.+?)\s*\((\d+)\)\s*$/);
-      if (goalMatch) {
-        goalScorers.push({
-          name: goalMatch[1]!.trim(),
-          team: "unknown",
-          goals: parseInt(goalMatch[2]!, 10),
-        });
-      } else if (text.length < 100) {
-        goalScorers.push({ name: text, team: "unknown", goals: 1 });
-      }
-    }
+  for (const [key, { team, goals }] of tally) {
+    const name = key.split("|").slice(1).join("|");
+    goalScorers.push({ name, team, goals });
   }
 
   const info: DbuMatchInfo = {
@@ -445,6 +544,7 @@ export async function scrapeMatchInfo(dbuMatchId: string): Promise<DbuMatchInfo>
     homeOfficials,
     awayOfficials,
     goalScorers,
+    goalEvents,
   };
 
   matchInfoCache.set(dbuMatchId, { data: info, timestamp: Date.now() });

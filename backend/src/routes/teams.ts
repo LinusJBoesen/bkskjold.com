@@ -163,7 +163,7 @@ teams.post("/lineup", requireRole("admin"), async (c) => {
 // GET /api/teams/lineup — get the latest saved training lineup that hasn't expired (admin + spiller)
 teams.get("/lineup", requireRole("admin", "spiller"), async (c) => {
   const rows = await sql`
-    SELECT id, label, event_date, team1, team2, created_at
+    SELECT id, label, event_date, team1, team2, winner, created_at
     FROM training_lineups
     WHERE event_date::date >= CURRENT_DATE
     ORDER BY event_date ASC
@@ -180,6 +180,7 @@ teams.get("/lineup", requireRole("admin", "spiller"), async (c) => {
       eventDate: row.event_date,
       team1: JSON.parse(row.team1),
       team2: JSON.parse(row.team2),
+      winner: row.winner ?? null,
       createdAt: row.created_at,
     },
   });
@@ -207,6 +208,10 @@ teams.post("/lineup/:id/result", requireRole("admin"), async (c) => {
   const eventDate = lineup.event_date;
   const losingTeam = winner === 1 ? team2 : team1;
 
+  // Idempotency: if the admin changes the winner, wipe the previous loss fines
+  // for this lineup before re-inserting so we don't leave stale ones behind.
+  await sql`DELETE FROM fines WHERE id LIKE ${`loss-${lineupId}-%`}`;
+
   // Fines for losing team
   for (const p of losingTeam) {
     const fineId = `loss-${lineupId}-${p.id}`;
@@ -228,6 +233,32 @@ teams.post("/lineup/:id/result", requireRole("admin"), async (c) => {
         ON CONFLICT DO NOTHING
       `;
     }
+  }
+
+  // Mirror the outcome into matches/match_players so per-player W/L stats
+  // pick it up. Use lineupId as matches.id for a natural 1:1 link; re-calls
+  // (e.g. when admin changes the winner) update the row in place.
+  // Only store real registered players — guest entries (not in players table)
+  // would fail the match_players FK.
+  const registeredPlayers = await sql`SELECT id FROM players` as { id: string }[];
+  const registeredIds = new Set(registeredPlayers.map((p) => p.id));
+  const team1Ids = team1.map((p) => p.id).filter((id) => registeredIds.has(id));
+  const team2Ids = team2.map((p) => p.id).filter((id) => registeredIds.has(id));
+
+  await sql`
+    INSERT INTO matches (id, date, status, winning_team, completed_at)
+    VALUES (${lineupId}, ${eventDate}, 'completed', ${winner}, NOW())
+    ON CONFLICT (id) DO UPDATE SET
+      status = 'completed',
+      winning_team = EXCLUDED.winning_team,
+      completed_at = NOW()
+  `;
+  await sql`DELETE FROM match_players WHERE match_id = ${lineupId}`;
+  for (const pid of team1Ids) {
+    await sql`INSERT INTO match_players (match_id, player_id, team) VALUES (${lineupId}, ${pid}, 1)`;
+  }
+  for (const pid of team2Ids) {
+    await sql`INSERT INTO match_players (match_id, player_id, team) VALUES (${lineupId}, ${pid}, 2)`;
   }
 
   return c.json({ success: true });

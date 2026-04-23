@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/toast";
 import { useAuth } from "@/hooks/use-auth";
-import { BarChart3, Swords, Users, Trophy, XCircle, Clock, Plus, X, ClipboardList, Trash2, Target, TrendingUp, ChevronUp, ChevronDown } from "lucide-react";
+import { BarChart3, Swords, Users, Trophy, XCircle, Clock, Plus, X, ClipboardList, Trash2, Target, TrendingUp } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, CartesianGrid,
@@ -41,10 +41,24 @@ interface DbuSummary {
   losses: number;
 }
 
+interface DbuPlayerStat {
+  id: string;
+  displayName: string;
+  profilePicture?: string | null;
+  matches: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goals: number;
+  assists: number;
+}
+
 interface AnalysisData {
   dbuMatches: DbuMatch[];
   dbuSummary: DbuSummary;
   playerStats: PlayerStat[];
+  dbuPlayerStats?: DbuPlayerStat[];
+  dbuUnmappedNames?: string[];
 }
 
 const resultBadge = (result: "win" | "draw" | "loss") => {
@@ -274,16 +288,6 @@ function GoalAssistTooltip({ active, payload }: any) {
   );
 }
 
-type StatSortKey = "name" | "goals" | "assists" | "cleanSheets" | "yellowCards" | "redCards";
-type StatSortDir = "asc" | "desc";
-
-function StatSortIcon({ active, dir }: { active: boolean; dir: StatSortDir }) {
-  if (!active) return <ChevronDown className="w-3 h-3 text-zinc-600 inline ml-0.5" />;
-  return dir === "asc"
-    ? <ChevronUp className="w-3 h-3 text-red-400 inline ml-0.5" />
-    : <ChevronDown className="w-3 h-3 text-red-400 inline ml-0.5" />;
-}
-
 /* ── Form Dot for timeline ── */
 function FormDot({ result }: { result: "win" | "draw" | "loss" }) {
   const colors = {
@@ -307,7 +311,6 @@ export default function MatchAnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activePostMatch, setActivePostMatch] = useState<string | null>(null);
-  const [statSort, setStatSort] = useState<{ key: StatSortKey; dir: StatSortDir }>({ key: "goals", dir: "desc" });
   const { toast } = useToast();
   const { role } = useAuth();
   const navigate = useNavigate();
@@ -393,42 +396,6 @@ export default function MatchAnalysisPage() {
       };
     }).filter(Boolean);
   }, [data]);
-
-  const sortedPlayerStats = useMemo(() => {
-    if (!data) return [];
-    return [...data.playerStats].sort((a, b) => {
-      let cmp = 0;
-      switch (statSort.key) {
-        case "name":
-          cmp = a.displayName.localeCompare(b.displayName);
-          break;
-        case "goals":
-          cmp = a.goals - b.goals;
-          break;
-        case "assists":
-          cmp = a.assists - b.assists;
-          break;
-        case "cleanSheets":
-          cmp = a.cleanSheets - b.cleanSheets;
-          break;
-        case "yellowCards":
-          cmp = a.yellowCards - b.yellowCards;
-          break;
-        case "redCards":
-          cmp = a.redCards - b.redCards;
-          break;
-      }
-      return statSort.dir === "asc" ? cmp : -cmp;
-    });
-  }, [data, statSort]);
-
-  const toggleStatSort = (key: StatSortKey) => {
-    setStatSort((prev) =>
-      prev.key === key
-        ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: "desc" }
-    );
-  };
 
   const registerResult = async (matchId: string, winningTeam: number) => {
     try {
@@ -807,79 +774,69 @@ export default function MatchAnalysisPage() {
         </Card>
       )}
 
-      {/* Player Match Stats Table */}
-      {data.playerStats.length === 0 ? (
-        <Card><CardContent className="py-8 text-center">
-          <p className="text-zinc-500" data-testid="analysis-no-stats">Ingen spillerstatistik endnu</p>
-        </CardContent></Card>
-      ) : (
-        <Card className="overflow-hidden">
+      {/* DBU real-match per-player stats (attendance + W/D/L + goals/assists) */}
+      {data.dbuPlayerStats && data.dbuPlayerStats.some((p) => p.matches > 0) && (
+        <Card className="mb-6 overflow-hidden" data-testid="analysis-dbu-player-stats">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Users className="w-5 h-5 text-zinc-400" />
-              {da.analysis.playerStats}
+              <Swords className="w-5 h-5 text-red-400" />
+              {da.analysis.dbuPlayerStats}
             </CardTitle>
+            {data.dbuUnmappedNames && data.dbuUnmappedNames.length > 0 && (
+              <p className="text-xs text-amber-400/80 mt-1" data-testid="analysis-dbu-unmapped">
+                {da.analysis.dbuUnmappedHint}: {data.dbuUnmappedNames.join(", ")}
+              </p>
+            )}
           </CardHeader>
           <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full" data-testid="analysis-player-rates-table">
-              <thead>
-                <tr className="bg-zinc-900 text-zinc-400 text-xs font-medium uppercase tracking-wider">
-                  <th className="px-4 py-3 text-left cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("name")}>
-                    Navn
-                    <StatSortIcon active={statSort.key === "name"} dir={statSort.dir} />
-                  </th>
-                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("goals")}>
-                    {da.analysis.goals}
-                    <StatSortIcon active={statSort.key === "goals"} dir={statSort.dir} />
-                  </th>
-                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("assists")}>
-                    {da.analysis.assists}
-                    <StatSortIcon active={statSort.key === "assists"} dir={statSort.dir} />
-                  </th>
-                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("cleanSheets")}>
-                    {da.analysis.cleanSheets}
-                    <StatSortIcon active={statSort.key === "cleanSheets"} dir={statSort.dir} />
-                  </th>
-                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("yellowCards")}>
-                    {da.analysis.yellowCards}
-                    <StatSortIcon active={statSort.key === "yellowCards"} dir={statSort.dir} />
-                  </th>
-                  <th className="px-4 py-3 text-center cursor-pointer select-none hover:text-zinc-200 transition-colors" onClick={() => toggleStatSort("redCards")}>
-                    {da.analysis.redCards}
-                    <StatSortIcon active={statSort.key === "redCards"} dir={statSort.dir} />
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedPlayerStats.map((p) => (
-                  <tr
-                    key={p.id}
-                    className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors"
-                  >
-                    <td className="px-4 py-3 text-sm font-medium text-zinc-200">
-                      <div className="flex items-center gap-2.5">
-                        <PlayerAvatar name={p.displayName} src={p.profilePicture} />
-                        {p.displayName}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.goals}</td>
-                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.assists}</td>
-                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">{p.cleanSheets}</td>
-                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">
-                      {p.yellowCards > 0 ? <span className="text-yellow-400">{p.yellowCards}</span> : 0}
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-300">
-                      {p.redCards > 0 ? <span className="text-red-400">{p.redCards}</span> : 0}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-zinc-900 text-zinc-400 text-xs font-medium uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left">Navn</th>
+                    <th className="px-4 py-3 text-center">{da.analysis.matches}</th>
+                    <th className="px-4 py-3 text-center text-emerald-400">S</th>
+                    <th className="px-4 py-3 text-center text-zinc-400">U</th>
+                    <th className="px-4 py-3 text-center text-red-400">T</th>
+                    <th className="px-4 py-3 text-center">{da.analysis.goals}</th>
+                    <th className="px-4 py-3 text-center">{da.analysis.assists}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {[...data.dbuPlayerStats]
+                    .filter((p) => p.matches > 0 || p.goals > 0 || p.assists > 0)
+                    .sort((a, b) =>
+                      b.matches - a.matches ||
+                      b.goals - a.goals ||
+                      b.assists - a.assists ||
+                      a.displayName.localeCompare(b.displayName)
+                    )
+                    .map((p) => (
+                      <tr
+                        key={p.id}
+                        className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors"
+                      >
+                        <td className="px-4 py-3 text-sm font-medium text-zinc-200">
+                          <div className="flex items-center gap-2.5">
+                            <PlayerAvatar name={p.displayName} src={p.profilePicture} />
+                            {p.displayName}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-200">{p.matches}</td>
+                        <td className="px-4 py-3 text-center text-sm tabular-nums text-emerald-400">{p.wins}</td>
+                        <td className="px-4 py-3 text-center text-sm tabular-nums text-zinc-400">{p.draws}</td>
+                        <td className="px-4 py-3 text-center text-sm tabular-nums text-red-400">{p.losses}</td>
+                        <td className="px-4 py-3 text-center text-sm tabular-nums text-emerald-300">{p.goals}</td>
+                        <td className="px-4 py-3 text-center text-sm tabular-nums text-blue-300">{p.assists}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       )}
+
     </div>
   );
 }
