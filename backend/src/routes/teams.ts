@@ -212,8 +212,15 @@ teams.post("/lineup/:id/result", requireRole("admin"), async (c) => {
   // for this lineup before re-inserting so we don't leave stale ones behind.
   await sql`DELETE FROM fines WHERE id LIKE ${`loss-${lineupId}-%`}`;
 
+  // Guests (IDs starting with "guest-") aren't in the players table, so any
+  // insert that references players.id (fines, match_players) must filter them
+  // out — otherwise the FK constraint fails and the whole save is rolled back.
+  const registeredPlayers = await sql`SELECT id FROM players` as { id: string }[];
+  const registeredIds = new Set(registeredPlayers.map((p) => p.id));
+
   // Fines for losing team
   for (const p of losingTeam) {
+    if (!registeredIds.has(p.id)) continue;
     const fineId = `loss-${lineupId}-${p.id}`;
     await sql`
       INSERT INTO fines (id, player_id, fine_type_id, event_name, event_date, amount)
@@ -238,10 +245,6 @@ teams.post("/lineup/:id/result", requireRole("admin"), async (c) => {
   // Mirror the outcome into matches/match_players so per-player W/L stats
   // pick it up. Use lineupId as matches.id for a natural 1:1 link; re-calls
   // (e.g. when admin changes the winner) update the row in place.
-  // Only store real registered players — guest entries (not in players table)
-  // would fail the match_players FK.
-  const registeredPlayers = await sql`SELECT id FROM players` as { id: string }[];
-  const registeredIds = new Set(registeredPlayers.map((p) => p.id));
   const team1Ids = team1.map((p) => p.id).filter((id) => registeredIds.has(id));
   const team2Ids = team2.map((p) => p.id).filter((id) => registeredIds.has(id));
 
