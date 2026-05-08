@@ -1,0 +1,43 @@
+name: Deploy to production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          command_timeout: 10m
+          script: |
+            cd /opt/skjold
+            echo "--- git pull ---"
+            git pull --ff-only
+            echo "--- backend deps ---"
+            cd backend && bun install && cd ..
+            echo "--- frontend deps + build ---"
+            cd frontend && bun install && bunx vite build && cd ..
+            echo "--- swap static dir ---"
+            rm -rf backend/static
+            mv frontend/dist backend/static
+            chown -R skjold:skjold /opt/skjold
+            echo "--- restart service ---"
+            systemctl restart skjold
+            sleep 3
+            systemctl is-active skjold
+            echo "--- smoke test ---"
+            curl -fsS https://bkskjold.com/api/health
+            echo
