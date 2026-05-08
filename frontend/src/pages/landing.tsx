@@ -158,7 +158,7 @@ export default function LandingPage() {
           <span className="text-lg font-bold text-zinc-50 tracking-tight">BK Skjold</span>
         </div>
         <a
-          href="https://www.instagram.com/bkskjold13/"
+          href="https://www.instagram.com/bkskjold10/"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-all duration-200"
@@ -240,11 +240,11 @@ export default function LandingPage() {
         <div className="max-w-lg mx-auto">
           <div className="flex items-center gap-3 mb-6">
             <InstagramIcon className="h-5 w-5 text-zinc-400" />
-            <h2 className="text-lg font-semibold text-zinc-200">@bkskjold13</h2>
+            <h2 className="text-lg font-semibold text-zinc-200">@bkskjold10</h2>
           </div>
           <div className="rounded-xl overflow-hidden border border-white/10 bg-white/[0.02]">
             <iframe
-              src="https://www.instagram.com/bkskjold13/embed"
+              src="https://www.instagram.com/bkskjold10/embed"
               className="w-full border-0"
               height="600"
               loading="lazy"
@@ -264,7 +264,7 @@ export default function LandingPage() {
           BK Skjold · København
         </p>
         <a
-          href="https://www.instagram.com/bkskjold13/"
+          href="https://www.instagram.com/bkskjold10/"
           target="_blank"
           rel="noopener noreferrer"
           className="text-zinc-600 hover:text-zinc-400 transition-colors"
