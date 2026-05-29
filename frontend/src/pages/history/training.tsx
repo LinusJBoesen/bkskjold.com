@@ -482,7 +482,8 @@ export default function TrainingHistoryPage() {
             {filteredCompleted.map((m) => {
               const team1 = m.players.filter((p) => p.team === 1);
               const team2 = m.players.filter((p) => p.team === 2);
-              const isDraw = m.winning_team === null;
+              const isTie = m.winning_team === 0;
+              const isPending = m.winning_team === null;
               const events = m.events || [];
               const goals = events.filter((e) => e.event_type === "goal");
               const assists = events.filter((e) => e.event_type === "assist");
@@ -498,8 +499,8 @@ export default function TrainingHistoryPage() {
                           {m.score_team1} - {m.score_team2}
                         </span>
                       )}
-                      <Badge variant={isDraw ? "secondary" : m.winning_team === 1 ? "success" : "info"}>
-                        {isDraw ? "Uafgjort" : `Hold ${m.winning_team} vandt`}
+                      <Badge variant={isTie ? "error" : isPending ? "default" : m.winning_team === 1 ? "success" : "info"}>
+                        {isTie ? "Begge hold tabte" : isPending ? "Uafgjort" : `Hold ${m.winning_team} vandt`}
                       </Badge>
                       {role === "admin" && (
                         <button

@@ -25,7 +25,7 @@ export class SpondClient {
       throw new Error("Spond credentials not configured");
     }
 
-    const res = await fetch(`${SPOND_API_BASE}/login`, {
+    const res = await fetch(`${SPOND_API_BASE}/auth2/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -38,10 +38,10 @@ export class SpondClient {
       throw new Error(`Spond auth failed: ${res.status}`);
     }
 
-    const data = await res.json() as { loginToken: string };
+    const data = await res.json() as { accessToken: { token: string; expiration: string } };
     cachedToken = {
-      token: data.loginToken,
-      expiresAt: Date.now() + 3600_000, // 1 hour
+      token: data.accessToken.token,
+      expiresAt: new Date(data.accessToken.expiration).getTime(),
     };
 
     return cachedToken.token;

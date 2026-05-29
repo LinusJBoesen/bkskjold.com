@@ -165,7 +165,7 @@ export default function TeamSelectorPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [publishedLineup, setPublishedLineup] = useState<{ id: string; label: string; team1: { id: string; displayName: string; profilePicture?: string | null }[]; team2: { id: string; displayName: string; profilePicture?: string | null }[]; winner?: 1 | 2 | null; createdAt: string } | null>(null);
+  const [publishedLineup, setPublishedLineup] = useState<{ id: string; label: string; team1: { id: string; displayName: string; profilePicture?: string | null }[]; team2: { id: string; displayName: string; profilePicture?: string | null }[]; winner?: 0 | 1 | 2 | null; createdAt: string } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [formationTeam, setFormationTeam] = useState<1 | 2>(1);
   const [playerPositions, setPlayerPositions] = useState<Record<string, Position[]>>({});
@@ -208,7 +208,7 @@ export default function TeamSelectorPage() {
         if (res.lineup) {
           setSavedLineupId(res.lineup.id);
           setSavedLineup(true);
-          if (res.lineup.winner === 1 || res.lineup.winner === 2) {
+          if (res.lineup.winner === 0 || res.lineup.winner === 1 || res.lineup.winner === 2) {
             setWinnerDone(true);
           }
         }
@@ -426,13 +426,18 @@ export default function TeamSelectorPage() {
     setSavingLineup(false);
   };
 
-  const submitWinner = async (winner: 1 | 2) => {
+  const submitWinner = async (winner: 0 | 1 | 2) => {
     if (!savedLineupId) return;
     setWinnerSubmitting(true);
     try {
       await api.post(`/teams/lineup/${savedLineupId}/result`, { winner });
       setWinnerDone(true);
-      toast(`Hold ${winner} vandt — bøder tildelt taberne og fraværende`, "success");
+      toast(
+        winner === 0
+          ? "Begge hold tabte — bøder tildelt begge hold og fraværende"
+          : `Hold ${winner} vandt — bøder tildelt taberne og fraværende`,
+        "success"
+      );
     } catch {
       toast("Kunne ikke gemme resultat", "error");
     }
@@ -945,7 +950,7 @@ export default function TeamSelectorPage() {
           {!winnerDone ? (
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
               <p className="text-sm text-zinc-400 mb-3">Hvem vandt træningskampen?</p>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   variant="secondary"
                   onClick={() => submitWinner(1)}
@@ -965,6 +970,16 @@ export default function TeamSelectorPage() {
                 >
                   <div className="h-5 w-5 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-[10px] font-bold text-zinc-100 mr-2">2</div>
                   Hold 2 vandt
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => submitWinner(0)}
+                  disabled={winnerSubmitting}
+                  data-testid="winner-tie"
+                  className="flex-1 border-amber-600/40 hover:border-amber-500/60 hover:bg-amber-500/5"
+                >
+                  <div className="h-5 w-5 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-[10px] font-bold text-amber-300 mr-2">=</div>
+                  Uafgjort
                 </Button>
               </div>
             </div>
@@ -1297,7 +1312,7 @@ export default function TeamSelectorPage() {
               {savedLineup && !winnerDone && (
                 <div className="border-t border-zinc-800 pt-4">
                   <p className="text-sm text-zinc-400 mb-3">Hvem vandt træningskampen?</p>
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <Button
                       variant="secondary"
                       onClick={() => submitWinner(1)}
@@ -1317,6 +1332,16 @@ export default function TeamSelectorPage() {
                     >
                       <div className="h-5 w-5 rounded-full bg-zinc-900 border border-zinc-500 flex items-center justify-center text-[10px] font-bold text-zinc-100 mr-2">2</div>
                       Hold 2 vandt
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => submitWinner(0)}
+                      disabled={winnerSubmitting}
+                      data-testid="winner-tie"
+                      className="flex-1 border-amber-600/40 hover:border-amber-500/60 hover:bg-amber-500/5"
+                    >
+                      <div className="h-5 w-5 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-[10px] font-bold text-amber-300 mr-2">=</div>
+                      Uafgjort
                     </Button>
                   </div>
                 </div>

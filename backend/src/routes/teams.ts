@@ -189,10 +189,12 @@ teams.get("/lineup", requireRole("admin", "spiller"), async (c) => {
 // POST /api/teams/lineup/:id/result — record training match winner + assign fines (admin only)
 teams.post("/lineup/:id/result", requireRole("admin"), async (c) => {
   const lineupId = c.req.param("id");
-  const { winner } = await c.req.json() as { winner: 1 | 2 };
+  const { winner } = await c.req.json() as { winner: 0 | 1 | 2 };
 
-  if (winner !== 1 && winner !== 2) {
-    return c.json({ error: "winner skal være 1 eller 2" }, 400);
+  // winner: 1 = team 1 won, 2 = team 2 won, 0 = tie (both teams "lose" — everyone
+  // who played gets a training_loss fine and a loss in their stats)
+  if (winner !== 0 && winner !== 1 && winner !== 2) {
+    return c.json({ error: "winner skal være 0 (uafgjort), 1 eller 2" }, 400);
   }
 
   const rows = await sql`SELECT * FROM training_lineups WHERE id = ${lineupId}` as any[];
@@ -206,7 +208,8 @@ teams.post("/lineup/:id/result", requireRole("admin"), async (c) => {
   await sql`UPDATE training_lineups SET winner = ${winner} WHERE id = ${lineupId}`;
 
   const eventDate = lineup.event_date;
-  const losingTeam = winner === 1 ? team2 : team1;
+  const isTie = winner === 0;
+  const losingTeam = isTie ? [...team1, ...team2] : winner === 1 ? team2 : team1;
 
   // Idempotency: if the admin changes the winner, wipe the previous loss fines
   // for this lineup before re-inserting so we don't leave stale ones behind.
@@ -218,13 +221,13 @@ teams.post("/lineup/:id/result", requireRole("admin"), async (c) => {
   const registeredPlayers = await sql`SELECT id FROM players` as { id: string }[];
   const registeredIds = new Set(registeredPlayers.map((p) => p.id));
 
-  // Fines for losing team
+  // Fines for losing team (or both teams on a tie)
   for (const p of losingTeam) {
     if (!registeredIds.has(p.id)) continue;
     const fineId = `loss-${lineupId}-${p.id}`;
     await sql`
       INSERT INTO fines (id, player_id, fine_type_id, event_name, event_date, amount)
-      VALUES (${fineId}, ${p.id}, 'training_loss', 'Tabt træningsmatch', ${eventDate}, 10)
+      VALUES (${fineId}, ${p.id}, 'training_loss', ${isTie ? 'Uafgjort træningsmatch' : 'Tabt træningsmatch'}, ${eventDate}, 10)
       ON CONFLICT DO NOTHING
     `;
   }
