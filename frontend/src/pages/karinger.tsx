@@ -124,7 +124,7 @@ export default function KaringrPage() {
       toast("Din stemme er bekræftet og låst", "success");
     } catch (e: any) {
       if (e?.status === 409) {
-        toast("Du har allerede stemt på denne kåring", "error");
+        toast("Du har allerede stemt på denne nominering", "error");
         load();
       } else {
         toast("Kunne ikke gemme stemme", "error");
@@ -202,13 +202,13 @@ export default function KaringrPage() {
     }
     try {
       await api.post("/awards/create", { title: createTitle.trim(), description: createDesc.trim() || undefined, candidates });
-      toast("Kåring oprettet og åbnet for afstemning", "success");
+      toast("Nominering oprettet og åbnet for afstemning", "success");
       setCreateTitle("");
       setCreateDesc("");
       setPicked(new Set());
       load();
     } catch {
-      toast("Kunne ikke oprette kåring", "error");
+      toast("Kunne ikke oprette nominering", "error");
     }
   };
 
@@ -275,13 +275,13 @@ export default function KaringrPage() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Er du sikker på, at du vil slette denne kåring?")) return;
+    if (!confirm("Er du sikker på, at du vil slette denne nominering?")) return;
     try {
       await api.delete(`/awards/${id}`);
-      toast("Kåring slettet", "success");
+      toast("Nominering slettet", "success");
       load();
     } catch {
-      toast("Kunne ikke slette kåring", "error");
+      toast("Kunne ikke slette nominering", "error");
     }
   };
 
@@ -320,7 +320,7 @@ export default function KaringrPage() {
       {!loading && tab === "vote" && (
         <div className="space-y-4" data-testid="karinger-vote-list">
           {openAwards.length === 0 ? (
-            <Card><CardContent className="py-8 text-center text-zinc-500 text-sm">Ingen åbne kåringer lige nu</CardContent></Card>
+            <Card><CardContent className="py-8 text-center text-zinc-500 text-sm">Ingen åbne nomineringer lige nu</CardContent></Card>
           ) : openAwards.map(a => (
             <Card key={a.id} data-testid={`award-${a.id}`}>
               <CardHeader>
@@ -434,7 +434,7 @@ export default function KaringrPage() {
       {!loading && tab === "results" && (
         <div className="space-y-4" data-testid="karinger-results-list">
           {revealed.length === 0 ? (
-            <Card><CardContent className="py-8 text-center text-zinc-500 text-sm">Ingen afslørede kåringer endnu</CardContent></Card>
+            <Card><CardContent className="py-8 text-center text-zinc-500 text-sm">Ingen afslørede nomineringer endnu</CardContent></Card>
           ) : revealed.map(a => {
             const total = a.candidates.reduce((s, c) => s + (c.voteCount ?? 0), 0);
             const maxVotes = Math.max(0, ...a.candidates.map(c => c.voteCount ?? 0));
@@ -513,7 +513,7 @@ export default function KaringrPage() {
       {!loading && tab === "suggest" && canSuggest && (
         <Card data-testid="karinger-suggest-form">
           <CardHeader>
-            <CardTitle>Foreslå en ny kåring</CardTitle>
+            <CardTitle>Foreslå en ny nominering</CardTitle>
             <p className="text-sm text-zinc-400 mt-1">Admin vælger kandidaterne og åbner afstemningen.</p>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -600,7 +600,7 @@ export default function KaringrPage() {
           {!editingAward && (
             <Card>
               <CardHeader>
-                <CardTitle>Opret kåring fra bunden</CardTitle>
+                <CardTitle>Opret nominering fra bunden</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Input placeholder="Titel" value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} />
@@ -622,8 +622,8 @@ export default function KaringrPage() {
           {/* Adgang til Kåringer — invite list */}
           <Card>
             <CardHeader>
-              <CardTitle>Adgang til Kåringer</CardTitle>
-              <p className="text-sm text-zinc-400 mt-1">Vælg de spillere og fans, der må se og stemme i kåringerne. Nye brugere har som standard ingen adgang.</p>
+              <CardTitle>Adgang til Nomineringer</CardTitle>
+              <p className="text-sm text-zinc-400 mt-1">Vælg de spillere og fans, der må se og stemme i nomineringerne. Nye brugere har som standard ingen adgang.</p>
             </CardHeader>
             <CardContent>
               {accessUsers.length === 0 ? (

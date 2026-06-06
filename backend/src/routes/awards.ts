@@ -16,7 +16,7 @@ async function checkAccess(c: any): Promise<Response | null> {
   if (session.role === "admin") return null;
   const [user] = await sql`SELECT karinger_access FROM users WHERE id = ${session.userId}` as any[];
   if (!user?.karinger_access) {
-    return c.json({ error: "Du har ikke adgang til kåringer" }, 403);
+    return c.json({ error: "Du har ikke adgang til nomineringer" }, 403);
   }
   return null;
 }
@@ -200,7 +200,7 @@ app.post("/:id/candidates", requireRole("admin"), async (c) => {
     }
   }
   const [award] = await sql`SELECT status FROM awards WHERE id = ${id}` as any[];
-  if (!award) return c.json({ error: "Kåring ikke fundet" }, 404);
+  if (!award) return c.json({ error: "Nominering ikke fundet" }, 404);
   if (award.status === "revealed") {
     return c.json({ error: "Kan ikke ændre kandidater efter afsløring" }, 400);
   }
@@ -230,7 +230,7 @@ app.post("/:id/open", requireRole("admin"), async (c) => {
     }
   }
   const [exists] = await sql`SELECT id FROM awards WHERE id = ${id}` as any[];
-  if (!exists) return c.json({ error: "Kåring ikke fundet" }, 404);
+  if (!exists) return c.json({ error: "Nominering ikke fundet" }, 404);
 
   await sql.begin(async (tx) => {
     if (body.title?.trim()) await tx`UPDATE awards SET title = ${body.title.trim()} WHERE id = ${id}`;
@@ -281,7 +281,7 @@ app.post("/:id/vote", async (c) => {
   if (!body.candidateId) return c.json({ error: "candidateId er påkrævet" }, 400);
 
   const [award] = await sql`SELECT status FROM awards WHERE id = ${id}` as any[];
-  if (!award) return c.json({ error: "Kåring ikke fundet" }, 404);
+  if (!award) return c.json({ error: "Nominering ikke fundet" }, 404);
   if (award.status !== "open") return c.json({ error: "Afstemningen er ikke åben" }, 400);
 
   const [cand] = await sql`SELECT id FROM award_candidates WHERE id = ${body.candidateId} AND award_id = ${id}` as any[];
@@ -295,7 +295,7 @@ app.post("/:id/vote", async (c) => {
     ON CONFLICT (award_id, voter_user_id) DO NOTHING
   `;
   if (result.count === 0) {
-    return c.json({ error: "Du har allerede stemt på denne kåring" }, 409);
+    return c.json({ error: "Du har allerede stemt på denne nominering" }, 409);
   }
   return c.json({ success: true });
 });
@@ -305,7 +305,7 @@ app.post("/:id/reveal", requireRole("admin"), async (c) => {
   const id = c.req.param("id");
   const result = await sql`UPDATE awards SET status = 'revealed', revealed_at = NOW() WHERE id = ${id} AND status = 'open'`;
   if (result.count === 0) {
-    return c.json({ error: "Kåring findes ikke eller er ikke åben" }, 400);
+    return c.json({ error: "Nominering findes ikke eller er ikke åben" }, 400);
   }
   return c.json({ success: true });
 });

@@ -37,7 +37,7 @@ export const da = {
     analysis: "Kampanalyse",
     admin: "Admin",
     seasoncard: "Sæsonkort",
-    karinger: "Kåringer",
+    karinger: "Nomineringer",
   },
 
   // Layout
