@@ -8,6 +8,13 @@ const app = new Hono();
 interface CandidateInput {
   playerId?: string;
   fanId?: string;
+  userId?: string;
+}
+
+// Exactly one of playerId / fanId / userId must be set on each candidate.
+function isValidCandidate(c: CandidateInput): boolean {
+  const set = (c.playerId ? 1 : 0) + (c.fanId ? 1 : 0) + (c.userId ? 1 : 0);
+  return set === 1;
 }
 
 // Returns 403 response if the current non-admin user lacks karinger_access. Returns null when allowed.
@@ -26,12 +33,17 @@ async function loadCandidates(awardIds: string[]) {
   if (awardIds.length === 0) return byAward;
   const rows = await sql`
     SELECT ac.id, ac.award_id,
-      CASE WHEN ac.player_id IS NOT NULL THEN 'player' ELSE 'fan' END AS type,
-      COALESCE(p.display_name, f.name) AS name,
+      CASE
+        WHEN ac.player_id IS NOT NULL THEN 'player'
+        WHEN ac.user_id IS NOT NULL THEN 'user'
+        ELSE 'fan'
+      END AS type,
+      COALESCE(p.display_name, u.name, f.name) AS name,
       p.profile_picture AS profile_picture
     FROM award_candidates ac
     LEFT JOIN players p ON p.id = ac.player_id
     LEFT JOIN fan_signups f ON f.id = ac.fan_id
+    LEFT JOIN users u ON u.id = ac.user_id
     WHERE ac.award_id = ANY(${sql.array(awardIds, 'TEXT')})
     ORDER BY name
   ` as any[];
@@ -195,8 +207,8 @@ app.post("/:id/candidates", requireRole("admin"), async (c) => {
     return c.json({ error: "Mindst én kandidat påkrævet" }, 400);
   }
   for (const cand of body.candidates) {
-    if (!!cand.playerId === !!cand.fanId) {
-      return c.json({ error: "Hver kandidat skal være enten en spiller eller en fan" }, 400);
+    if (!isValidCandidate(cand)) {
+      return c.json({ error: "Hver kandidat skal være præcis én af: spiller, fan eller bruger" }, 400);
     }
   }
   const [award] = await sql`SELECT status FROM awards WHERE id = ${id}` as any[];
@@ -208,8 +220,8 @@ app.post("/:id/candidates", requireRole("admin"), async (c) => {
   let added = 0;
   await sql.begin(async (tx) => {
     for (const cand of body.candidates) {
-      const res = await tx`INSERT INTO award_candidates (id, award_id, player_id, fan_id)
-        VALUES (${randomUUID()}, ${id}, ${cand.playerId || null}, ${cand.fanId || null})
+      const res = await tx`INSERT INTO award_candidates (id, award_id, player_id, fan_id, user_id)
+        VALUES (${randomUUID()}, ${id}, ${cand.playerId || null}, ${cand.fanId || null}, ${cand.userId || null})
         ON CONFLICT DO NOTHING`;
       if (res.count > 0) added++;
     }
@@ -225,8 +237,8 @@ app.post("/:id/open", requireRole("admin"), async (c) => {
     return c.json({ error: "Vælg mindst 2 kandidater" }, 400);
   }
   for (const cand of body.candidates) {
-    if (!!cand.playerId === !!cand.fanId) {
-      return c.json({ error: "Hver kandidat skal være enten en spiller eller en fan" }, 400);
+    if (!isValidCandidate(cand)) {
+      return c.json({ error: "Hver kandidat skal være præcis én af: spiller, fan eller bruger" }, 400);
     }
   }
   const [exists] = await sql`SELECT id FROM awards WHERE id = ${id}` as any[];
@@ -238,8 +250,8 @@ app.post("/:id/open", requireRole("admin"), async (c) => {
     await tx`DELETE FROM award_votes WHERE award_id = ${id}`;
     await tx`DELETE FROM award_candidates WHERE award_id = ${id}`;
     for (const cand of body.candidates) {
-      await tx`INSERT INTO award_candidates (id, award_id, player_id, fan_id)
-        VALUES (${randomUUID()}, ${id}, ${cand.playerId || null}, ${cand.fanId || null})`;
+      await tx`INSERT INTO award_candidates (id, award_id, player_id, fan_id, user_id)
+        VALUES (${randomUUID()}, ${id}, ${cand.playerId || null}, ${cand.fanId || null}, ${cand.userId || null})`;
     }
     await tx`UPDATE awards SET status = 'open', revealed_at = NULL WHERE id = ${id}`;
   });
@@ -255,8 +267,8 @@ app.post("/create", requireRole("admin"), async (c) => {
     return c.json({ error: "Vælg mindst 2 kandidater" }, 400);
   }
   for (const cand of body.candidates) {
-    if (!!cand.playerId === !!cand.fanId) {
-      return c.json({ error: "Hver kandidat skal være enten en spiller eller en fan" }, 400);
+    if (!isValidCandidate(cand)) {
+      return c.json({ error: "Hver kandidat skal være præcis én af: spiller, fan eller bruger" }, 400);
     }
   }
   const id = randomUUID();
@@ -264,8 +276,8 @@ app.post("/create", requireRole("admin"), async (c) => {
     await tx`INSERT INTO awards (id, title, description, status, suggested_by_user_id)
       VALUES (${id}, ${body.title.trim()}, ${body.description?.trim() || null}, 'open', ${session.userId})`;
     for (const cand of body.candidates) {
-      await tx`INSERT INTO award_candidates (id, award_id, player_id, fan_id)
-        VALUES (${randomUUID()}, ${id}, ${cand.playerId || null}, ${cand.fanId || null})`;
+      await tx`INSERT INTO award_candidates (id, award_id, player_id, fan_id, user_id)
+        VALUES (${randomUUID()}, ${id}, ${cand.playerId || null}, ${cand.fanId || null}, ${cand.userId || null})`;
     }
   });
   return c.json({ id }, 201);

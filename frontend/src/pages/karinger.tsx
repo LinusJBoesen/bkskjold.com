@@ -11,7 +11,7 @@ import { Award as AwardIcon, Check, Eye, Trash2, Plus, ChevronRight, Trophy, Cro
 
 interface Candidate {
   id: string;
-  type: "player" | "fan";
+  type: "player" | "fan" | "user";
   name: string;
   profilePicture?: string | null;
   voteCount: number | null;
@@ -29,7 +29,10 @@ interface Award {
 }
 
 interface Player { id: string; display_name: string; profile_picture: string | null }
-interface Fan { id: string; name: string }
+// Unified picker entry for the Fans column: either a fan_signups record
+// (kind="signup", id refers to fan_signups.id) or a fan-role user account
+// (kind="user", id refers to users.id).
+interface Fan { id: string; name: string; kind: "signup" | "user" }
 
 type Tab = "vote" | "results" | "suggest" | "admin";
 
@@ -87,11 +90,21 @@ export default function KaringrPage() {
     const tasks: Promise<unknown>[] = [api.get<Award[]>("/awards").then(setAwards).catch(() => {})];
     if (isAdmin) {
       tasks.push(api.get<Player[]>("/players").then(setPlayers));
-      tasks.push(api.get<Fan[]>("/fan-signup").then(setFans).catch(() => {}));
-      tasks.push(api.get<AccessUser[]>("/awards/access").then(rows => {
-        setAccessUsers(rows);
-        setAccessAllowed(new Set(rows.filter(r => r.karingerAccess).map(r => r.id)));
-      }).catch(() => {}));
+      // Combine fan_signups + fan-role users into the Fans picker column.
+      // The /awards/access endpoint already returns spiller+fan users; we
+      // filter that down to fans for the picker (independent of access flag —
+      // anyone can be a candidate even if they can't see the tab).
+      tasks.push(Promise.all([
+        api.get<{ id: string; name: string }[]>("/fan-signup").catch(() => [] as { id: string; name: string }[]),
+        api.get<AccessUser[]>("/awards/access").catch(() => [] as AccessUser[]),
+      ]).then(([signups, users]) => {
+        const fanUsers = users.filter(u => u.role === "fan").map(u => ({ id: u.id, name: u.name, kind: "user" as const }));
+        const fanSignups = signups.map(s => ({ id: s.id, name: s.name, kind: "signup" as const }));
+        // Sort alphabetically across the combined set.
+        setFans([...fanUsers, ...fanSignups].sort((a, b) => a.name.localeCompare(b.name)));
+        setAccessUsers(users);
+        setAccessAllowed(new Set(users.filter(r => r.karingerAccess).map(r => r.id)));
+      }));
     }
     Promise.all(tasks).finally(() => setLoading(false));
   };
@@ -175,6 +188,7 @@ export default function KaringrPage() {
     for (const key of picked) {
       const [kind, id] = key.split(":");
       if (kind === "p") candidates.push({ playerId: id });
+      else if (kind === "u") candidates.push({ userId: id });
       else candidates.push({ fanId: id });
     }
     try {
@@ -198,6 +212,7 @@ export default function KaringrPage() {
     for (const key of picked) {
       const [kind, id] = key.split(":");
       if (kind === "p") candidates.push({ playerId: id });
+      else if (kind === "u") candidates.push({ userId: id });
       else candidates.push({ fanId: id });
     }
     try {
@@ -261,7 +276,9 @@ export default function KaringrPage() {
     const candidates: { playerId?: string; fanId?: string }[] = [];
     for (const key of addPicks) {
       const [kind, id] = key.split(":");
-      candidates.push(kind === "p" ? { playerId: id } : { fanId: id });
+      if (kind === "p") candidates.push({ playerId: id });
+      else if (kind === "u") candidates.push({ userId: id });
+      else candidates.push({ fanId: id });
     }
     try {
       const res = await api.post<{ added: number }>(`/awards/${addingTo}/candidates`, { candidates });
@@ -364,7 +381,7 @@ export default function KaringrPage() {
                       >
                         <Avatar name={cand.name} src={cand.profilePicture} />
                         <span className="text-sm text-zinc-200 flex-1 min-w-0 truncate">{cand.name}</span>
-                        {cand.type === "fan" && <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Fan</span>}
+                        {(cand.type === "fan" || cand.type === "user") && <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Fan</span>}
                         {isAdmin && cand.voteCount !== null && (
                           <span className="text-[11px] font-semibold tabular-nums bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded shrink-0">{cand.voteCount}</span>
                         )}
@@ -686,12 +703,12 @@ function CandidatePicker({ players, fans, picked, onToggle }: {
         <p className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Fans ({fans.length})</p>
         <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
           {fans.length === 0 ? (
-            <p className="text-xs text-zinc-500 px-2 py-1.5">Ingen fan-tilmeldinger</p>
+            <p className="text-xs text-zinc-500 px-2 py-1.5">Ingen fans registreret</p>
           ) : fans.map(f => {
-            const key = `f:${f.id}`;
+            const key = `${f.kind === "user" ? "u" : "f"}:${f.id}`;
             const sel = picked.has(key);
             return (
-              <label key={f.id} className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer ${sel ? "bg-emerald-500/10" : "hover:bg-zinc-800/50"}`}>
+              <label key={key} className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer ${sel ? "bg-emerald-500/10" : "hover:bg-zinc-800/50"}`}>
                 <input type="checkbox" checked={sel} onChange={() => onToggle(key)} className="accent-emerald-500" />
                 <Avatar name={f.name} size="sm" />
                 <span className="text-sm text-zinc-200 truncate">{f.name}</span>

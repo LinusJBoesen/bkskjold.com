@@ -121,5 +121,14 @@ export async function migrate(): Promise<void> {
   // Kåringer nav entry until admin checks them on the access list.
   await sql.unsafe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS karinger_access INTEGER NOT NULL DEFAULT 0`).catch(() => {});
 
+  // Allow registered fan-role users (users.id) as award candidates too — the
+  // original schema only allowed fan_signups records, but the typical "fan"
+  // candidate is a fan-role user account, not a public-signup row.
+  await sql.unsafe(`ALTER TABLE award_candidates ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
+  await sql.unsafe(`ALTER TABLE award_candidates DROP CONSTRAINT IF EXISTS award_candidates_check`).catch(() => {});
+  await sql.unsafe(`ALTER TABLE award_candidates ADD CONSTRAINT award_candidates_check
+    CHECK ((player_id IS NOT NULL)::int + (fan_id IS NOT NULL)::int + (user_id IS NOT NULL)::int = 1)`).catch(() => {});
+  await sql.unsafe(`CREATE UNIQUE INDEX IF NOT EXISTS award_candidates_user_unique ON award_candidates(award_id, user_id) WHERE user_id IS NOT NULL`).catch(() => {});
+
   console.log("Database migrated");
 }
