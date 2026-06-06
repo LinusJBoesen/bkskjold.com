@@ -17,6 +17,7 @@ import formationRoutes from "./routes/formations";
 import fanSignupRoutes from "./routes/fan-signup";
 import bodekasseRoutes from "./routes/bodekasse";
 import dbuRoutes from "./routes/dbu";
+import awardsRoutes from "./routes/awards";
 import { authMiddleware } from "./middleware/auth";
 import { sql } from "./lib/db";
 
@@ -181,6 +182,7 @@ app.route("/api/formations", formationRoutes);
 app.route("/api/fan-signup", fanSignupRoutes);
 app.route("/api/bodekasse", bodekasseRoutes);
 app.route("/api/dbu", dbuRoutes);
+app.route("/api/awards", awardsRoutes);
 
 // Serve frontend static files in production (built into backend/static by Dockerfile)
 app.use("/*", serveStatic({ root: "./static" }));

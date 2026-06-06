@@ -128,19 +128,21 @@ auth.get("/me", async (c) => {
 
   // Fetch user details from DB if we have a real userId
   if (session.userId && session.userId !== "env-admin") {
-    const users = await sql`SELECT name, player_id FROM users WHERE id = ${session.userId}`;
+    const users = await sql`SELECT name, player_id, karinger_access FROM users WHERE id = ${session.userId}`;
     if (users.length > 0) {
       return c.json({
         email: session.email,
         name: users[0].name,
         role: session.role,
         playerId: users[0].player_id,
+        // Admins always have access regardless of the DB flag.
+        karingerAccess: session.role === "admin" ? true : !!users[0].karinger_access,
       });
     }
   }
 
-  // Env-admin fallback
-  return c.json({ email: session.email, name: "Admin", role: session.role, playerId: null });
+  // Env-admin fallback — admins always have karinger access
+  return c.json({ email: session.email, name: "Admin", role: session.role, playerId: null, karingerAccess: true });
 });
 
 export default auth;

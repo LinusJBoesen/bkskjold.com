@@ -84,5 +84,42 @@ export async function migrate(): Promise<void> {
   // Add goal_events column to dbu_match_info for per-event goal detail (scorer + assist).
   await sql.unsafe(`ALTER TABLE dbu_match_info ADD COLUMN IF NOT EXISTS goal_events TEXT`).catch(() => {});
 
+  // Kåringer (awards): voting feature for the season-end party. Lifecycle:
+  // suggested → open → revealed. Candidates can be a player OR a fan (XOR via CHECK).
+  await sql.unsafe(`CREATE TABLE IF NOT EXISTS awards (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL CHECK(status IN ('suggested', 'open', 'revealed')) DEFAULT 'suggested',
+    suggested_by_user_id TEXT REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    revealed_at TIMESTAMPTZ
+  )`).catch(() => {});
+
+  await sql.unsafe(`CREATE TABLE IF NOT EXISTS award_candidates (
+    id TEXT PRIMARY KEY,
+    award_id TEXT NOT NULL REFERENCES awards(id) ON DELETE CASCADE,
+    player_id TEXT REFERENCES players(id) ON DELETE CASCADE,
+    fan_id TEXT REFERENCES fan_signups(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CHECK ((player_id IS NOT NULL)::int + (fan_id IS NOT NULL)::int = 1)
+  )`).catch(() => {});
+
+  await sql.unsafe(`CREATE UNIQUE INDEX IF NOT EXISTS award_candidates_player_unique ON award_candidates(award_id, player_id) WHERE player_id IS NOT NULL`).catch(() => {});
+  await sql.unsafe(`CREATE UNIQUE INDEX IF NOT EXISTS award_candidates_fan_unique ON award_candidates(award_id, fan_id) WHERE fan_id IS NOT NULL`).catch(() => {});
+
+  await sql.unsafe(`CREATE TABLE IF NOT EXISTS award_votes (
+    award_id TEXT NOT NULL REFERENCES awards(id) ON DELETE CASCADE,
+    voter_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    candidate_id TEXT NOT NULL REFERENCES award_candidates(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (award_id, voter_user_id)
+  )`).catch(() => {});
+
+  // Invite-list access control for Kåringer: opt-in. Spiller/fan users see no
+  // Kåringer nav entry until admin checks them on the access list.
+  await sql.unsafe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS karinger_access INTEGER NOT NULL DEFAULT 0`).catch(() => {});
+
   console.log("Database migrated");
 }

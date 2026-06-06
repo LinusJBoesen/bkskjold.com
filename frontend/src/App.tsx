@@ -17,6 +17,7 @@ import MatchAnalysisPage from "@/pages/analysis/match";
 import AdminSettingsPage from "@/pages/admin/settings";
 import SeasonCardPage from "@/pages/fan/seasoncard";
 import MatchDetailPage from "@/pages/matches/detail";
+import KaringrPage from "@/pages/karinger";
 
 function RoleGuard({ allowed, children }: { allowed: string[]; children: React.ReactNode }) {
   const { role } = useAuth();
@@ -27,7 +28,7 @@ function RoleGuard({ allowed, children }: { allowed: string[]; children: React.R
 }
 
 function ProtectedLayout() {
-  const { isAuthenticated, loading, email, role, logout } = useAuth();
+  const { isAuthenticated, loading, email, role, karingerAccess, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (loading) {
@@ -56,7 +57,7 @@ function ProtectedLayout() {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <Sidebar onNavigate={() => setSidebarOpen(false)} role={role} />
+        <Sidebar onNavigate={() => setSidebarOpen(false)} role={role} karingerAccess={karingerAccess} />
       </div>
       <div className="flex-1 flex flex-col min-w-0">
         <Header email={email} role={role} onLogout={logout} onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
@@ -139,6 +140,7 @@ export default function App() {
             <Route path="matches/:id" element={<MatchDetailPage />} />
             <Route path="tournament" element={<TournamentStandingsPage />} />
             <Route path="analysis" element={<MatchAnalysisPage />} />
+            <Route path="karinger" element={<KaringrPage />} />
             <Route path="admin" element={<RoleGuard allowed={["admin"]}><AdminSettingsPage /></RoleGuard>} />
             <Route path="seasoncard" element={<RoleGuard allowed={["fan"]}><SeasonCardPage /></RoleGuard>} />
           </Route>

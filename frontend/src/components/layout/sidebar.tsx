@@ -8,6 +8,7 @@ import {
   BarChart3,
   Settings,
   CreditCard,
+  Award,
 } from "lucide-react";
 import { da } from "@/i18n/da";
 
@@ -18,6 +19,7 @@ const navItems = [
   { to: "/history", label: da.nav.history, testId: "nav-history", icon: History, roles: ["admin", "spiller"] },
   { to: "/tournament", label: da.nav.tournament, testId: "nav-tournament", icon: Trophy, roles: ["admin", "spiller", "fan"] },
   { to: "/analysis", label: da.nav.analysis, testId: "nav-analysis", icon: BarChart3, roles: ["admin", "spiller", "fan"] },
+  { to: "/karinger", label: da.nav.karinger, testId: "nav-karinger", icon: Award, roles: ["admin", "spiller", "fan"] },
   { to: "/seasoncard", label: da.nav.seasoncard, testId: "nav-seasoncard", icon: CreditCard, roles: ["fan"] },
   { to: "/admin", label: da.nav.admin, testId: "nav-admin", icon: Settings, roles: ["admin"] },
 ];
@@ -25,11 +27,17 @@ const navItems = [
 interface SidebarProps {
   onNavigate?: () => void;
   role?: string | null;
+  karingerAccess?: boolean;
 }
 
-export function Sidebar({ onNavigate, role }: SidebarProps) {
+export function Sidebar({ onNavigate, role, karingerAccess }: SidebarProps) {
   const filteredItems = role
-    ? navItems.filter((item) => item.roles.includes(role))
+    ? navItems.filter((item) => {
+        if (!item.roles.includes(role)) return false;
+        // Kåringer is invite-only for non-admin users.
+        if (item.to === "/karinger" && role !== "admin" && !karingerAccess) return false;
+        return true;
+      })
     : navItems;
 
   return (
