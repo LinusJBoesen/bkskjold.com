@@ -262,6 +262,17 @@ export const da = {
     goalsLabel: "Mål",
     assistsLabel: "Assists",
     cardsLabel: "Kort",
+    noResult: "Mangler resultat",
+    setResult: "Ret resultat",
+    team1Won: "Hold 1 vandt",
+    team2Won: "Hold 2 vandt",
+    bothLost: "Begge hold tabte",
+    cancelEdit: "Fortryd",
+    confirmChange:
+      "Denne kamp har allerede et resultat. Ændrer du det, bliver bøderne for det tabende hold slettet og tildelt på ny. Fortsæt?",
+    resultSaved: "Resultat gemt",
+    resultSaveError: "Kunne ikke gemme resultatet",
+    notATrainingMatch: "Denne kamp kom ikke fra holdgeneratoren, så resultatet kan ikke rettes her",
   },
 
   // Analysis

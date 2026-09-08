@@ -14,7 +14,7 @@ import { api } from "@/lib/api";
 import { da } from "@/i18n/da";
 import { useToast } from "@/components/toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Download, Trophy, Swords, Trash2, ChevronUp, ChevronDown, BarChart3, Flame } from "lucide-react";
+import { Download, Trophy, Swords, Trash2, Pencil, ChevronUp, ChevronDown, BarChart3, Flame } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -132,6 +132,8 @@ export default function TrainingHistoryPage() {
   const [filter, setFilter] = useState<"all" | "10" | "20">("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const [statSort, setStatSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "winRate", dir: "desc" });
+  const [editingResult, setEditingResult] = useState<string | null>(null);
+  const [savingResult, setSavingResult] = useState<string | null>(null);
   const { toast } = useToast();
   const { role } = useAuth();
 
@@ -260,6 +262,27 @@ export default function TrainingHistoryPage() {
       loadData();
     } catch {
       toast("Kunne ikke slette kamp", "error");
+    }
+  };
+
+  // Correcting an old result re-runs the whole fine calculation server-side:
+  // the previous losing team's fines are deleted and re-issued for the new
+  // loser, so warn before overwriting a result that already exists.
+  const setResult = async (matchId: string, winner: 0 | 1 | 2, hadResult: boolean) => {
+    if (hadResult && !confirm(da.history.confirmChange)) return;
+    setSavingResult(matchId);
+    try {
+      await api.post(`/teams/lineup/${matchId}/result`, { winner });
+      toast(da.history.resultSaved, "success");
+      setEditingResult(null);
+      await loadData();
+    } catch (err) {
+      // Matches created by hand have no training_lineups row behind them, so
+      // the lineup endpoint 404s. Say why rather than "something went wrong".
+      const notFound = err instanceof Error && err.message.includes("404");
+      toast(notFound ? da.history.notATrainingMatch : da.history.resultSaveError, "error");
+    } finally {
+      setSavingResult(null);
     }
   };
 
@@ -500,8 +523,22 @@ export default function TrainingHistoryPage() {
                         </span>
                       )}
                       <Badge variant={isTie ? "error" : isPending ? "default" : m.winning_team === 1 ? "success" : "info"}>
-                        {isTie ? "Begge hold tabte" : isPending ? "Uafgjort" : `Hold ${m.winning_team} vandt`}
+                        {isTie
+                          ? da.history.bothLost
+                          : isPending
+                            ? da.history.noResult
+                            : `Hold ${m.winning_team} vandt`}
                       </Badge>
+                      {role === "admin" && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditingResult(editingResult === m.id ? null : m.id); }}
+                          className={`transition-colors ${editingResult === m.id ? "text-zinc-200" : "text-zinc-600 hover:text-zinc-300"}`}
+                          title={da.history.setResult}
+                          data-testid={`edit-result-${m.id}`}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       {role === "admin" && (
                         <button
                           onClick={(e) => { e.stopPropagation(); deleteMatch(m.id); }}
@@ -513,6 +550,33 @@ export default function TrainingHistoryPage() {
                       )}
                     </div>
                   </div>
+
+                  {role === "admin" && editingResult === m.id && (
+                    <div
+                      className="flex flex-wrap items-center gap-2 mb-3 p-2 rounded-md bg-zinc-800/40 border border-zinc-800"
+                      data-testid={`result-editor-${m.id}`}
+                    >
+                      {([1, 2, 0] as const).map((w) => (
+                        <Button
+                          key={w}
+                          size="sm"
+                          variant={m.winning_team === w ? "default" : "secondary"}
+                          disabled={savingResult === m.id}
+                          onClick={() => setResult(m.id, w, !isPending)}
+                          data-testid={`set-winner-${w}-${m.id}`}
+                        >
+                          {w === 1 ? da.history.team1Won : w === 2 ? da.history.team2Won : da.history.bothLost}
+                        </Button>
+                      ))}
+                      <button
+                        onClick={() => setEditingResult(null)}
+                        className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors ml-auto"
+                      >
+                        {da.history.cancelEdit}
+                      </button>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div className={`rounded-md px-3 py-2 ${m.winning_team === 1 ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-zinc-800/50 border border-zinc-800"}`}>
                       <div className="flex items-center gap-1.5 mb-1">
