@@ -60,6 +60,22 @@ interface Match {
   score_team2: number | null;
   players: MatchPlayer[];
   events?: MatchEvent[];
+  // True for a generated session that never got a result. It has no matches
+  // row behind it, so it cannot be deleted through /api/matches.
+  isPendingLineup?: boolean;
+}
+
+interface PendingLineupPlayer {
+  id: string;
+  displayName: string;
+}
+
+interface PendingLineup {
+  id: string;
+  label: string;
+  eventDate: string;
+  team1: PendingLineupPlayer[];
+  team2: PendingLineupPlayer[];
 }
 
 interface PlayerStat {
@@ -132,6 +148,7 @@ export default function TrainingHistoryPage() {
   const [filter, setFilter] = useState<"all" | "10" | "20">("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const [statSort, setStatSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "winRate", dir: "desc" });
+  const [pending, setPending] = useState<PendingLineup[]>([]);
   const [editingResult, setEditingResult] = useState<string | null>(null);
   const [savingResult, setSavingResult] = useState<string | null>(null);
   const { toast } = useToast();
@@ -142,10 +159,14 @@ export default function TrainingHistoryPage() {
     Promise.all([
       api.get<Match[]>("/matches"),
       api.get<PlayerStat[]>("/matches/stats/all"),
+      // Sessions still awaiting a result. Fetched separately because they have
+      // no matches row yet — that is written only when a winner is recorded.
+      api.get<PendingLineup[]>("/teams/lineup/pending").catch(() => [] as PendingLineup[]),
     ])
-      .then(([matchData, statsData]) => {
+      .then(([matchData, statsData, pendingData]) => {
         setMatches(matchData);
         setStats(statsData);
+        setPending(pendingData);
       })
       .catch(() => setError("Kunne ikke indlæse træningsdata"))
       .finally(() => setLoading(false));
@@ -240,7 +261,28 @@ export default function TrainingHistoryPage() {
     return { bestId: withRate[0].id, worstId: withRate[withRate.length - 1].id };
   }, [stats]);
 
-  const sortedCompleted = [...completedMatches].sort((a, b) =>
+  // Sessions awaiting a result are shaped like matches so they list and sort
+  // alongside them — same card, same editor, in date order rather than pinned
+  // to the top where they would read as a separate concept.
+  const pendingAsMatches: Match[] = useMemo(
+    () =>
+      pending.map((l) => ({
+        id: l.id,
+        date: l.eventDate,
+        status: "completed",
+        winning_team: null,
+        score_team1: null,
+        score_team2: null,
+        isPendingLineup: true,
+        players: [
+          ...l.team1.map((p) => ({ player_id: p.id, team: 1, display_name: p.displayName })),
+          ...l.team2.map((p) => ({ player_id: p.id, team: 2, display_name: p.displayName })),
+        ],
+      })),
+    [pending],
+  );
+
+  const sortedCompleted = [...completedMatches, ...pendingAsMatches].sort((a, b) =>
     sort === "newest"
       ? new Date(b.date).getTime() - new Date(a.date).getTime()
       : new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -539,7 +581,9 @@ export default function TrainingHistoryPage() {
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                       )}
-                      {role === "admin" && (
+                      {/* A session with no result has no matches row behind it,
+                          so DELETE /matches/:id would 404. */}
+                      {role === "admin" && !m.isPendingLineup && (
                         <button
                           onClick={(e) => { e.stopPropagation(); deleteMatch(m.id); }}
                           className="text-zinc-600 hover:text-red-400 transition-colors"

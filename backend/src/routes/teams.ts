@@ -186,6 +186,31 @@ teams.get("/lineup", requireRole("admin", "spiller"), async (c) => {
   });
 });
 
+// GET /api/teams/lineup/pending — training sessions that were generated but
+// never got a result. A matches row is only written when a winner is recorded,
+// so these are invisible everywhere else in the app: the history page lists
+// matches, and GET /lineup only returns the next upcoming session.
+teams.get("/lineup/pending", requireRole("admin", "spiller"), async (c) => {
+  const rows = await sql`
+    SELECT id, label, event_date, team1, team2, created_at
+    FROM training_lineups
+    WHERE winner IS NULL
+      AND event_date::date < CURRENT_DATE
+    ORDER BY event_date DESC
+  ` as any[];
+
+  return c.json(
+    rows.map((row) => ({
+      id: row.id,
+      label: row.label,
+      eventDate: row.event_date,
+      team1: JSON.parse(row.team1),
+      team2: JSON.parse(row.team2),
+      createdAt: row.created_at,
+    })),
+  );
+});
+
 // POST /api/teams/lineup/:id/result — record training match winner + assign fines (admin only)
 teams.post("/lineup/:id/result", requireRole("admin"), async (c) => {
   const lineupId = c.req.param("id");
