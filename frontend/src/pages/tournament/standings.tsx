@@ -30,8 +30,8 @@ interface DbuMatch {
   dbuMatchId: string | null;
 }
 
-const SKJOLD = "BK Skjold";
-const SKJOLD_MATCH = "Skjold 10";
+// Fallback until the API reports our DBU team name (derived from DBU_TEAM_ID).
+const DEFAULT_TEAM_NAME = "Skjold 10";
 
 export default function TournamentStandingsPage() {
   const [standings, setStandings] = useState<Standing[]>([]);
@@ -40,6 +40,7 @@ export default function TournamentStandingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [ourTeam, setOurTeam] = useState(DEFAULT_TEAM_NAME);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -48,10 +49,11 @@ export default function TournamentStandingsPage() {
     setError(null);
     try {
       const [standingsData, matchesData] = await Promise.all([
-        api.get<{ standings: Standing[] }>("/tournament/standings"),
+        api.get<{ standings: Standing[]; teamName?: string }>("/tournament/standings"),
         api.get<{ upcoming: DbuMatch[]; previous: DbuMatch[] }>("/tournament/matches"),
       ]);
       setStandings(standingsData.standings);
+      if (standingsData.teamName) setOurTeam(standingsData.teamName);
       setUpcoming(matchesData.upcoming);
       setPrevious(matchesData.previous);
     } catch {
@@ -84,7 +86,7 @@ export default function TournamentStandingsPage() {
     return "border-l-2 border-l-transparent";
   };
 
-  const isSkjold = (name: string) => name === SKJOLD;
+  const isSkjold = (name: string) => name === ourTeam;
 
   return (
     <div data-testid="page-tournament" className="animate-fade-in-up">
@@ -183,8 +185,8 @@ export default function TournamentStandingsPage() {
             ) : (
               <div className="space-y-3" data-testid="tournament-upcoming-matches">
                 {upcoming.map((m, i) => {
-                  const isSkjoldHome = m.homeTeam === SKJOLD_MATCH;
-                  const isSkjoldAway = m.awayTeam === SKJOLD_MATCH;
+                  const isSkjoldHome = m.homeTeam === ourTeam;
+                  const isSkjoldAway = m.awayTeam === ourTeam;
                   return (
                     <div
                       key={`${m.date}-${m.homeTeam}-${i}`}
@@ -243,8 +245,8 @@ export default function TournamentStandingsPage() {
             ) : (
               <div className="space-y-3" data-testid="tournament-previous-matches">
                 {previous.map((m, i) => {
-                  const isSkjoldHome = m.homeTeam === SKJOLD_MATCH;
-                  const isSkjoldAway = m.awayTeam === SKJOLD_MATCH;
+                  const isSkjoldHome = m.homeTeam === ourTeam;
+                  const isSkjoldAway = m.awayTeam === ourTeam;
                   const skjoldWon = (isSkjoldHome && (m.homeScore ?? 0) > (m.awayScore ?? 0)) ||
                                     (isSkjoldAway && (m.awayScore ?? 0) > (m.homeScore ?? 0));
                   const skjoldLost = (isSkjoldHome && (m.homeScore ?? 0) < (m.awayScore ?? 0)) ||

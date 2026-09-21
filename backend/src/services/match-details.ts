@@ -10,7 +10,7 @@ let cachedTeamName: string | null = null;
  * varies by season ("Skjold 10", "BK Skjold" legacy dev-seed, etc.), so
  * hardcoding was wrong.
  */
-async function getOurTeamName(): Promise<string> {
+export async function getOurTeamName(): Promise<string> {
   if (cachedTeamName) return cachedTeamName;
   const ourTeamId = process.env.DBU_TEAM_ID;
   if (!ourTeamId) return FALLBACK_TEAM_NAME;

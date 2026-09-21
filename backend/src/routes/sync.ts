@@ -121,9 +121,8 @@ sync.post("/dbu", async (c) => {
 
       // dbu_team_matches is the single source of truth for match data.
       // Tournament + match-details both read from here (filtered by team_id).
-      // DBU assigns dbu_match_id only after a match is played — upcoming
-      // matches and bye weeks scrape as "". Synthesize a stable key for those
-      // so they don't collide on the PK.
+      // Rows without a kampinfo link (bye weeks) scrape with dbu_match_id "".
+      // Synthesize a stable key for those so they don't collide on the PK.
       await tx`DELETE FROM dbu_team_matches WHERE team_id = ${teamId}`;
       for (const tm of teamMatches) {
         const matchKey = tm.dbuMatchId || pendingMatchKey(tm);

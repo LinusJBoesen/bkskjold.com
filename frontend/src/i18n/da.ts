@@ -90,7 +90,7 @@ export const da = {
     wins: "S",
     draws: "U",
     losses: "T",
-    goalDiff: "Målforskel",
+    goalDiff: "Mål",
     points: "Point",
     refresh: "Opdatér",
     refreshing: "Opdaterer...",

@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { fetchStandings, fetchMatchResults } from "../services/dbu";
+import { getOurTeamName } from "../services/match-details";
 
 const tournament = new Hono();
 
 tournament.get("/standings", async (c) => {
-  const standings = await fetchStandings();
-  return c.json({ standings });
+  const [standings, teamName] = await Promise.all([fetchStandings(), getOurTeamName()]);
+  return c.json({ standings, teamName });
 });
 
 tournament.get("/matches", async (c) => {

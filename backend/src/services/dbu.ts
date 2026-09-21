@@ -139,16 +139,16 @@ export async function scrapeTeamMatches(teamId: string): Promise<DbuTeamMatch[]>
     const cells = row.querySelectorAll("td, th");
     if (cells.length < 7) continue;
 
-    // cells[0] = icon with link to /resultater/kamp/{matchId}/kampinfo
+    // cells[0] = icon, cells[1] = kampnr
     // cells[2] = date, cells[3] = time, cells[4] = home, cells[5] = away
     // cells[6] = venue, cells[7] = result
 
-    // Extract dbu_match_id from icon link in cells[0]
-    const iconLink = cells[0]?.querySelector("a");
-    const iconHref = iconLink?.getAttribute("href") ?? "";
-    // href like "/resultater/kamp/913776_489363/kampinfo"
-    const matchIdMatch = iconHref.match(/\/resultater\/kamp\/([^/]+)/);
-    const dbuMatchId = matchIdMatch?.[1] ?? "";
+    // The kampinfo link lives on the row itself —
+    // onclick="MatchProgramMatchClick('/resultater/kamp/392540_496324/kampinfo')".
+    // Older markup had it as an <a> in cells[0]; keep that as a fallback.
+    const linkSource =
+      row.getAttribute("onclick") ?? cells[0]?.querySelector("a")?.getAttribute("href") ?? "";
+    const dbuMatchId = linkSource.match(/\/resultater\/kamp\/([^/'"]+)/)?.[1] ?? "";
 
     const dateStr = cells[2]?.text.trim() ?? "";
     const time = cells[3]?.text.trim() ?? "";
@@ -206,10 +206,10 @@ export async function scrapeTeamMatches(teamId: string): Promise<DbuTeamMatch[]>
 }
 
 /**
- * Stable synthetic key for an unplayed DBU fixture. DBU assigns a real
- * dbu_match_id only after kickoff, so upcoming matches need a deterministic
- * key that is identical regardless of which team's kampprogram produced the
- * row — otherwise we'd insert the same physical fixture once per scraped team.
+ * Stable synthetic key for a DBU fixture row with no kampinfo link (e.g. bye
+ * weeks, "Oversidder"). The key must be identical regardless of which team's
+ * kampprogram produced the row — otherwise we'd insert the same physical
+ * fixture once per scraped team.
  */
 export function pendingMatchKey(tm: {
   date: string;
@@ -360,8 +360,8 @@ export async function fetchMatchResults(): Promise<(DbuMatch & { dbuMatchId?: st
     awayScore: r.away_score,
     venue: r.venue ?? null,
     // Expose synthetic "pending_…" keys too — they let the frontend link into
-    // the match-detail page for upcoming matches (no DBU id yet). The detail
-    // route reads the same key from dbu_team_matches.
+    // the match-detail page for rows without a DBU id. The detail route reads
+    // the same key from dbu_team_matches.
     dbuMatchId: r.dbu_match_id ?? undefined,
   }));
 
